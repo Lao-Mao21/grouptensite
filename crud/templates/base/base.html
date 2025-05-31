@@ -1,0 +1,22 @@
+{% load static %}
+{% load humanize %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static '/css/output.css' %}">
+    <title>{% block 'title'%} {% endblock 'title' %}</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    {% block content %} {% endblock content %}
+    <script src="{% static 'js/sidebar.js' %}"></script>
+    <script src="{% static 'js/pagination.js' %}"></script>
+    <script src="{% static 'js/booking.js' %}"></script>
+    <script src="{% static 'js/current_date.js' %}"></script>
+    <script src="{% static 'js/reservation.js' %}"></script>
+    <script src="{% static 'js/sales.js' %}"></script>
+</body>
+</html>

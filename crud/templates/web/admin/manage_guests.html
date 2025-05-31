@@ -1,0 +1,381 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Manage Guests{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 flex sm:flex-row flex-col">
+    {% include "attachments/sidebar.html" %}
+    <div class="flex-1 p-4 sm:p-8">
+        <!-- date js -->
+        <div class="mb-2 sm:mb-4">
+            <span id="current-date" class="text-2xl sm:text-4xl font-bold text-gray-700"></span>
+            <h2 class="text-lg sm:text-2xl text-gray-700">Welcome, Admin</h2>
+        </div>
+        <!-- Table Switcher -->
+        <div class="flex items-center mb-4" style="gap: 1rem">
+            <label class="flex items-center gap-x-2">
+                <input type="radio" name="active_table" id="show-today" value="today" class="accent-blue-600 align-middle" checked>
+                <span class="align-middle">Today's Booking</span>
+            </label>
+            <label class="flex items-center gap-x-2">
+                <input type="radio" name="active_table" id="show-reservations" value="reservations" class="accent-blue-600 align-middle">
+                <span class="align-middle">Reservation</span>
+            </label>
+        </div>
+
+        <!-- Search Bar -->
+        <form method="get" class="flex items-center mb-4">
+            <input type="text" name="search" placeholder="Search" class="flex-1 px-4 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ request.GET.search }}">
+            <button type="submit" class="px-4 py-2 bg-blue-700 text-white rounded-r-md hover:bg-blue-800">Search</button>
+        </form>
+
+        <!-- Table Container -->
+        <div class="relative overflow-x-auto shadow-md sm:rounded-lg" id="today-table">
+            <table class="w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 border">Room</th>
+                        <th class="px-4 py-2 border">Type</th>
+                        <th class="px-4 py-2 border">Name</th>
+                        <th class="px-4 py-2 border">Status</th>
+                        <th class="px-4 py-2 border">Check in</th>
+                        <th class="px-4 py-2 border">Check out</th>
+                        <th class="px-4 py-2 border">Payment</th>
+                        <th class="px-4 py-2 border text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for guest in todays_bookings %}
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-4 py-2 border">{{ guest.room_id.room_number }}</td>
+                        <td class="px-4 py-2 border">{{ guest.room_id.room_type }}</td>
+                        <td class="px-4 py-2 border">{{ guest.guest_id.full_name }}</td>
+                        <td class="px-4 py-2 border">{{ guest.room_id.room_status }}</td>
+                        <td class="px-4 py-2 border">{{ guest.check_in|date:"m/d/y h:i A" }}</td>
+                        <td class="px-4 py-2 border">{{ guest.check_out|date:"m/d/y h:i A" }}</td>
+                        <td class="px-4 py-2 border">{{ guest.payment_status }}</td>
+                        <td class="px-4 py-2 border text-center">
+                            <a href="{% url 'edit_guest' guest.id %}" class="text-green-600 hover:text-green-800 mx-1" title="Edit">
+                                <span class="material-icons align-middle text-base">edit</span>
+                            </a>
+                            <a href="{% url 'delete_guest' guest.id %}" class="text-red-600 hover:text-red-800 mx-1" title="Delete">
+                                <span class="material-icons align-middle text-base">delete</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-2 px-4 border">No guests found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <!-- Pagination and Book Button -->
+            <div class="flex items-center justify-between mt-2 px-2">
+                <div>
+                    {% if todays_bookings.has_previous %}
+                        <a href="?today_page={{ todays_bookings.previous_page_number }}&active_table=today"
+                           class="inline-flex items-center px-3 py-1 border rounded hover:bg-gray-100">
+                            <span class="material-icons text-base">arrow_back</span>
+                        </a>
+                    {% endif %}
+                    {% if todays_bookings.has_next %}
+                        <a href="?today_page={{ todays_bookings.next_page_number }}&active_table=today"
+                           class="inline-flex items-center px-3 py-1 border rounded hover:bg-gray-100">
+                            <span class="material-icons text-base">arrow_forward</span>
+                        </a>
+                    {% endif %}
+                </div>
+                <button id="show-book-form"
+                    class="px-6 py-2 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition"
+                    title="Book for guest">
+                    Book for guest
+                </button>
+            </div>
+        </div>
+
+        <!-- Pagination for Today's Bookings -->
+        {% if todays_bookings.paginator.num_pages > 1 %}
+        <div class="flex justify-center items-center gap-2 mt-2">
+            {% if todays_bookings.has_previous %}
+                <a href="?today_page={{ todays_bookings.previous_page_number }}&active_table=today"
+                   class="px-3 py-1 border rounded hover:bg-blue-100">
+                    <span class="material-icons text-base">arrow_back</span>
+                </a>
+            {% endif %}
+            {% for num in todays_bookings.paginator.page_range %}
+                {% if todays_bookings.number == num %}
+                    <span class="px-3 py-1 bg-blue-600 text-white rounded">{{ num }}</span>
+                {% else %}
+                    <a href="?today_page={{ num }}&active_table=today"
+                       class="px-3 py-1 border rounded hover:bg-blue-100">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if todays_bookings.has_next %}
+                <a href="?today_page={{ todays_bookings.next_page_number }}&active_table=today"
+                   class="px-3 py-1 border rounded hover:bg-blue-100">
+                    <span class="material-icons text-base">arrow_forward</span>
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Pagination for Reservations -->
+        {% if reservations.paginator.num_pages > 1 %}
+        <div class="flex justify-center items-center gap-2 mt-2">
+            {% if reservations.has_previous %}
+                <a href="?reservation_page={{ reservations.previous_page_number }}&active_table=reservations"
+                class="px-3 py-1 border rounded hover:bg-blue-100">
+                    <span class="material-icons text-base">arrow_back</span>
+                </a>
+            {% endif %}
+            {% for num in reservations.paginator.page_range %}
+                {% if reservations.number == num %}
+                    <span class="px-3 py-1 bg-blue-600 text-white rounded">{{ num }}</span>
+                {% else %}
+                    <a href="?reservation_page={{ num }}&active_table=reservations"
+                    class="px-3 py-1 border rounded hover:bg-blue-100">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if reservations.has_next %}
+                <a href="?reservation_page={{ reservations.next_page_number }}&active_table=reservations"
+                class="px-3 py-1 border rounded hover:bg-blue-100">
+                    <span class="material-icons text-base">arrow_forward</span>
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Reservations Table (hidden by default) -->
+        <div class="relative overflow-x-auto shadow-md sm:rounded-lg" id="reservations-table" style="display:none;">
+            <table class="w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 border">Room</th>
+                        <th class="px-4 py-2 border">Type</th>
+                        <th class="px-4 py-2 border">Name</th>
+                        <th class="px-4 py-2 border">Expected Arrival</th>
+                        <th class="px-4 py-2 border">Duration</th>
+                        <th class="px-4 py-2 border">Payment</th>
+                        <th class="px-4 py-2 border">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for guest in reservations %}
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-4 py-2 border">{{ guest.room_id.room_number }}</td>
+                        <td class="px-4 py-2 border">{{ guest.room_id.room_type }}</td>
+                        <td class="px-4 py-2 border">{{ guest.guest_id.full_name }}</td>
+                        <td class="px-4 py-2 border">{{ guest.room_id.room_status }}</td>
+                        <td class="px-4 py-2 border">{{ guest.check_in|date:"m/d/y h:i A" }}</td>
+                        <td class="px-4 py-2 border">{{ guest.check_out|date:"m/d/y h:i A" }}</td>
+                        <td class="px-4 py-2 border">{{ guest.payment_status }}</td>
+                        <td class="px-4 py-2 border text-center">
+                            <a href="{% url 'edit_guest' guest.id %}" class="text-green-600 hover:text-green-800 mx-1" title="Edit">
+                                <span class="material-icons align-middle text-base">edit</span>
+                            </a>
+                            <a href="{% url 'delete_guest' guest.id %}" class="text-red-600 hover:text-red-800 mx-1" title="Delete">
+                                <span class="material-icons align-middle text-base">delete</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-2 px-4 border">No reservations found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <!-- Pagination and Reservation Button -->
+            <div class="flex items-center justify-between mt-2 px-2">
+                <div>
+                    {% if reservations.has_previous %}
+                        <a href="?reservation_page={{ reservations.previous_page_number }}&active_table=reservations"
+                           class="inline-flex items-center px-3 py-1 border rounded hover:bg-gray-100">
+                            <span class="material-icons text-base">arrow_back</span>
+                        </a>
+                    {% endif %}
+                    {% if reservations.has_next %}
+                        <a href="?reservation_page={{ reservations.next_page_number }}&active_table=reservations"
+                           class="inline-flex items-center px-3 py-1 border rounded hover:bg-gray-100">
+                            <span class="material-icons text-base">arrow_forward</span>
+                        </a>
+                    {% endif %}
+                </div>
+                <button id="show-reservation-form"
+                    class="px-6 py-2 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition"
+                    title="Add Reservation">
+                    Add Reservation
+                </button>
+            </div>
+        </div>
+
+        <!-- Book Guest Modal -->
+        <div id="book-guest-form-modal" class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" style="display:none;">
+            <div class="bg-white rounded-lg shadow-lg p-16 w-full max-w-lg relative">
+                <button id="close-book-form" type="button" class="absolute top-2 right-2 text-gray-500 hover:text-red-600 text-2xl">&times;</button>
+                <h1 class="text-2xl font-semibold mb-4">Book Guest</h1>
+                <form action="{% url 'add_guest' %}" method="post">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="guest_id" class="block text-sm font-medium text-gray-700">Guest</label>
+                        <select id="guest_id" name="guest_id" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            {% for guest in all_guests %}
+                                <option value="{{ guest.id }}">{{ guest.first_name }} {{ guest.last_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="room_id" class="block text-sm font-medium text-gray-700">Room</label>
+                        <select id="room_id" name="room_id" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            {% for room in all_rooms %}
+                                <option value="{{ room.room_id }}">Room {{ room.room_id }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                        <select id="status" name="status" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            <option value="reserved">Reserved</option>
+                            <option value="occupied">Occupied</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="check_in" class="block text-sm font-medium text-gray-700">Check In</label>
+                        <input type="datetime-local" id="check_in" name="check_in" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="check_out" class="block text-sm font-medium text-gray-700">Check Out</label>
+                        <input type="datetime-local" id="check_out" name="check_out" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="payment" class="block text-sm font-medium text-gray-700">Payment</label>
+                        <div class="flex rounded-md shadow-sm">
+                            <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                ₱
+                            </span>
+                            <input type="text" id="payment" name="payment" required
+                                   class="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                   placeholder="Amount">
+                        </div>
+                    </div>
+                    {% comment %} add button to open booking form {% endcomment %}
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Book Guest</button>
+                    <button type="reset" class="px-4 py-2 bg-gray-300 text-black rounded-md hover:bg-gray-400 ml-2">Reset</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Reserve Guest Modal -->
+        <div id="reserve-guest-form-modal" class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" style="display:none;">
+            <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-lg relative">
+                <button id="close-reserve-form" type="button" class="absolute top-2 right-2 text-gray-500 hover:text-red-600 text-2xl">&times;</button>
+                <h1 class="text-2xl font-semibold mb-4">Reserve Guest</h1>
+                <form action="{% url 'add_reservation' %}" method="post">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="reserve_guest_id" class="block text-sm font-medium text-gray-700">Guest</label>
+                        <select id="reserve_guest_id" name="guest_id" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            {% for guest in all_guests %}
+                                <option value="{{ guest.id }}">{{ guest.first_name }} {{ guest.last_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="reserve_room_id" class="block text-sm font-medium text-gray-700">Room</label>
+                        <select id="reserve_room_id" name="room_id" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            {% for room in all_rooms %}
+                                <option value="{{ room.room_id }}">Room {{ room.room_id }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="reserve_status" class="block text-sm font-medium text-gray-700">Status</label>
+                        <select id="reserve_status" name="status" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            <option value="reserved">Reserved</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="reserve_check_in" class="block text-sm font-medium text-gray-700">Check In</label>
+                        <input type="datetime-local" id="reserve_check_in" name="check_in" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="reserve_check_out" class="block text-sm font-medium text-gray-700">Check Out</label>
+                        <input type="datetime-local" id="reserve_check_out" name="check_out" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="reserve_payment" class="block text-sm font-medium text-gray-700">Payment</label>
+                        <div class="flex rounded-md shadow-sm">
+                            <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                ₱
+                            </span>
+                            <input type="text" id="reserve_payment" name="payment" required
+                                   class="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                   placeholder="Amount">
+                        </div>
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Reserve</button>
+                    <button type="reset" class="px-4 py-2 bg-gray-300 text-black rounded-md hover:bg-gray-400 ml-2">Reset</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% comment %} <script>
+    // Table switcher logic
+    const todayRadio = document.getElementById('show-today');
+    const reservationsRadio = document.getElementById('show-reservations');
+    const todayTable = document.getElementById('today-table');
+    const reservationsTable = document.getElementById('reservations-table');
+
+    function showTable(active) {
+        if (active === 'reservations') {
+            todayTable.style.display = 'none';
+            reservationsTable.style.display = '';
+            reservationsRadio.checked = true;
+            todayRadio.checked = false;
+        } else {
+            todayTable.style.display = '';
+            reservationsTable.style.display = 'none';
+            todayRadio.checked = true;
+            reservationsRadio.checked = false;
+        }
+    }
+
+    todayRadio.addEventListener('change', function() { showTable('today'); });
+    reservationsRadio.addEventListener('change', function() { showTable('reservations'); });
+
+    // On page load, show the correct table based on active_table param
+    document.addEventListener('DOMContentLoaded', function() {
+        const params = new URLSearchParams(window.location.search);
+        const activeTable = params.get('active_table');
+        showTable(activeTable === 'reservations' ? 'reservations' : 'today');
+    });
+
+    // Book Guest Modal logic
+    function setupBookButtons(btnId) {
+        const bookFormBtn = document.getElementById(btnId);
+        const bookGuestFormModal = document.getElementById('book-guest-form-modal');
+        const closeBookFormBtn = document.getElementById('close-book-form');
+        if (bookFormBtn) {
+            bookFormBtn.addEventListener('click', function() {
+                bookGuestFormModal.style.display = 'flex';
+            });
+        }
+        if (closeBookFormBtn) {
+            closeBookFormBtn.addEventListener('click', function() {
+                bookGuestFormModal.style.display = 'none';
+            });
+        }
+        bookGuestFormModal.addEventListener('click', function(e) {
+            if (e.target === bookGuestFormModal) {
+                bookGuestFormModal.style.display = 'none';
+            }
+        });
+    }
+    setupBookButtons('show-book-form');
+    setupBookButtons('show-book-form-res');
+</script> {% endcomment %}
+{% endblock content %}

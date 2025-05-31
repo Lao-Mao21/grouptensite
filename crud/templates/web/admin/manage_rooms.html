@@ -1,0 +1,214 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Manage Rooms{% endblock title %}
+    
+{% block content %}
+<div class="min-h-screen bg-gray-100 flex sm:flex-row flex-col">
+    {% include "attachments/sidebar.html" %}
+    <div class="flex-1 p-4 sm:p-8">
+        <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-md p-6">
+            <div class="mb-4">
+                <span id="current-date" class="text-2xl sm:text-4xl font-bold text-gray-700"></span>
+                <div class="text-2xl font-semibold text-gray-600">Welcome back, Admin</div>
+            </div>
+            <!-- Room Status Switcher and Search -->
+            <form method="get" class="flex items-center gap-x-6 mb-4">
+                <label class="flex items-center gap-x-2">
+                    <input type="radio" name="room_status" value="available" {% if selected_status == "available" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
+                    <span>Available Now</span>
+                </label>
+                <label class="flex items-center gap-x-2">
+                    <input type="radio" name="room_status" value="occupied" {% if selected_status == "occupied" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
+                    <span>Occupied</span>
+                </label>
+                <label class="flex items-center gap-x-2">
+                    <input type="radio" name="room_status" value="reserved" {% if selected_status == "reserved" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
+                    <span>Reserved</span>
+                </label>
+                <input type="text" name="search" placeholder="Search" class="flex-1 px-4 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ search }}">
+                <button type="submit" class="px-4 py-2 bg-blue-700 text-white rounded-r-md hover:bg-blue-800">Search</button>
+            </form>
+            <!-- Single Table -->
+            <div class="overflow-x-auto rounded-lg shadow">
+                <table class="min-w-full bg-white border border-gray-200 text-sm">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-2 border">Room</th>
+                            <th class="px-4 py-2 border">Type</th>
+                            <th class="px-4 py-2 border">Bed Count</th>
+                            <th class="px-4 py-2 border">Bed Size</th>
+                            <th class="px-4 py-2 border">Floor</th>
+                            <th class="px-4 py-2 border">Price</th>
+                            <th class="px-4 py-2 border text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for room in rooms %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 border">{{ room.room_number }}</td>
+                            <td class="px-4 py-2 border">{{ room.room_type }}</td>
+                            <td class="px-4 py-2 border">{{ room.bed_count }}</td>
+                            <td class="px-4 py-2 border">{{ room.bed_size }}</td>
+                            <td class="px-4 py-2 border">{{ room.floor }}</td>
+                            <td class="px-4 py-2 border">₱{{ room.room_price|floatformat:0|intcomma }}</td>
+                            <td class="px-4 py-2 border text-center">
+                                <a href="{% url 'edit_room' room.id %}" class="text-green-600 hover:text-green-800 mx-1" title="Edit">
+                                    <span class="material-icons align-middle text-base">edit</span>
+                                </a>
+                                <a href="{% url 'delete_room' room.id %}" class="text-red-600 hover:text-red-800 mx-1" title="Delete">
+                                    <span class="material-icons align-middle text-base">delete</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-2 px-4 border text-gray-500">No rooms found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if rooms.has_other_pages %}
+            <div class="flex justify-center items-center gap-2 mt-4">
+                {% if rooms.has_previous %}
+                    <a href="?room_status={{ selected_status }}&search={{ search }}&page={{ rooms.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-blue-100">
+                        <span class="material-icons text-base">arrow_back</span>
+                    </a>
+                {% endif %}
+                {% for num in rooms.paginator.page_range %}
+                    {% if rooms.number == num %}
+                        <span class="px-3 py-1 bg-blue-600 text-white rounded">{{ num }}</span>
+                    {% else %}
+                        <a href="?room_status={{ selected_status }}&search={{ search }}&page={{ num }}" class="px-3 py-1 border rounded hover:bg-blue-100">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+                {% if rooms.has_next %}
+                    <a href="?room_status={{ selected_status }}&search={{ search }}&page={{ rooms.next_page_number }}" class="px-3 py-1 border rounded hover:bg-blue-100">
+                        <span class="material-icons text-base">arrow_forward</span>
+                    </a>
+                {% endif %}
+            </div>
+            {% endif %}
+            <!-- Action Buttons -->
+            <div class="flex justify-end gap-2 mt-4">
+                <button onclick="document.getElementById('book-guest-form-modal').style.display='flex'"
+                        class="px-6 py-2 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition">
+                    Book for guest
+                </button>
+                <button onclick="document.getElementById('add-room-form-modal').style.display='flex'"
+                        class="px-6 py-2 rounded bg-blue-700 text-white font-semibold shadow hover:bg-blue-800 transition">
+                    + Add room
+                </button>
+            </div>
+        </div>
+
+        <!-- Add Room Modal (hidden by default) -->
+        <div id="add-room-form-modal" class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" style="display:none;">
+            <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-lg relative">
+                <button type="button" onclick="document.getElementById('add-room-form-modal').style.display='none'"
+                        class="absolute top-2 right-2 text-gray-500 hover:text-red-600 text-2xl">&times;</button>
+                <h2 class="text-2xl font-semibold mb-4">Add New Room</h2>
+                <form action="{% url 'add_room' %}" method="post">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="room_number" class="block text-sm font-medium text-gray-700">Room Number</label>
+                        <input type="text" id="room_number" name="room_number" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="room_type" class="block text-sm font-medium text-gray-700">Room Type</label>
+                        <input type="text" id="room_type" name="room_type" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="bed_count" class="block text-sm font-medium text-gray-700">Bed Count</label>
+                        <input type="text" id="bed_count" name="bed_count" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="bed_size" class="block text-sm font-medium text-gray-700">Bed Size</label>
+                        <input type="text" id="bed_size" name="bed_size" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="floor" class="block text-sm font-medium text-gray-700">Floor</label>
+                        <input type="text" id="floor" name="floor" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="room_price" class="block text-sm font-medium text-gray-700">Price</label>
+                        <input type="number" id="room_price" name="room_price" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="room_status" class="block text-sm font-medium text-gray-700">Room Status</label>
+                        <select id="room_status" name="room_status" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            <option value="available">Available</option>
+                            <option value="reserved">Reserved</option>
+                            <option value="occupied">Occupied</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="available_at" class="block text-sm font-medium text-gray-700">Available At</label>
+                        <input type="datetime-local" id="available_at" name="available_at" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Add Room</button>
+                </form>
+            </div>
+        </div>
+        <!-- Book Guest Modal -->
+         <div id="book-guest-form-modal" class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" style="display:none;">
+            <div class="bg-white rounded-lg shadow-lg p-16 w-full max-w-lg relative">
+                <button id="close-book-form" type="button" class="absolute top-2 right-2 text-gray-500 hover:text-red-600 text-2xl">&times;</button>
+                <h1 class="text-2xl font-semibold mb-4">Book Guest</h1>
+                <form action="{% url 'add_guest' %}" method="post">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="guest_id" class="block text-sm font-medium text-gray-700">Guest</label>
+                        <select id="guest_id" name="guest_id" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            {% for guest in all_guests %}
+                                <option value="{{ guest.id }}">{{ guest.first_name }} {{ guest.last_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="room_id" class="block text-sm font-medium text-gray-700">Room</label>
+                        <select id="room_id" name="room_id" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            {% for room in all_rooms %}
+                                <option value="{{ room.room_id }}">Room {{ room.room_id }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                        <select id="status" name="status" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            <option value="reserved">Reserved</option>
+                            <option value="occupied">Occupied</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="check_in" class="block text-sm font-medium text-gray-700">Check In</label>
+                        <input type="datetime-local" id="check_in" name="check_in" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="check_out" class="block text-sm font-medium text-gray-700">Check Out</label>
+                        <input type="datetime-local" id="check_out" name="check_out" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="payment" class="block text-sm font-medium text-gray-700">Payment</label>
+                        <div class="flex rounded-md shadow-sm">
+                            <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                ₱
+                            </span>
+                            <input type="text" id="payment" name="payment" required
+                                   class="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                   placeholder="Amount">
+                        </div>
+                    </div>
+                    {% comment %} add button to open booking form {% endcomment %}
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Book Guest</button>
+                    <button type="reset" class="px-4 py-2 bg-gray-300 text-black rounded-md hover:bg-gray-400 ml-2">Reset</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

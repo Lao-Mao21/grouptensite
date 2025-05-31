@@ -1,0 +1,112 @@
+from django.db import models
+from django.utils import timezone
+from django.contrib.auth.hashers import make_password
+
+# Create your models here.
+
+class ManageRoom(models.Model):
+    class Meta:
+        db_table = 'manageroom_tbl'
+    room_id = models.AutoField(primary_key=True, blank=False, null=False)
+    ROOM_TYPE_CHOICES = [
+        ('single', 'Single'),
+        ('double', 'Double'),
+        ('suite', 'Suite'),
+        ('deluxe', 'Deluxe'),
+    ]
+    room_type = models.CharField(max_length=100, blank=False, null=False, choices=ROOM_TYPE_CHOICES)
+    room_number = models.CharField(max_length=50, blank=False, null=False, unique=True)
+    bed_count = models.IntegerField(blank=False, null=False)
+    check_in = models.ForeignKey('ManageGuest', on_delete=models.CASCADE, related_name='check_in_room', null=True, blank=True)
+    floor = models.CharField(max_length=50, blank=False, null=False)
+    ROOM_STATUS_CHOICES = [
+        ('available', 'Available'),
+        ('reserved', 'Reserved'),
+        ('occupied', 'Occupied'),
+    ]
+    room_status = models.CharField(max_length=30, choices=ROOM_STATUS_CHOICES, blank=False, null=False)
+    room_price = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False)
+    available_at = models.DateTimeField(blank=False, null=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+
+class AdminAccounts(models.Model):
+    class Meta:
+        db_table = 'adminaccounts_tbl'
+    is_active = models.BooleanField(default=True)
+    admin_id = models.AutoField(primary_key=True, blank=False, null=False)
+    first_name = models.CharField(max_length=155, blank=False, null=False)
+    middle_name = models.CharField(max_length=155, blank=True, null=True)
+    last_name = models.CharField(max_length=155, blank=False, null=False)
+    full_name = models.CharField(max_length=310, blank=False, null=False)
+    username = models.CharField(max_length=150, unique=True, blank=False, null=False)
+    verification_token = models.CharField(max_length=255, blank=True, null=True)
+    date_of_birth = models.DateField(blank=True, null=True)
+    last_login = models.DateTimeField(blank=True, null=True)
+    GENDER_CHOICES = [
+        ('male', 'Male'),
+        ('female', 'Female'),
+        ('other', 'Other'),
+    ]
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=False, null=False)
+    email = models.EmailField(max_length=255, unique=True)
+    phone_number = models.CharField(max_length=20, blank=False, null=False)
+    address = models.CharField(max_length=255, blank=False, null=False)
+    password = models.CharField(max_length=255, blank=False, null=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.password.startswith('pbkdf2_'):
+            self.password = make_password(self.password)
+        super().save(*args, **kwargs)
+
+class GuestAccounts(models.Model):
+    class Meta:
+        db_table = 'guestaccounts_tbl'
+    guest_id = models.AutoField(primary_key=True, blank=False, null=False)
+    first_name = models.CharField(max_length=155, blank=False, null=False)
+    middle_name = models.CharField(max_length=155, blank=True, null=True)
+    last_name = models.CharField(max_length=155, blank=False, null=False)
+    username = models.CharField(max_length=150, unique=True, blank=False, null=False)
+    full_name = models.CharField(max_length=310, blank=False, null=False)
+    GENDER_CHOICES = [
+        ('male', 'Male'),
+        ('female', 'Female'),
+        ('other', 'Other'),
+    ]
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=False, null=False)
+    email = models.EmailField(max_length=255, unique=True)
+    phone_number = models.CharField(max_length=20, blank=False, null=False)
+    address = models.CharField(max_length=255, blank=False, null=False)
+    password = models.CharField(max_length=255, blank=False, null=False)
+    is_active = models.BooleanField(default=True)
+    date_of_birth = models.DateField(blank=True, null=True)
+    last_login = models.DateTimeField(blank=True, null=True)
+    email_verified = models.BooleanField(default=False)
+    verification_token = models.CharField(max_length=255, blank=True, null=True)
+    nationality = models.CharField(max_length=100, blank=True, null=True)
+    emergency_contact = models.CharField(max_length=100, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.password.startswith('pbkdf2_'):
+            self.password = make_password(self.password)
+        super().save(*args, **kwargs)
+
+class ManageGuest(models.Model):
+    class Meta:
+        db_table = 'manageguest_tbl'
+    guest_id = models.ForeignKey(GuestAccounts, on_delete=models.CASCADE, related_name='guests')
+    guest_name = models.CharField(max_length=155, blank=False, null=False)
+    room_id = models.ForeignKey(ManageRoom, on_delete=models.CASCADE, related_name='guests')
+    status = models.CharField(max_length=20, blank=False, null=False)
+    check_in = models.DateTimeField(blank=False, null=False)
+    check_out = models.DateTimeField(blank=False, null=False)
+    expected_arrival = models.DateTimeField(blank=False, null=False)
+    payment_status = models.CharField(max_length=40, blank=False, null=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
