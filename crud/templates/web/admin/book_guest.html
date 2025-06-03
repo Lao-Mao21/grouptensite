@@ -1,0 +1,177 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Book Guest{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 flex sm:flex-row flex-col">
+    {% include "attachments/sidebar.html" %}
+    <div class="flex-1 p-4 sm:p-8">
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Book Guest</h1>
+            <p class="text-gray-600">Fill in the details to book a guest</p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6 max-w-4xl">
+            <form id="book-guest-form" action="{% url 'book_guest' %}" method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Guest Selection -->
+                    <div>
+                        <label for="guest_id" class="block text-sm font-medium text-gray-700 mb-1">Select Guest</label>
+                        <select id="guest_id" name="guest_id" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Choose a guest...</option>
+                            {% for guest in all_guests %}
+                                <option value="{{ guest.guest_id }}">{{ guest.first_name }} {{ guest.last_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Room Selection -->
+                    <div>
+                        <label for="room_id" class="block text-sm font-medium text-gray-700 mb-1">Select Room</label>
+                        <select id="room_id" name="room_id" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Choose a room...</option>
+                            {% for room in all_rooms %}
+                                {% if room.room_status == 'available' %}
+                                    <option value="{{ room.room_id }}" 
+                                            data-bed-count="{{ room.bed_count }}"
+                                            data-bed-type="{{ room.bed_type }}"
+                                            data-floor="{{ room.floor }}"
+                                            data-room-type="{{ room.room_type }}"
+                                            data-price="{{ room.room_price }}">
+                                        Room {{ room.room_number }} ({{ room.room_type|title }} - ₱{{ room.room_price|floatformat:2 }})
+                                    </option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                        <p id="room-price-display" class="mt-1 text-sm text-gray-500"></p>
+                    </div>
+
+                    <!-- Check-in Date/Time -->
+                    <div>
+                        <label for="check_in" class="block text-sm font-medium text-gray-700 mb-1">Check In</label>
+                        <input type="datetime-local" id="check_in" name="check_in" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <!-- Check-out Date/Time -->
+                    <div>
+                        <label for="check_out" class="block text-sm font-medium text-gray-700 mb-1">Check Out</label>
+                        <input type="datetime-local" id="check_out" name="check_out" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <!-- Payment Status -->
+                    <div>
+                        <label for="payment" class="block text-sm font-medium text-gray-700 mb-1">Payment Status</label>
+                        <select id="payment" name="payment" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select payment status...</option>
+                            <option value="paid">Paid</option>
+                            <option value="pending">Pending</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+
+                    <!-- Special Requests -->
+                    <div>
+                        <label for="special_requests" class="block text-sm font-medium text-gray-700 mb-1">Special Requests</label>
+                        <textarea id="special_requests" name="special_requests" rows="2"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="Any special requirements or requests..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Hidden fields for room details -->
+                <input type="hidden" id="bed_count" name="bed_count">
+                <input type="hidden" id="bed_type" name="bed_type">
+                <input type="hidden" id="floor" name="floor">
+                <input type="hidden" id="room_type" name="room_type">
+                <input type="hidden" name="status" value="occupied">
+
+                <!-- Room Details Display -->
+                <div class="mt-4 p-4 bg-gray-50 rounded-md">
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">Room Details</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <span class="block text-gray-500">Room Type</span>
+                            <span id="display-room-type" class="font-medium">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-gray-500">Bed Type</span>
+                            <span id="display-bed-type" class="font-medium">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-gray-500">Floor</span>
+                            <span id="display-floor" class="font-medium">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-gray-500">Price</span>
+                            <span id="display-price" class="font-medium">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end space-x-3 pt-6 border-t">
+                    <a href="{% url 'manage_guests' %}" 
+                       class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Book Guest
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roomSelect = document.getElementById('room_id');
+    const displayRoomType = document.getElementById('display-room-type');
+    const displayBedType = document.getElementById('display-bed-type');
+    const displayFloor = document.getElementById('display-floor');
+    const displayPrice = document.getElementById('display-price');
+    
+    // Update room details when a room is selected
+    roomSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        
+        // Update hidden fields
+        document.getElementById('bed_count').value = selectedOption.dataset.bedCount || '';
+        document.getElementById('bed_type').value = selectedOption.dataset.bedType || '';
+        document.getElementById('floor').value = selectedOption.dataset.floor || '';
+        document.getElementById('room_type').value = selectedOption.dataset.roomType || '';
+        
+        // Update display fields
+        displayRoomType.textContent = selectedOption.dataset.roomType || '-';
+        displayBedType.textContent = selectedOption.dataset.bedType || '-';
+        displayFloor.textContent = selectedOption.dataset.floor || '-';
+        displayPrice.textContent = selectedOption.dataset.price ? `₱${parseFloat(selectedOption.dataset.price).toLocaleString()}` : '-';
+    });
+
+    // Date validation
+    const checkInInput = document.getElementById('check_in');
+    const checkOutInput = document.getElementById('check_out');
+    
+    checkInInput.addEventListener('change', function() {
+        checkOutInput.min = this.value;
+        if (checkOutInput.value && checkOutInput.value <= this.value) {
+            checkOutInput.value = '';
+        }
+    });
+
+    // Set minimum check-in date to today
+    const now = new Date();
+    const nowString = now.toISOString().slice(0, 16);
+    checkInInput.min = nowString;
+});
+</script>
+{% endblock content %} 

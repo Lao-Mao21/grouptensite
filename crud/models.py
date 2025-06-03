@@ -17,10 +17,23 @@ class ManageRoom(models.Model):
     room_type = models.CharField(max_length=100, blank=False, null=False, choices=ROOM_TYPE_CHOICES)
     room_number = models.CharField(max_length=50, blank=False, null=False, unique=True)
     bed_count = models.IntegerField(blank=False, null=False)
+    BED_TYPE_CHOICES = [
+        ('single', 'Single'),
+        ('double', 'Double'),
+        ('deluxe', 'Deluxe'),
+        ('VIP', 'VIP'),
+        ('king', 'King'),
+        ('queen', 'Queen'),
+        ('bunk', 'Bunk Bed'),
+        ('futon', 'Futon'),
+    ]
+    bed_type = models.CharField(max_length=100, blank=False, null=False , choices=BED_TYPE_CHOICES)
     check_in = models.ForeignKey('ManageGuest', on_delete=models.CASCADE, related_name='check_in_room', null=True, blank=True)
     floor = models.CharField(max_length=50, blank=False, null=False)
     ROOM_STATUS_CHOICES = [
         ('available', 'Available'),
+        ('maintenance', 'Maintenance'),
+        ('cleaning', 'Cleaning'),
         ('reserved', 'Reserved'),
         ('occupied', 'Occupied'),
     ]
@@ -107,6 +120,11 @@ class ManageGuest(models.Model):
     check_in = models.DateTimeField(blank=False, null=False)
     check_out = models.DateTimeField(blank=False, null=False)
     expected_arrival = models.DateTimeField(blank=False, null=False)
-    payment_status = models.CharField(max_length=40, blank=False, null=False)
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('cancelled', 'Cancelled'),
+    ]
+    payment_status = models.CharField(max_length=40, choices=PAYMENT_STATUS_CHOICES, default='pending', blank=False, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

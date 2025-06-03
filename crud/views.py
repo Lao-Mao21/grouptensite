@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from .models import ManageRoom, ManageGuest, GuestAccounts
+from .models import ManageRoom, ManageGuest, GuestAccounts, AdminAccounts
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.core.paginator import Paginator
@@ -51,18 +51,34 @@ def admin_dashboard(request):
 def manage_rooms(request):
     status = request.GET.get('room_status', 'available')
     search = request.GET.get('search', '')
+    
+    # Get rooms with their latest guest booking and payment status
     rooms_list = ManageRoom.objects.all()
     if status:
         rooms_list = rooms_list.filter(room_status=status)
     if search:
         rooms_list = rooms_list.filter(room_number__icontains=search)
+
+    # Annotate rooms with their latest guest's payment status
+    for room in rooms_list:
+        latest_booking = ManageGuest.objects.filter(room_id=room).order_by('-created_at').first()
+        room.current_payment_status = latest_booking.payment_status if latest_booking else 'No booking'
+    
     page_number = request.GET.get('page', 1)
     paginator = Paginator(rooms_list, 10)
     rooms = paginator.get_page(page_number)
+    
+    # Get all guests and rooms for the booking form
+    all_guests = GuestAccounts.objects.all()
+    all_rooms = ManageRoom.objects.all()
+    
     return render(request, "web/admin/manage_rooms.html", {
         "rooms": rooms,
         "selected_status": status,
         "search": search,
+        "all_guests": all_guests,
+        "all_rooms": all_rooms,
+        "payment_status_choices": ManageGuest.PAYMENT_STATUS_CHOICES,
     })
 
 def manage_guests(request):
@@ -81,11 +97,24 @@ def manage_guests(request):
 
     all_guests = GuestAccounts.objects.all()
     all_rooms = ManageRoom.objects.all()
+    # Search functionality
+    if request.method == "POST":
+        search = request.POST.get('search', '')
+        if search:
+            todays_bookings = todays_bookings.filter(guest_id__full_name__icontains=search)
+            reservations = reservations.filter(guest_id__full_name__icontains=search)
+    else:
+        search = request.GET.get('search', '')
+        if search:
+            todays_bookings = todays_bookings.filter(guest_id__full_name__icontains=search)
+            reservations = reservations.filter(guest_id__full_name__icontains=search)
     return render(request, "web/admin/manage_guests.html", {
         "todays_bookings": todays_bookings,
         "reservations": reservations,
         "all_guests": all_guests,
         "all_rooms": all_rooms,
+        "search": search,
+        "now": timezone.now(),
     })
 
 def add_guest(request):
@@ -129,18 +158,22 @@ def add_room(request):
         room_type = request.POST.get("room_type")
         bed_count = request.POST.get("bed_count")
         floor = request.POST.get("floor")
+        bed_type = request.POST.get("bed_type")
         room_status = request.POST.get("room_status")
         room_price = request.POST.get("room_price")
         available_at = request.POST.get("available_at")
-        # available_at = parse_datetime(available_at)
+        payment_status = request.POST.get("payment_status", "pending")
+        
         ManageRoom.objects.create(
             room_number=room_number,
             room_type=room_type,
             bed_count=bed_count,
             floor=floor,
+            bed_type=bed_type,
             room_status=room_status,
             room_price=room_price,
             available_at=available_at,
+            payment_status=payment_status,
         )
         return redirect('manage_rooms')
     return render(request, "web/admin/add_room.html")
@@ -175,16 +208,77 @@ def add_reservation(request):
         check_in = request.POST.get("check_in")
         check_out = request.POST.get("check_out")
         payment = request.POST.get("payment")
+        bed_count = request.POST.get("bed_count")
+        bed_type = request.POST.get("bed_type")
+        floor = request.POST.get("floor")
 
-        # Create reservation (ManageGuest)
-        ManageGuest.objects.create(
+        # Validate inputs
+        if not guest_id or not room_id or not check_in or not check_out:
+            return HttpResponse("Invalid input", status=400)
+        try:
+            check_in = parse_datetime(check_in)
+            check_out = parse_datetime(check_out)
+            if check_in >= check_out:
+                return HttpResponse("Check-in date must be before check-out date", status=400)
+        except ValueError:
+            return HttpResponse("Invalid date format", status=400)
+
+        # Check if the room is available
+        room = ManageRoom.objects.filter(room_id=room_id, room_status="available").first()
+        if not room:
+            return HttpResponse("Room is not available", status=400)
+
+        # Check if the guest exists
+        if not GuestAccounts.objects.filter(guest_id=guest_id).exists():
+            return HttpResponse("Guest does not exist", status=400)
+
+        # Validate payment status
+        if payment not in ["paid", "pending", "cancelled"]:
+            return HttpResponse("Invalid payment status", status=400)
+
+        # Validate check-in and check-out dates
+        if check_in < timezone.now() or check_out <= check_in:
+            return HttpResponse("Invalid check-in or check-out date", status=400)
+
+        # Validate that the room is not already booked for the given dates
+        if ManageGuest.objects.filter(
+            room_id_id=room_id,
+            check_in__lt=check_out,
+            check_out__gt=check_in
+        ).exists():
+            return HttpResponse("Room is already booked for the selected dates", status=400)
+
+        # Validate that the guest is not already booked in another room for the same dates
+        if ManageGuest.objects.filter(
             guest_id_id=guest_id,
+            check_in__lt=check_out,
+            check_out__gt=check_in
+        ).exists():
+            return HttpResponse("Guest is already booked in another room for the selected dates", status=400)
+
+        # Get the guest account
+        guest = GuestAccounts.objects.get(guest_id=guest_id)
+        
+        # Create reservation entry
+        ManageGuest.objects.create(
+            guest_id=guest,
+            guest_name=guest.full_name,
             room_id_id=room_id,
             status=status,
+            bed_count=bed_count,
+            bed_type=bed_type,
+            floor=floor,
             check_in=check_in,
             check_out=check_out,
-            payment_status=payment,
+            expected_arrival=check_in,
+            payment_status=payment
         )
+
+        # Update room status
+        room = ManageRoom.objects.get(room_id=room_id)
+        room.room_status = status
+        room.save()
+
         return redirect("/manage_guests/")
     all_guests = GuestAccounts.objects.all()
     all_rooms = ManageRoom.objects.all()
@@ -208,7 +302,7 @@ def sales_report(request):
             ).aggregate(total=Sum('payment_status'))['total'] or 0
             annual_data[rtype][idx-1] = float(total)
 
-    # Pie chart: total sales per room type for May
+    # Pie chart
     pie_data = []
     for rtype in room_types:
         total = ManageGuest.objects.filter(
@@ -218,7 +312,7 @@ def sales_report(request):
         ).aggregate(total=Sum('payment_status'))['total'] or 0
         pie_data.append(float(total))
 
-    # Daily sales for May
+    # Daily sales
     from calendar import monthrange
     days_in_may = monthrange(timezone.now().year, 5)[1]
     daily_sales = []
@@ -263,3 +357,152 @@ def sales_report(request):
         "sales_report": sales_page,
     }
     return render(request, "web/admin/sales.html", context)
+
+@csrf_exempt
+def book_guest(request):
+    if request.method == "POST":
+        guest_id = request.POST.get("guest_id")
+        room_id = request.POST.get("room_id")
+        status = request.POST.get("status", "occupied")
+        check_in = request.POST.get("check_in")
+        check_out = request.POST.get("check_out")
+        payment = request.POST.get("payment", "pending")  # Get payment with default
+        bed_count = request.POST.get("bed_count")
+        bed_type = request.POST.get("bed_type")
+        floor = request.POST.get("floor")
+        special_requests = request.POST.get("special_requests", "")
+
+        # Validate inputs
+        if not guest_id or not room_id or not check_in or not check_out:
+            return HttpResponse("Invalid input", status=400)
+        try:
+            check_in = parse_datetime(check_in)
+            check_out = parse_datetime(check_out)
+            if check_in >= check_out:
+                return HttpResponse("Check-in date must be before check-out date", status=400)
+        except ValueError:
+            return HttpResponse("Invalid date format", status=400)
+
+        # Check if the room is available
+        room = ManageRoom.objects.filter(room_id=room_id, room_status="available").first()
+        if not room:
+            return HttpResponse("Room is not available", status=400)
+        bed_count = room.bed_count
+        bed_type = room.bed_type
+        if not bed_count or not bed_type:
+            return HttpResponse("Room details are incomplete", status=400)
+
+        # Check if the guest exists
+        if not GuestAccounts.objects.filter(guest_id=guest_id).exists():
+            return HttpResponse("Guest does not exist", status=400)
+
+        # Validate payment status
+        if payment not in ["paid", "pending"]:
+            return HttpResponse("Invalid payment status", status=400)
+
+        # Validate room status
+        if room.room_status != "available":
+            return HttpResponse("Room is not available", status=400)
+
+        # Validate check-in and check-out dates
+        if check_in < timezone.now() or check_out <= check_in:
+            return HttpResponse("Invalid check-in or check-out date", status=400)
+
+        # Validate that the room is not already booked for the given dates
+        if ManageGuest.objects.filter(
+            room_id_id=room_id,
+            check_in__lt=check_out,
+            check_out__gt=check_in
+        ).exists():
+            return HttpResponse("Room is already booked for the selected dates", status=400)
+
+        # Validate that the guest is not already booked in another room for the same dates
+        if ManageGuest.objects.filter(
+            guest_id_id=guest_id,
+            check_in__lt=check_out,
+            check_out__gt=check_in
+        ).exists():
+            return HttpResponse("Guest is already booked in another room for the selected dates")
+
+        # Get the guest account
+        guest = GuestAccounts.objects.get(guest_id=guest_id)
+        
+        # Create booking entry
+        ManageGuest.objects.create(
+            guest_id=guest,
+            guest_name=guest.full_name,
+            room_id_id=room_id,
+            status=status,
+            bed_count=bed_count,
+            bed_type=bed_type,
+            floor=floor,
+            check_in=check_in,
+            check_out=check_out,
+            expected_arrival=check_in,
+            payment_status=payment,
+            special_requests=special_requests
+        )
+
+        # Update room status
+        room = ManageRoom.objects.get(room_id=room_id)
+        room.room_status = status
+        room.save()
+
+        return redirect("/manage_guests/")
+    return redirect("/manage_guests/")
+
+def edit_room(request, room_id):
+    room = ManageRoom.objects.get(room_id=room_id)
+    if request.method == "POST":
+        room.room_number = request.POST.get("room_number")
+        room.room_type = request.POST.get("room_type")
+        room.bed_count = request.POST.get("bed_count")
+        room.floor = request.POST.get("floor")
+        room.bed_type = request.POST.get("bed_type")
+        room.room_status = request.POST.get("room_status")
+        room.room_price = request.POST.get("room_price")
+        room.available_at = request.POST.get("available_at")
+        room.payment_status = request.POST.get("payment_status", room.payment_status)
+        room.save()
+        return redirect('manage_rooms')
+    return render(request, "web/admin/edit_room.html", {
+        "room": room
+    })
+
+def delete_room(request, room_id):
+    room = ManageRoom.objects.get(room_id=room_id)
+    if request.method == "POST":
+        room.delete()
+        return redirect('manage_rooms')
+    return render(request, "web/admin/confirm_delete_room.html", {
+        "room": room
+    })
+
+def pricing(request):
+    if request.method == "POST":
+        room_id = request.POST.get("room_id")
+        room_type = request.POST.get("room_type")
+        room_price = request.POST.get("room_price")
+        room = ManageRoom.objects.get(room_id=room_id)
+        room.room_type = room_type
+        room.room_price = room_price
+        room.save()
+        return redirect('pricing')
+    rooms = ManageRoom.objects.all()
+    return render(request, "web/admin/pricing.html", {
+        "rooms": rooms
+    })
+
+def delete_guest(request, guest_id):
+    guest = ManageGuest.objects.get(id=guest_id)
+    if request.method == "POST":
+        # Update room status back to available if it was occupied by this guest
+        room = guest.room_id
+        if room.room_status in ['occupied', 'reserved']:
+            room.room_status = 'available'
+            room.save()
+        guest.delete()
+        return redirect('manage_guests')
+    return render(request, "web/admin/confirm_delete_guest.html", {
+        "guest": guest
+    })

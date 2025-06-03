@@ -1,0 +1,58 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Confirm Delete Guest Booking{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 flex sm:flex-row flex-col">
+    {% include "attachments/sidebar.html" %}
+    <div class="flex-1 p-4 sm:p-8">
+        <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-6">
+            <div class="text-center">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Confirm Delete Guest Booking</h2>
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <span class="material-icons text-yellow-400">warning</span>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                Are you sure you want to delete the booking for {{ guest.guest_name }}?
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-6 text-left bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2 text-gray-700">Booking Details:</h3>
+                    <ul class="space-y-2 text-gray-600">
+                        <li><span class="font-medium">Guest Name:</span> {{ guest.guest_name }}</li>
+                        <li><span class="font-medium">Room Number:</span> {{ guest.room_id.room_number }}</li>
+                        <li><span class="font-medium">Room Type:</span> {{ guest.room_id.room_type|title }}</li>
+                        <li><span class="font-medium">Check In:</span> {{ guest.check_in|date:"m/d/y h:i A" }}</li>
+                        <li><span class="font-medium">Check Out:</span> {{ guest.check_out|date:"m/d/y h:i A" }}</li>
+                        <li><span class="font-medium">Status:</span> {{ guest.status|title }}</li>
+                        <li><span class="font-medium">Payment Status:</span> {{ guest.payment_status|title }}</li>
+                    </ul>
+                </div>
+
+                <p class="text-red-600 mb-6">This action cannot be undone.</p>
+                
+                <div class="flex justify-center space-x-4">
+                    <a href="{% url 'manage_guests' %}" 
+                       class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Cancel
+                    </a>
+                    <form action="{% url 'delete_guest' guest.id %}" method="post" class="inline">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                            Delete Booking
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %} 

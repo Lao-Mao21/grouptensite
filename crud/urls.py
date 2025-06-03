@@ -7,8 +7,13 @@ urlpatterns = [
     path('manage_rooms/', views.manage_rooms, name='manage_rooms'),
     path('manage_guests/', views.manage_guests, name='manage_guests'),
     path('add_guest/', views.add_guest, name='add_guest'),
+    path('book_guest/', views.book_guest, name='book_guest'),
     path('add_room/', views.add_room, name='add_room'),
+    path('edit_room/<int:room_id>/', views.edit_room, name='edit_room'),
+    path('delete_room/<int:room_id>/', views.delete_room, name='delete_room'),
+    path('delete_guest/<int:guest_id>/', views.delete_guest, name='delete_guest'),
     path('sales_report/', views.sales_report, name='sales_report'),
     path('add_reservation/', views.add_reservation, name='add_reservation'),
-    path('login/', views.login, name='login')
+    path('login/', views.login, name='login'),
+    path('pricing/', views.pricing, name='pricing')
 ]

@@ -9,14 +9,20 @@
     <link rel="stylesheet" href="{% static '/css/output.css' %}">
     <title>{% block 'title'%} {% endblock 'title' %}</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body>
     {% block content %} {% endblock content %}
     <script src="{% static 'js/sidebar.js' %}"></script>
     <script src="{% static 'js/pagination.js' %}"></script>
-    <script src="{% static 'js/booking.js' %}"></script>
     <script src="{% static 'js/current_date.js' %}"></script>
     <script src="{% static 'js/reservation.js' %}"></script>
     <script src="{% static 'js/sales.js' %}"></script>
+    <!-- manage -->
+    <script src="{% static 'js/manage_guests.js' %}"></script>
+    <script src="{% static 'js/table_filters.js' %}"></script>
+    <script src="{% static 'js/form_validation.js' %}"></script>
+    <script src="{% static 'js/booking_form.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </body>
 </html>
