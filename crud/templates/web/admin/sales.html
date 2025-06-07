@@ -19,10 +19,227 @@
                     <div class="font-bold text-lg mb-1">Annual Revenue</div>
                     <div class="flex-1 flex items-center justify-center">
                         <canvas id="annualRevenueChart" height="140"></canvas>
+                    </div><!-- Add Room Modal (hidden by default) -->
+                    <div id="add-room-form-modal" class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" style="display:none;">
+                        <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-lg relative">
+                            <button type="button" onclick="document.getElementById('add-room-form-modal').style.display='none'"
+                                    class="absolute top-2 right-2 text-gray-500 hover:text-red-600 text-2xl">&times;</button>
+                            <h2 class="text-2xl font-semibold mb-4">Add New Room</h2>
+                            <form id="add-room-form" action="{% url 'add_room' %}" method="post" class="space-y-4">
+                                {% csrf_token %}
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="room_number" class="block text-sm font-medium text-gray-700">Room Number</label>
+                                        <input type="text" id="room_number" name="room_number" required 
+                                               pattern="[0-9]+" title="Please enter a valid room number"
+                                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label for="room_type" class="block text-sm font-medium text-gray-700">Room Type</label>
+                                        <select id="room_type" name="room_type" required
+                                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">Select room type</option>
+                                            <option value="single">Single</option>
+                                            <option value="double">Double</option>
+                                            <option value="suite">Suite</option>
+                                            <option value="deluxe">Deluxe</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="bed_count" class="block text-sm font-medium text-gray-700">Bed Count</label>
+                                        <select id="bed_count" name="bed_count" required
+                                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">Select bed count</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="bed_type" class="block text-sm font-medium text-gray-700">Bed Type</label>
+                                        <select id="bed_type" name="bed_type" required
+                                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">Select bed type</option>
+                                            <option value="single">Single</option>
+                                            <option value="double">Double</option>
+                                            <option value="deluxe">Deluxe</option>
+                                            <option value="VIP">VIP</option>
+                                            <option value="king">King</option>
+                                            <option value="queen">Queen</option>
+                                            <option value="bunk">Bunk Bed</option>
+                                            <option value="futon">Futon</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="floor" class="block text-sm font-medium text-gray-700">Floor</label>
+                                        <select id="floor" name="floor" required
+                                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">Select floor</option>
+                                            <option value="1">1st Floor</option>
+                                            <option value="2">2nd Floor</option>
+                                            <option value="3">3rd Floor</option>
+                                            <option value="4">4th Floor</option>
+                                            <option value="5">5th Floor</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="room_price" class="block text-sm font-medium text-gray-700">Price (₱)</label>
+                                        <div class="mt-1 relative rounded-md shadow-sm">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <span class="text-gray-500 sm:text-sm">₱</span>
+                                            </div>
+                                            <input type="number" id="room_price" name="room_price" required min="0" step="0.01"
+                                                   class="block w-full pl-7 pr-12 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="room_status" class="block text-sm font-medium text-gray-700">Room Status</label>
+                                    <select id="room_status" name="room_status" required
+                                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Select room status</option>
+                                        <option value="available">Available</option>
+                                        <option value="maintenance">Maintenance</option>
+                                        <option value="cleaning">Cleaning</option>
+                                        <option value="reserved">Reserved</option>
+                                        <option value="occupied">Occupied</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="available_at" class="block text-sm font-medium text-gray-700">Available At</label>
+                                    <input type="datetime-local" id="available_at" name="available_at" required
+                                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div class="flex justify-end space-x-3 mt-6">
+                                    <button type="button" onclick="document.getElementById('add-room-form-modal').style.display='none'"
+                                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        Cancel
+                                    </button>
+                                    <button type="submit"
+                                            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        Add Room
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <!-- Book Guest Modal -->
+                    <div id="book-guest-form-modal" class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm overflow-y-auto py-6" style="display:none;">
+                        <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-3xl mx-auto relative">
+                            <button id="close-book-form" type="button" class="absolute top-2 right-2 text-gray-500 hover:text-red-600 text-2xl">&times;</button>
+                            <h2 class="text-2xl font-semibold mb-6 text-gray-800">Book Guest</h2>
+                            <form id="book-guest-form" action="{% url 'book_guest' %}" method="post" class="space-y-4">
+                                {% csrf_token %}
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="guest_id" class="block text-sm font-medium text-gray-700">Guest</label>
+                                        <select id="guest_id" name="guest_id" required 
+                                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">Select a guest</option>
+                                            {% for guest in all_guests %}
+                                                <option value="{{ guest.guest_id }}">{{ guest.first_name }} {{ guest.last_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="room_id" class="block text-sm font-medium text-gray-700">Room</label>
+                                        <select id="room_id" name="room_id" required 
+                                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">Select a room</option>
+                                            {% for room in all_rooms %}
+                                                {% if room.room_status == 'available' %}
+                                                    <option value="{{ room.room_id }}" 
+                                                            data-bed-count="{{ room.bed_count }}"
+                                                            data-bed-type="{{ room.bed_type }}"
+                                                            data-floor="{{ room.floor }}"
+                                                            data-room-type="{{ room.room_type }}"
+                                                            data-price="{{ room.room_price }}">
+                                                        Room {{ room.room_number }} ({{ room.room_type|title }} - ₱{{ room.room_price|floatformat:2 }})
+                                                    </option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+            
+                                <!-- Room Details Display -->
+                                <div class="bg-gray-50 rounded-md p-4 mt-4">
+                                    <h3 class="text-lg font-medium text-gray-700 mb-2">Room Details</h3>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                        <div>
+                                            <span class="block text-gray-500">Room Type</span>
+                                            <span id="display-room-type" class="font-medium">-</span>
+                                        </div>
+                                        <div>
+                                            <span class="block text-gray-500">Bed Type</span>
+                                            <span id="display-bed-type" class="font-medium">-</span>
+                                        </div>
+                                        <div>
+                                            <span class="block text-gray-500">Floor</span>
+                                            <span id="display-floor" class="font-medium">-</span>
+                                        </div>
+                                        <div>
+                                            <span class="block text-gray-500">Price</span>
+                                            <span id="display-price" class="font-medium">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+            
+                                <!-- Hidden fields for room details -->
+                                <input type="hidden" id="bed_count" name="bed_count">
+                                <input type="hidden" id="bed_type" name="bed_type">
+                                <input type="hidden" id="floor" name="floor">
+                                <input type="hidden" id="room_type" name="room_type">
+            
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="check_in" class="block text-sm font-medium text-gray-700">Check In</label>
+                                        <input type="text" id="check_in" name="check_in" required 
+                                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                               placeholder="Select check-in date & time">
+                                    </div>
+                                    <div>
+                                        <label for="check_out" class="block text-sm font-medium text-gray-700">Check Out</label>
+                                        <input type="text" id="check_out" name="check_out" required 
+                                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                               placeholder="Select check-out date & time">
+                                    </div>
+                                </div>
+            
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="payment" class="block text-sm font-medium text-gray-700">Payment Status</label>
+                                        <select name="payment" id="payment" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none cursor-pointer">
+                                            <option value="" disabled selected>Select payment status</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="paid">Paid</option>
+                                            <option value="cancelled">Cancelled</option>
+                                        </select>
+                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+            
+                                <div class="flex justify-end space-x-3 pt-4 border-t">
+                                    <button type="button" id="close-book-form"
+                                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        Cancel
+                                    </button>
+                                    <button type="submit"
+                                            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        Book Guest
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                     <div class="flex justify-center gap-3 mt-1 text-xs">
-                        <span class="text-blue-700 font-bold">■ FAMILY</span>
-                        <span class="text-green-600 font-bold">■ VIP</span>
+                        <span class="text-blue-700 font-bold">■ Single</span>
+                        <span class="text-green-600 font-bold">■ Double</span>
+                        <span class="text-yellow-500 font-bold">■ Suite</span>
                         <span class="text-cyan-500 font-bold">■ Deluxe</span>
                     </div>
                 </div>
@@ -34,21 +251,26 @@
                     <div class="flex-1 flex flex-col items-center justify-center w-full">
                         <canvas id="monthlyTopSalesChart" width="120" height="120"></canvas>
                         <!-- Legend below the chart, centered and compact -->
-                        <div class="flex flex-row items-center justify-center gap-2 mt-2 text-xs">
+                        <div class="flex flex-wrap justify-center gap-2 mt-2 text-xs">
                             <span class="flex items-center gap-1">
                                 <span class="text-blue-700 font-bold">■</span>
-                                <span class="font-bold text-blue-700">FAMILY</span>
-                                <span class="text-gray-700 font-semibold">43%</span>
+                                <span class="font-bold text-blue-700">Single</span>
+                                <span class="text-gray-700 font-semibold" id="single-percentage">{{ pie_data.0 }}%</span>
                             </span>
                             <span class="flex items-center gap-1">
                                 <span class="text-green-600 font-bold">■</span>
-                                <span class="font-bold text-green-600">VIP</span>
-                                <span class="text-gray-700 font-semibold">20%</span>
+                                <span class="font-bold text-green-600">Double</span>
+                                <span class="text-gray-700 font-semibold" id="double-percentage">{{ pie_data.1 }}%</span>
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <span class="text-yellow-500 font-bold">■</span>
+                                <span class="font-bold text-yellow-500">Suite</span>
+                                <span class="text-gray-700 font-semibold" id="suite-percentage">{{ pie_data.2 }}%</span>
                             </span>
                             <span class="flex items-center gap-1">
                                 <span class="text-cyan-500 font-bold">■</span>
                                 <span class="font-bold text-cyan-500">Deluxe</span>
-                                <span class="text-gray-700 font-semibold">37%</span>
+                                <span class="text-gray-700 font-semibold" id="deluxe-percentage">{{ pie_data.3 }}%</span>
                             </span>
                         </div>
                     </div>
@@ -67,7 +289,7 @@
             <div class="bg-white rounded-xl shadow-md p-3 mt-2">
                 <div class="flex justify-between items-center mb-1">
                     <div>
-                        <div class="font-bold text-lg">Month of May</div>
+                        <div class="font-bold text-lg">Month of {{ current_month_name }}</div>
                         <div class="text-xs text-gray-500">Daily Sales</div>
                     </div>
                     <form method="get" class="flex items-center">
@@ -107,8 +329,8 @@
                 </div>
                 <div class="flex justify-center items-center gap-1 mt-1">
                     {% if sales_report.has_previous %}
-                        <a href="?page={{ sales_report.previous_page_number }}" class="px-2 py-1 border rounded hover:bg-blue-100">
-                            <span class="material-icons text-base">arrow_back</span>
+                        <a href="?page={{ sales_report.previous_page_number }}" class="p-1 border rounded-full hover:bg-blue-100">
+                            <span class="material-icons text-base text-center align-middle">arrow_back</span>
                         </a>
                     {% endif %}
                     {% for num in sales_report.paginator.page_range %}
@@ -128,4 +350,10 @@
         </div>
     </div>
 </div>
+
+<!-- Chart Data -->
+{{ months|safe|json_script:"months-data" }}
+{{ annual_data|safe|json_script:"annual-data" }}
+{{ pie_data|safe|json_script:"pie-data" }}
+
 {% endblock content %}

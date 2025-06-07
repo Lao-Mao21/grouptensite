@@ -15,5 +15,7 @@ urlpatterns = [
     path('sales_report/', views.sales_report, name='sales_report'),
     path('add_reservation/', views.add_reservation, name='add_reservation'),
     path('login/', views.login, name='login'),
-    path('pricing/', views.pricing, name='pricing')
+    path('pricing/', views.pricing, name='pricing'),
+    path('set_price/', views.set_price, name='set_price'),
+    path('edit_guest/<int:guest_id>/', views.edit_guest, name='edit_guest'),
 ]

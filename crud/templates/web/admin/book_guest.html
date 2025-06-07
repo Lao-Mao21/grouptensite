@@ -4,127 +4,150 @@
 {% block title %}Book Guest{% endblock title %}
 
 {% block content %}
+<!-- Add Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Add Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 <div class="min-h-screen bg-gray-100 flex sm:flex-row flex-col">
     {% include "attachments/sidebar.html" %}
-    <div class="flex-1 p-4 sm:p-8">
-        <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">Book Guest</h1>
-            <p class="text-gray-600">Fill in the details to book a guest</p>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-lg p-6 max-w-4xl">
-            <form id="book-guest-form" action="{% url 'book_guest' %}" method="post" class="space-y-6">
+    <div class="flex-1 p-2 sm:p-8">
+        <!-- Booking Form -->
+        <div class="max-w-5xl h-fit mx-auto bg-white rounded-xl shadow-md p-6">
+            <form method="post" action="{% url 'book_guest' %}" class="space-y-4" id="booking-form">
                 {% csrf_token %}
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Guest Selection -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Guest Name -->
                     <div>
-                        <label for="guest_id" class="block text-sm font-medium text-gray-700 mb-1">Select Guest</label>
-                        <select id="guest_id" name="guest_id" required 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Choose a guest...</option>
+                        <label class="block text-sm font-medium text-gray-700">Guest Name *</label>
+                        <select name="full_name" id="guest-select" required
+                                class="mt-1 px-4 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Select Guest</option>
                             {% for guest in all_guests %}
-                                <option value="{{ guest.guest_id }}">{{ guest.first_name }} {{ guest.last_name }}</option>
+                            <option value="{{ guest.full_name }}" 
+                                    data-gender="{{ guest.gender }}"
+                                    data-contact="{{ guest.phone_number }}"
+                                    data-nationality="{{ guest.nationality|default:'' }}"
+                                    data-address="{{ guest.address|default:'' }}">
+                                {{ guest.full_name }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
 
-                    <!-- Room Selection -->
+                    <!-- Gender -->
                     <div>
-                        <label for="room_id" class="block text-sm font-medium text-gray-700 mb-1">Select Room</label>
-                        <select id="room_id" name="room_id" required 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Choose a room...</option>
-                            {% for room in all_rooms %}
-                                {% if room.room_status == 'available' %}
-                                    <option value="{{ room.room_id }}" 
-                                            data-bed-count="{{ room.bed_count }}"
-                                            data-bed-type="{{ room.bed_type }}"
-                                            data-floor="{{ room.floor }}"
-                                            data-room-type="{{ room.room_type }}"
-                                            data-price="{{ room.room_price }}">
-                                        Room {{ room.room_number }} ({{ room.room_type|title }} - ₱{{ room.room_price|floatformat:2 }})
-                                    </option>
-                                {% endif %}
+                        <label class="block text-sm font-medium text-gray-700">Gender *</label>
+                        <input type="text" name="gender" id="gender-select" required readonly
+                               class="mt-1 px-4 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Contact Number -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Contact Number *</label>
+                        <input type="tel" name="contact_number" id="contact-input" required readonly
+                               class="mt-1 px-4 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Nationality -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Nationality *</label>
+                        <input type="text" name="nationality" id="nationality-input" required readonly
+                               class="mt-1 px-4 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Address -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700">Address *</label>
+                        <input type="text" name="address" id="address-input" required readonly
+                               class="mt-1 px-4 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Booking Type -->
+                    <div class="md:col-span-1">
+                        <label class="block text-sm font-medium text-gray-700">Booking Type *</label>
+                        <select name="booking_type" id="booking-type" required
+                                class="mt-1 px-4 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Select Booking Type</option>
+                            <option value="immediate">Immediate Check-in</option>
+                            <option value="reservation">Future Reservation</option>
+                        </select>
+                    </div>
+
+                    <!-- Expected Arrival -->
+                    <div id="expected-arrival-container" style="display: none;">
+                        <label class="block text-sm font-medium text-gray-700">Expected Arrival *</label>
+                        <input type="datetime-local" name="expected_arrival" id="expected-arrival"
+                               class="mt-1 px-4 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <input type="hidden" name="expected_arrival" id="expected-arrival-hidden">
+
+                    <!-- Room Number and Type -->
+                    <div class="md:col-span-1">
+                        <label class="block text-sm font-medium text-gray-700">Room Number & Type *</label>
+                        <select name="room_number" id="room-number" required 
+                                class="mt-1 px-4 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Select Available Room</option>
+                            {% for room in available_rooms %}
+                            <option value="{{ room.room_id }}" data-room-type="{{ room.room_type }}">
+                                {{ room.room_number }} - {{ room.room_type }}
+                            </option>
+                            {% empty %}
+                            <option value="" disabled>No rooms available at the moment</option>
                             {% endfor %}
                         </select>
-                        <p id="room-price-display" class="mt-1 text-sm text-gray-500"></p>
+                        <p class="mt-1 px-4 py-2 text-sm text-gray-500">
+                            {% if available_rooms %}
+                            Select from {{ available_rooms|length }} available room{{ available_rooms|length|pluralize }}
+                            {% else %}
+                            All rooms are currently occupied or reserved
+                            {% endif %}
+                        </p>
                     </div>
 
-                    <!-- Check-in Date/Time -->
+                    <!-- Number of Guests -->
                     <div>
-                        <label for="check_in" class="block text-sm font-medium text-gray-700 mb-1">Check In</label>
-                        <input type="datetime-local" id="check_in" name="check_in" required 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <label class="block text-sm font-medium text-gray-700">Number of Guest *</label>
+                        <input type="number" name="guest_count" id="guest-count" required min="1"
+                               class="mt-1 px-4 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
 
-                    <!-- Check-out Date/Time -->
+                    <!-- Check In -->
                     <div>
-                        <label for="check_out" class="block text-sm font-medium text-gray-700 mb-1">Check Out</label>
-                        <input type="datetime-local" id="check_out" name="check_out" required 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <label class="block text-sm font-medium text-gray-700">Check In *</label>
+                        <input type="datetime-local" name="check_in" id="check-in" required
+                               class="mt-1 px-4 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
 
-                    <!-- Payment Status -->
+                    <!-- Check Out -->
                     <div>
-                        <label for="payment" class="block text-sm font-medium text-gray-700 mb-1">Payment Status</label>
-                        <select id="payment" name="payment" required 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Select payment status...</option>
-                            <option value="paid">Paid</option>
-                            <option value="pending">Pending</option>
-                            <option value="cancelled">Cancelled</option>
+                        <label class="block text-sm font-medium text-gray-700">Check Out *</label>
+                        <input type="datetime-local" name="check_out" id="check-out" required
+                               class="mt-1 px-4 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Mode of Payment -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Mode of Payment *</label>
+                        <select name="payment_mode" required 
+                                class="mt-1 px-4 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Select</option>
+                            <option value="cash">Cash</option>
+                            <option value="card">Credit/Debit Card</option>
+                            <option value="gcash">GCash</option>
                         </select>
                     </div>
-
-                    <!-- Special Requests -->
-                    <div>
-                        <label for="special_requests" class="block text-sm font-medium text-gray-700 mb-1">Special Requests</label>
-                        <textarea id="special_requests" name="special_requests" rows="2"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                  placeholder="Any special requirements or requests..."></textarea>
-                    </div>
                 </div>
 
-                <!-- Hidden fields for room details -->
-                <input type="hidden" id="bed_count" name="bed_count">
-                <input type="hidden" id="bed_type" name="bed_type">
-                <input type="hidden" id="floor" name="floor">
-                <input type="hidden" id="room_type" name="room_type">
-                <input type="hidden" name="status" value="occupied">
-
-                <!-- Room Details Display -->
-                <div class="mt-4 p-4 bg-gray-50 rounded-md">
-                    <h3 class="text-lg font-medium text-gray-700 mb-2">Room Details</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                            <span class="block text-gray-500">Room Type</span>
-                            <span id="display-room-type" class="font-medium">-</span>
-                        </div>
-                        <div>
-                            <span class="block text-gray-500">Bed Type</span>
-                            <span id="display-bed-type" class="font-medium">-</span>
-                        </div>
-                        <div>
-                            <span class="block text-gray-500">Floor</span>
-                            <span id="display-floor" class="font-medium">-</span>
-                        </div>
-                        <div>
-                            <span class="block text-gray-500">Price</span>
-                            <span id="display-price" class="font-medium">-</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="flex justify-end space-x-3 pt-6 border-t">
+                <div class="flex justify-end mt-6 space-x-3">
                     <a href="{% url 'manage_guests' %}" 
-                       class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                       class="px-6 py-2 bg-gray-100 text-gray-700 font-semibold rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                         Cancel
                     </a>
-                    <button type="submit"
-                            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        Book Guest
+                    <button type="submit" 
+                            class="px-6 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        Book Now
                     </button>
                 </div>
             </form>
@@ -132,46 +155,202 @@
     </div>
 </div>
 
+<!-- Form handling script -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const roomSelect = document.getElementById('room_id');
-    const displayRoomType = document.getElementById('display-room-type');
-    const displayBedType = document.getElementById('display-bed-type');
-    const displayFloor = document.getElementById('display-floor');
-    const displayPrice = document.getElementById('display-price');
+    const form = document.getElementById('booking-form');
+    const guestSelect = document.getElementById('guest-select');
+    const genderSelect = document.getElementById('gender-select');
+    const contactInput = document.getElementById('contact-input');
+    const nationalityInput = document.getElementById('nationality-input');
+    const addressInput = document.getElementById('address-input');
+    const bookingType = document.getElementById('booking-type');
+    const expectedArrivalContainer = document.getElementById('expected-arrival-container');
     
-    // Update room details when a room is selected
-    roomSelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        
-        // Update hidden fields
-        document.getElementById('bed_count').value = selectedOption.dataset.bedCount || '';
-        document.getElementById('bed_type').value = selectedOption.dataset.bedType || '';
-        document.getElementById('floor').value = selectedOption.dataset.floor || '';
-        document.getElementById('room_type').value = selectedOption.dataset.roomType || '';
-        
-        // Update display fields
-        displayRoomType.textContent = selectedOption.dataset.roomType || '-';
-        displayBedType.textContent = selectedOption.dataset.bedType || '-';
-        displayFloor.textContent = selectedOption.dataset.floor || '-';
-        displayPrice.textContent = selectedOption.dataset.price ? `₱${parseFloat(selectedOption.dataset.price).toLocaleString()}` : '-';
-    });
+    // Function to update guest details
+    function updateGuestDetails(selectedOption) {
+        if (selectedOption && selectedOption.value) {
+            // Fill in the form fields with data from the selected option
+            genderSelect.value = selectedOption.dataset.gender || '';
+            contactInput.value = selectedOption.dataset.contact || '';
+            nationalityInput.value = selectedOption.dataset.nationality || '';
+            addressInput.value = selectedOption.dataset.address || '';
+        } else {
+            // Clear all fields if no guest is selected
+            genderSelect.value = '';
+            contactInput.value = '';
+            nationalityInput.value = '';
+            addressInput.value = '';
+        }
+    }
 
-    // Date validation
-    const checkInInput = document.getElementById('check_in');
-    const checkOutInput = document.getElementById('check_out');
-    
-    checkInInput.addEventListener('change', function() {
-        checkOutInput.min = this.value;
-        if (checkOutInput.value && checkOutInput.value <= this.value) {
-            checkOutInput.value = '';
+    // Add change event listener to guest select
+    if (guestSelect) {
+        guestSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            updateGuestDetails(selectedOption);
+        });
+
+        // Trigger the change event if a guest is already selected
+        if (guestSelect.value) {
+            const selectedOption = guestSelect.options[guestSelect.selectedIndex];
+            updateGuestDetails(selectedOption);
+        }
+    }
+
+    // Common config for date/time pickers
+    const dateConfig = {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        minDate: "today",
+        time_24hr: true
+    };
+
+    // Initialize Expected Arrival picker
+    const expectedArrivalPicker = flatpickr("#expected-arrival", {
+        ...dateConfig,
+        onChange: function(selectedDates) {
+            // Update min date for check-in
+            checkInPicker.set('minDate', selectedDates[0]);
         }
     });
 
-    // Set minimum check-in date to today
-    const now = new Date();
-    const nowString = now.toISOString().slice(0, 16);
-    checkInInput.min = nowString;
+    // Initialize Check In picker
+    const checkInPicker = flatpickr("#check-in", {
+        ...dateConfig,
+        onChange: function(selectedDates) {
+            // Update min date for check-out
+            checkOutPicker.set('minDate', selectedDates[0]);
+        }
+    });
+
+    // Initialize Check Out picker
+    const checkOutPicker = flatpickr("#check-out", {
+        ...dateConfig,
+        minDate: new Date()
+    });
+
+    // Handle booking type changes
+    bookingType.addEventListener('change', function() {
+        const isReservation = this.value === 'reservation';
+        
+        // Show/hide expected arrival field
+        expectedArrivalContainer.style.display = isReservation ? 'block' : 'none';
+        const expectedArrival = document.getElementById('expected-arrival');
+        expectedArrival.required = isReservation;
+
+        // Update check-in constraints
+        if (isReservation) {
+            // For reservations, allow future dates
+            checkInPicker.set('minDate', 'today');
+        } else {
+            // For immediate bookings, only allow today and set expected arrival to check-in time
+            const today = new Date();
+            checkInPicker.set('minDate', today);
+            checkInPicker.set('maxDate', today);
+            checkInPicker.setDate(today);
+            // Set expected arrival to same as check-in for immediate bookings
+            expectedArrival.value = today.toISOString().slice(0, 16);
+        }
+    });
+
+    // Handle form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent form submission until we validate
+
+        // Create an array of required fields with their display names
+        const requiredFields = [
+            { id: 'guest-select', name: 'Guest Name' },
+            { id: 'gender-select', name: 'Gender' },
+            { id: 'contact-input', name: 'Contact Number' },
+            { id: 'nationality-input', name: 'Nationality' },
+            { id: 'address-input', name: 'Address' },
+            { id: 'booking-type', name: 'Booking Type' },
+            { id: 'room-number', name: 'Room' },
+            { id: 'guest-count', name: 'Number of Guest' },
+            { id: 'check-in', name: 'Check-in Date' },
+            { id: 'check-out', name: 'Check-out Date' }
+        ];
+
+        // Check all required fields
+        let isValid = true;
+        for (const field of requiredFields) {
+            const element = document.getElementById(field.id);
+            if (!element || !element.value.trim()) {
+                alert(`Please fill in ${field.name}`);
+                if (element) element.focus();
+                isValid = false;
+                return;
+            }
+        }
+
+        // Check payment mode
+        const paymentMode = document.querySelector('select[name="payment_mode"]');
+        if (!paymentMode || !paymentMode.value) {
+            alert('Please select Payment Mode');
+            paymentMode.focus();
+            isValid = false;
+            return;
+        }
+
+        const isReservation = bookingType.value === 'reservation';
+        
+        // Check reservation-specific fields
+        if (isReservation) {
+            const expectedArrival = document.getElementById('expected-arrival');
+            if (!expectedArrival || !expectedArrival.value.trim()) {
+                alert('Expected arrival is required for reservations');
+                expectedArrival.focus();
+                isValid = false;
+                return;
+            }
+        }
+
+        // Validate check-in and check-out dates
+        const checkInDate = new Date(document.getElementById('check-in').value);
+        const checkOutDate = new Date(document.getElementById('check-out').value);
+        
+        if (checkOutDate <= checkInDate) {
+            alert('Check-out must be after check-in');
+            document.getElementById('check-out').focus();
+            isValid = false;
+            return;
+        }
+
+        // Validate guest count is a number
+        const guestCount = document.getElementById('guest-count').value.trim();
+        if (isNaN(guestCount) || guestCount < 1) {
+            alert('Please enter a valid number of guests');
+            document.getElementById('guest-count').focus();
+            isValid = false;
+            return;
+        }
+
+        // For immediate bookings, set expected arrival to check-in time
+        if (!isReservation) {
+            const expectedArrival = document.getElementById('expected-arrival');
+            expectedArrival.value = document.getElementById('check-in').value;
+        }
+
+        if (isValid) {
+            // Add room type to hidden input
+            const selectedRoom = document.getElementById('room-number');
+            const selectedOption = selectedRoom.options[selectedRoom.selectedIndex];
+            const roomType = selectedOption.dataset.roomType;
+            
+            let roomTypeInput = form.querySelector('input[name="room_type"]');
+            if (!roomTypeInput) {
+                roomTypeInput = document.createElement('input');
+                roomTypeInput.type = 'hidden';
+                roomTypeInput.name = 'room_type';
+                form.appendChild(roomTypeInput);
+            }
+            roomTypeInput.value = roomType;
+
+            // Submit the form
+            form.submit();
+        }
+    });
 });
 </script>
 {% endblock content %} 

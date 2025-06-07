@@ -1,0 +1,120 @@
+{% extends "base/base.html" %}
+
+{% block title %}Manage Pricing{% endblock title %}
+
+{% block content %}
+{% load static %}
+{% include "attachments/form_modals.html" %}
+<div class="min-h-screen bg-gray-100 flex">
+    <!-- Sidebar -->
+    {% include "attachments/sidebar.html" %}
+
+    <!-- Main Content -->
+    <div class="flex-1 p-6">
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold" id="current-date"></h1>
+            <p class="text-gray-600">Welcome back, Admin</p>
+        </div>
+
+        <!-- Add Room Form Card -->
+        <div class="bg-white rounded-lg shadow-sm mb-6">
+            <div class="p-6">
+                <h2 class="text-xl font-semibold mb-4">Set Room Price</h2>
+                <form method="POST" action="{% url 'set_price' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">Select Room *</label>
+                            <select name="room_id" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">Select Room</option>
+                                {% for room in rooms %}
+                                <option value="{{ room.room_id }}">Room {{ room.room_number }} - {{ room.get_room_type_display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">Price every 12hours *</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 sm:text-sm">₱</span>
+                                </div>
+                                <input type="number" name="room_price" required min="0" step="0.01" class="pl-7 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+                            Set Price
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Room List Table -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-4 border-b border-gray-200">
+                <form method="GET" action="{% url 'pricing' %}" class="flex gap-2">
+                    <input type="text" name="search" placeholder="Search by room number or type..." 
+                           value="{{ search }}" 
+                           class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                        Search
+                    </button>
+                    {% if search %}
+                    <a href="{% url 'pricing' %}" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
+                        Clear
+                    </a>
+                    {% endif %}
+                </form>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Room</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type of Room</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bed</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bed Size</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Floor</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price / 12Hours</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for room in rooms %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">{{ room.room_number }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">{{ room.get_room_type_display }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">{{ room.bed_count }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">{{ room.get_bed_type_display }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">{{ room.floor }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">₱ {{ room.room_price }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-4 py-3 border-t border-gray-200 flex justify-center">
+                {% if rooms.has_other_pages %}
+                <div class="flex space-x-2">
+                    {% if rooms.has_previous %}
+                    <a href="?page={{ rooms.previous_page_number }}{% if search %}&search={{ search }}{% endif %}" 
+                       class="rounded-full p-1 hover:bg-gray-100 align-middle">
+                        <span class="material-icons text-gray-600 border border-gray-300 rounded-full p-1">arrow_back</span>
+                    </a>
+                    {% endif %}
+                    <span class="text-sm text-gray-700 text-center text-3xl align-middle p-2">{{ rooms.number }}</span>
+                    {% if rooms.has_next %}
+                    <a href="?page={{ rooms.next_page_number }}{% if search %}&search={{ search }}{% endif %}"
+                       class="rounded-full p-1 hover:bg-gray-100 align-middle">
+                        <span class="material-icons text-gray-600 border border-gray-300 rounded-full p-1">arrow_forward</span>
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

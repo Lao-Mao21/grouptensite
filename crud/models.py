@@ -120,6 +120,13 @@ class ManageGuest(models.Model):
     check_in = models.DateTimeField(blank=False, null=False)
     check_out = models.DateTimeField(blank=False, null=False)
     expected_arrival = models.DateTimeField(blank=False, null=False)
+    guest_count = models.IntegerField(default=1, blank=False, null=False)
+    PAYMENT_MODE_CHOICES = [
+        ('cash', 'Cash'),
+        ('card', 'Credit/Debit Card'),
+        ('gcash', 'GCash'),
+    ]
+    payment_mode = models.CharField(max_length=20, choices=PAYMENT_MODE_CHOICES, default='cash', blank=False, null=False)
     PAYMENT_STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('paid', 'Paid'),
