@@ -7,7 +7,6 @@
 {% block content %}
 <div class="min-h-screen bg-gray-100 flex sm:flex-row flex-col">
     {% include "attachments/sidebar.html" %}
-    {% include "attachments/form_modals.html" %}
     <div class="max-w-5xl h-fit mx-auto my-auto bg-white rounded-xl shadow-md p-6">
         <div class="flex-1 p-4 sm:p-8">
             <div class="mb-4">
@@ -110,14 +109,14 @@
             {% endif %}
             <!-- Action Buttons -->
             <div class="flex justify-end gap-2 mt-4">
-                                 <a href="{% url 'book_guest' %}"
+                                 <a href="{% url 'manage_guests' %}"
                           class="px-6 py-2 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition">
                       Book for guest
                  </a>
-                <button onclick="document.getElementById('add-room-form-modal').style.display='flex'"
-                        class="px-6 py-2 rounded bg-blue-700 text-white font-semibold shadow hover:bg-blue-800 transition">
+                <a href="{% url 'add_room' %}"
+                    class="px-6 py-2 rounded bg-blue-700 text-white font-semibold shadow hover:bg-blue-800 transition">
                     + Add room
-                </button>
+                </a>
             </div>
         </div>
     </div>

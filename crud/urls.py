@@ -2,6 +2,7 @@ from django.urls import path
 from . import views 
 
 urlpatterns = [
+    # Admin URLs
     path('login_admin/', views.login_admin, name='login_admin'),
     path('admin_dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('manage_rooms/', views.manage_rooms, name='manage_rooms'),
@@ -22,4 +23,6 @@ urlpatterns = [
     path('manage_admin/', views.manage_admin, name='manage_admin'),
     path('edit_admin/<int:admin_id>/', views.edit_admin, name='edit_admin'),
     path('delete_admin/<int:admin_id>/', views.delete_admin, name='delete_admin'),
+    # Guest URLs
+    path('landing_page/', views.landing_page, name='landing_page'),
 ]

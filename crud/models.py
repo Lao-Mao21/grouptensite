@@ -39,6 +39,12 @@ class ManageRoom(models.Model):
     ]
     room_status = models.CharField(max_length=30, choices=ROOM_STATUS_CHOICES, blank=False, null=False)
     room_price = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False)
+    PRICE_TYPE_CHOICES = [
+        ('per hour', 'Per Hour'),
+        ('per day/night', 'Per Day/Night'),
+        ('custom', 'Custom Price'),
+    ]
+    room_price_type = models.CharField(max_length=100, choices=PRICE_TYPE_CHOICES, blank=False, null=False)
     available_at = models.DateTimeField(blank=False, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

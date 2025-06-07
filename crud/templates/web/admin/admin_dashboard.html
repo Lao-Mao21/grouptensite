@@ -6,7 +6,6 @@
 {% load static %}
 <div class="min-h-screen bg-gray-100 flex">
     {% include "attachments/sidebar.html" %}
-    {% include "attachments/form_modals.html" %}
 
     <!-- Main Content -->
     <div class="flex-1 p-6">
@@ -24,7 +23,7 @@
                     <div class="flex justify-between items-start">
                         <div>
                             <h3 class="text-sm font-medium text-gray-500">Available Rooms</h3>
-                            <p class="text-2xl font-bold text-indigo-600 mt-1">{{ available_rooms }}</p>
+                            <p class="text-2xl font-bold text-indigo-600 mt-1">{{ available_rooms|length }}</p>
                         </div>
                         <a href="{% url 'manage_rooms' %}" class="px-3 py-1 bg-green-500 text-white text-xs rounded-full hover:bg-green-600">
                             Manage
@@ -69,7 +68,7 @@
                             <h2 class="text-lg font-medium">Available Room</h2>
                             <div class="flex space-x-2">
                                 <input type="text" placeholder="Search" class="px-3 py-1 border rounded-lg text-sm">
-                                <a href="{% url 'book_guest' %}"
+                                <a href="{% url 'manage_guests' %}"
                                     class="px-6 py-2 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition">
                                     Make Reservation
                                 </a>
@@ -87,17 +86,21 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                {% for room in available_rooms_list %}
+                                {% for room in available_rooms %}
                                 <tr>
                                     <td class="px-4 py-3 text-sm">{{ room.room_number }}</td>
                                     <td class="px-4 py-3 text-sm">{{ room.room_type }}</td>
                                     <td class="px-4 py-3 text-sm">{{ room.floor }}</td>
                                     <td class="px-4 py-3 text-sm">
-                                        <span class="px-2 py-1 text-xs {% if room.room_status == 'available' %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %} rounded-full">
+                                        <span class="px-2 py-1 text-xs {% if room.room_status == 'available' %} bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %} rounded-full">
                                             {{ room.room_status|title }}
                                         </span>
                                     </td>
                                 </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td class="px-4 py-3 text-sm text-gray-400">No Available Rooms</td>
+                                    </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -136,6 +139,10 @@
                                     <td class="px-4 py-3 text-sm">{{ booking.check_out|date:"m/d/Y h:i A" }}</td>
                                     <td class="px-4 py-3 text-sm">{{ booking.duration }} Hours</td>
                                 </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td class="px-4 py-3 text-sm text-gray-400">No Bookings Today</td>
+                                    </tr>
                                 {% endfor %}
                             </tbody>
                         </table>

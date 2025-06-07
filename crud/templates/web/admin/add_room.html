@@ -1,0 +1,110 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Add Room{% endblock title %}
+
+{% block content %}
+<div id="add-room-form-modal" class="min-h-screen bg-gray-100 flex sm:flex-row flex-col">
+    {% include "attachments/sidebar.html" %}
+    <div class="w-fit mx-auto my-auto bg-white rounded-xl shadow-md p-6">
+        <div class="flex-1 p-4 sm:p-8">
+            <h2 class="text-2xl font-semibold mb-6 text-gray-800">Add New Room</h2>
+            <form action="{% url 'add_room' %}" method="post" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="room_number" class="block text-sm font-medium text-gray-700">Room Number</label>
+                    <input type="text" id="room_number" name="room_number" required placeholder="Enter Room Number"
+                           pattern="[0-9]+" title="Please enter a valid room number"
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="room_type" class="block text-sm font-medium text-gray-700">Room Type</label>
+                    <select id="room_type" name="room_type" required
+                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select room type</option>
+                        <option value="single">Single</option>
+                        <option value="double">Double</option>
+                        <option value="suite">Suite</option>
+                        <option value="deluxe">Deluxe</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="bed_count" class="block text-sm font-medium text-gray-700">Bed Count</label>
+                    <select id="bed_count" name="bed_count" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select bed count</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="bed_type" class="block text-sm font-medium text-gray-700">Bed Type</label>
+                    <select id="bed_type" name="bed_type" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select bed type</option>
+                        <option value="single">Single</option>
+                        <option value="double">Double</option>
+                        <option value="deluxe">Deluxe</option>
+                        <option value="VIP">VIP</option>
+                        <option value="king">King</option>
+                        <option value="queen">Queen</option>
+                        <option value="bunk">Bunk Bed</option>
+                        <option value="futon">Futon</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="floor" class="block text-sm font-medium text-gray-700">Floor</label>
+                    <select id="floor" name="floor" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select floor</option>
+                        <option value="1">1st Floor</option>
+                        <option value="2">2nd Floor</option>
+                        <option value="3">3rd Floor</option>
+                        <option value="4">4th Floor</option>
+                        <option value="5">5th Floor</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="room_price" class="block text-sm font-medium text-gray-700">Price (₱)</label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 sm:text-sm">₱</span>
+                        </div>
+                        <input type="number" id="room_price" name="room_price" required min="0" step="0.01"
+                               class="block w-full pl-7 pr-12 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+            </div>
+            <div>
+                <label for="room_status" class="block text-sm font-medium text-gray-700">Room Status</label>
+                <select id="room_status" name="room_status" required
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Select room status</option>
+                    <option value="available">Available</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="cleaning">Cleaning</option>
+                    <option value="reserved">Reserved</option>
+                    <option value="occupied">Occupied</option>
+                </select>
+            </div>
+            <div>
+                <label for="available_at" class="block text-sm font-medium text-gray-700">Available At</label>
+                <input type="datetime-local" id="available_at" name="available_at" required
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+                <a href="{% url 'manage_rooms' %}"
+                    class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Add Room
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}

@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from .models import ManageRoom, ManageGuest, GuestAccounts, AdminAccounts
@@ -11,6 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Sum, Count, Q
 from django.shortcuts import render
 
+# Admin Views
 def login(request):
     if request.method == "POST":
         username = request.POST.get("username")
@@ -37,12 +38,14 @@ def login_admin(request):
 
 def admin_dashboard(request):
     available_rooms = ManageRoom.objects.filter(room_status="available").count()
+    available_rooms_qs = ManageRoom.objects.filter(room_status="available")
     reserved_rooms = ManageRoom.objects.filter(room_status="reserved").count()
     monthly_sales = ManageGuest.objects.filter(payment_status="paid").count()
     today = timezone.now().date()
     todays_bookings = ManageGuest.objects.filter(check_in__date=today).count()
     return render(request, "web/admin/admin_dashboard.html", {
         "available_rooms": available_rooms,
+        "available_rooms": available_rooms_qs,
         "reserved_rooms": reserved_rooms,
         "monthly_sales": monthly_sales,
         "todays_bookings": todays_bookings,
@@ -162,7 +165,9 @@ def add_room(request):
         room_status = request.POST.get("room_status")
         available_at = request.POST.get("available_at")
         payment_status = request.POST.get("payment_status", "pending")
-        
+        room_price_type = request.POST.get("room_price_type", "custom")
+        room_price = request.POST.get("room_price", 0)
+
         ManageRoom.objects.create(
             room_number=room_number,
             room_type=room_type,
@@ -170,9 +175,10 @@ def add_room(request):
             floor=floor,
             bed_type=bed_type,
             room_status=room_status,
+            room_price_type=room_price_type,
             available_at=available_at,
             payment_status=payment_status,
-            room_price=0  # Default price of 0, to be set in pricing page
+            room_price=room_price
         )
         return redirect('manage_rooms')
     return render(request, "web/admin/add_room.html")
@@ -501,7 +507,7 @@ def book_guest(request):
             room.room_status = "reserved"
             room.save()
 
-            return redirect("manage_guests")
+            return redirect(request.META.get('HTTP_REFERER', '/'))
 
         except Exception as e:
             return HttpResponse(str(e), status=400)
@@ -553,7 +559,8 @@ def pricing(request):
         rooms_list = rooms_list.filter(
             Q(room_number__icontains=search) |
             Q(room_type__icontains=search) |
-            Q(floor__icontains=search)
+            Q(floor__icontains=search) |
+            Q(room_price_type__icontains=search)
         )
     
     page_number = request.GET.get('page', 1)
@@ -563,9 +570,11 @@ def pricing(request):
     # Get choices for dropdowns
     room_type_choices = ManageRoom.ROOM_TYPE_CHOICES
     bed_type_choices = ManageRoom.BED_TYPE_CHOICES
+    room_price_type = ManageRoom.PRICE_TYPE_CHOICES
     
     context = {
         "rooms": rooms,
+        "room_price_type": room_price_type,
         "room_type_choices": room_type_choices,
         "bed_type_choices": bed_type_choices,
         "search": search,
@@ -678,3 +687,7 @@ def delete_admin(request, admin_id):
     return render(request, "web/admin/confirm_delete_admin.html", {
         "admin": admin
     })
+
+# Guest Views
+def landing_page(request):
+    return render(request, "web/guest/Landing_page.html")
