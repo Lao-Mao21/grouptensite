@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 31, 2025 at 05:16 PM
+-- Generation Time: Jun 07, 2025 at 05:46 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -46,6 +46,13 @@ CREATE TABLE `adminaccounts_tbl` (
   `created_at` datetime(6) NOT NULL,
   `updated_at` datetime(6) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `adminaccounts_tbl`
+--
+
+INSERT INTO `adminaccounts_tbl` (`is_active`, `admin_id`, `first_name`, `middle_name`, `last_name`, `full_name`, `username`, `verification_token`, `date_of_birth`, `last_login`, `gender`, `email`, `phone_number`, `address`, `password`, `created_at`, `updated_at`) VALUES
+(1, 1, 'Jonas', 'Cusay', 'Buenavides', '', 'Lao1Mao', NULL, '2006-02-15', NULL, 'male', 'Quan@gmail.com', '09123456789', 'One, Two, Three', 'pbkdf2_sha256$600000$39VeKREIrfGEZVirDpU6I0$CNVRHLX8+O1XHWsRnjBRW5Odwpq8/t2LzwpYFmumfxc=', '2025-06-07 03:15:07.152183', '2025-06-07 03:15:07.152219');
 
 -- --------------------------------------------------------
 
@@ -236,25 +243,27 @@ CREATE TABLE `django_migrations` (
 --
 
 INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES
-(1, 'contenttypes', '0001_initial', '2025-05-31 05:28:57.305281'),
-(2, 'auth', '0001_initial', '2025-05-31 05:28:57.706787'),
-(3, 'admin', '0001_initial', '2025-05-31 05:28:57.797994'),
-(4, 'admin', '0002_logentry_remove_auto_add', '2025-05-31 05:28:57.809261'),
-(5, 'admin', '0003_logentry_add_action_flag_choices', '2025-05-31 05:28:57.818360'),
-(6, 'contenttypes', '0002_remove_content_type_name', '2025-05-31 05:28:57.878515'),
-(7, 'auth', '0002_alter_permission_name_max_length', '2025-05-31 05:28:57.917713'),
-(8, 'auth', '0003_alter_user_email_max_length', '2025-05-31 05:28:57.936098'),
-(9, 'auth', '0004_alter_user_username_opts', '2025-05-31 05:28:57.946063'),
-(10, 'auth', '0005_alter_user_last_login_null', '2025-05-31 05:28:57.979012'),
-(11, 'auth', '0006_require_contenttypes_0002', '2025-05-31 05:28:57.982706'),
-(12, 'auth', '0007_alter_validators_add_error_messages', '2025-05-31 05:28:57.995286'),
-(13, 'auth', '0008_alter_user_username_max_length', '2025-05-31 05:28:58.010080'),
-(14, 'auth', '0009_alter_user_last_name_max_length', '2025-05-31 05:28:58.024807'),
-(15, 'auth', '0010_alter_group_name_max_length', '2025-05-31 05:28:58.038905'),
-(16, 'auth', '0011_update_proxy_permissions', '2025-05-31 05:28:58.049925'),
-(17, 'auth', '0012_alter_user_first_name_max_length', '2025-05-31 05:28:58.065568'),
-(18, 'crud', '0001_initial', '2025-05-31 05:28:58.378257'),
-(19, 'sessions', '0001_initial', '2025-05-31 05:28:58.408508');
+(1, 'contenttypes', '0001_initial', '2025-06-02 05:02:51.137146'),
+(2, 'auth', '0001_initial', '2025-06-02 05:02:51.581184'),
+(3, 'admin', '0001_initial', '2025-06-02 05:02:51.662319'),
+(4, 'admin', '0002_logentry_remove_auto_add', '2025-06-02 05:02:51.671995'),
+(5, 'admin', '0003_logentry_add_action_flag_choices', '2025-06-02 05:02:51.682519'),
+(6, 'contenttypes', '0002_remove_content_type_name', '2025-06-02 05:02:51.734585'),
+(7, 'auth', '0002_alter_permission_name_max_length', '2025-06-02 05:02:51.778565'),
+(8, 'auth', '0003_alter_user_email_max_length', '2025-06-02 05:02:51.792817'),
+(9, 'auth', '0004_alter_user_username_opts', '2025-06-02 05:02:51.799832'),
+(10, 'auth', '0005_alter_user_last_login_null', '2025-06-02 05:02:51.831947'),
+(11, 'auth', '0006_require_contenttypes_0002', '2025-06-02 05:02:51.834880'),
+(12, 'auth', '0007_alter_validators_add_error_messages', '2025-06-02 05:02:51.841591'),
+(13, 'auth', '0008_alter_user_username_max_length', '2025-06-02 05:02:51.854124'),
+(14, 'auth', '0009_alter_user_last_name_max_length', '2025-06-02 05:02:51.865204'),
+(15, 'auth', '0010_alter_group_name_max_length', '2025-06-02 05:02:51.877702'),
+(16, 'auth', '0011_update_proxy_permissions', '2025-06-02 05:02:51.885001'),
+(17, 'auth', '0012_alter_user_first_name_max_length', '2025-06-02 05:02:51.896287'),
+(18, 'crud', '0001_initial', '2025-06-02 05:02:52.060817'),
+(19, 'crud', '0002_alter_manageroom_room_status', '2025-06-02 05:02:52.066464'),
+(20, 'sessions', '0001_initial', '2025-06-02 05:02:52.094803'),
+(21, 'crud', '0003_manageguest_guest_count_manageguest_payment_mode_and_more', '2025-06-05 05:55:12.633064');
 
 -- --------------------------------------------------------
 
@@ -298,6 +307,13 @@ CREATE TABLE `guestaccounts_tbl` (
   `updated_at` datetime(6) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `guestaccounts_tbl`
+--
+
+INSERT INTO `guestaccounts_tbl` (`guest_id`, `first_name`, `middle_name`, `last_name`, `username`, `full_name`, `gender`, `email`, `phone_number`, `address`, `password`, `is_active`, `date_of_birth`, `last_login`, `email_verified`, `verification_token`, `nationality`, `emergency_contact`, `notes`, `created_at`, `updated_at`) VALUES
+(1, 'Jonas', 'Cusay', 'Buenavides', 'Nas', 'Jonas Cusay Buenavides', 'male', 'Quan@gmail.com', '09123456789', 'One, Two, Three', 'pbkdf2_sha256$600000$4HQYOd4abk8TVscBd8d3ly$KTtR2uto5lB1D2sNXeTbHmM8dIi0jsjxd2ltjwn2Wgs=', 1, NULL, NULL, 0, NULL, 'Filipino', 'N/A', 'test', '2025-06-02 08:09:03.279558', '2025-06-02 08:09:03.279599');
+
 -- --------------------------------------------------------
 
 --
@@ -315,8 +331,17 @@ CREATE TABLE `manageguest_tbl` (
   `created_at` datetime(6) NOT NULL,
   `updated_at` datetime(6) NOT NULL,
   `guest_id_id` int(11) NOT NULL,
-  `room_id_id` int(11) NOT NULL
+  `room_id_id` int(11) NOT NULL,
+  `guest_count` int(11) NOT NULL,
+  `payment_mode` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `manageguest_tbl`
+--
+
+INSERT INTO `manageguest_tbl` (`id`, `guest_name`, `status`, `check_in`, `check_out`, `expected_arrival`, `payment_status`, `created_at`, `updated_at`, `guest_id_id`, `room_id_id`, `guest_count`, `payment_mode`) VALUES
+(1, 'Jonas Cusay Buenavides', 'reserved', '2025-06-07 09:40:00.000000', '2025-06-16 12:00:00.000000', '2025-06-07 09:40:00.000000', 'pending', '2025-06-07 01:41:03.357604', '2025-06-07 01:41:03.357642', 1, 2, 1, 'cash');
 
 -- --------------------------------------------------------
 
@@ -329,6 +354,7 @@ CREATE TABLE `manageroom_tbl` (
   `room_type` varchar(100) NOT NULL,
   `room_number` varchar(50) NOT NULL,
   `bed_count` int(11) NOT NULL,
+  `bed_type` varchar(100) NOT NULL,
   `floor` varchar(50) NOT NULL,
   `room_status` varchar(30) NOT NULL,
   `room_price` decimal(10,2) NOT NULL,
@@ -337,6 +363,13 @@ CREATE TABLE `manageroom_tbl` (
   `updated_at` datetime(6) NOT NULL,
   `check_in_id` bigint(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `manageroom_tbl`
+--
+
+INSERT INTO `manageroom_tbl` (`room_id`, `room_type`, `room_number`, `bed_count`, `bed_type`, `floor`, `room_status`, `room_price`, `available_at`, `created_at`, `updated_at`, `check_in_id`) VALUES
+(2, 'single', '1', 1, 'single', '2', 'reserved', 1700.99, '2025-06-02 15:17:00.000000', '2025-06-02 07:17:41.034579', '2025-06-07 01:41:03.379272', NULL);
 
 --
 -- Indexes for dumped tables
@@ -455,7 +488,7 @@ ALTER TABLE `manageroom_tbl`
 -- AUTO_INCREMENT for table `adminaccounts_tbl`
 --
 ALTER TABLE `adminaccounts_tbl`
-  MODIFY `admin_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `admin_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `auth_group`
@@ -509,25 +542,25 @@ ALTER TABLE `django_content_type`
 -- AUTO_INCREMENT for table `django_migrations`
 --
 ALTER TABLE `django_migrations`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `guestaccounts_tbl`
 --
 ALTER TABLE `guestaccounts_tbl`
-  MODIFY `guest_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `guest_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `manageguest_tbl`
 --
 ALTER TABLE `manageguest_tbl`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `manageroom_tbl`
 --
 ALTER TABLE `manageroom_tbl`
-  MODIFY `room_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `room_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Constraints for dumped tables
