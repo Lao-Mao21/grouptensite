@@ -608,3 +608,73 @@ def edit_guest(request, guest_id):
         "statuses": ["reserved", "checked_in", "checked_out", "cancelled"],
         "payment_statuses": ["pending", "paid", "refunded", "cancelled"]
     })
+
+def add_admin(request):
+    if request.method == "POST":
+        first_name = request.POST.get("first_name")
+        last_name = request.POST.get("last_name")
+        middle_name = request.POST.get("middle_name")
+        username = request.POST.get("username")
+        email = request.POST.get("email")
+        phone_number = request.POST.get("phone_number")
+        address = request.POST.get("address")
+        password = request.POST.get("password")
+        confirm_password = request.POST.get("confirm_password")
+        gender = request.POST.get("gender")
+        date_of_birth = request.POST.get("date_of_birth")
+        is_active = request.POST.get("is_active")
+        
+        if password != confirm_password:
+            return HttpResponse("Passwords do not match", status=400)
+        
+        # Create admin account
+        admin = AdminAccounts.objects.create(
+            first_name=first_name,
+            last_name=last_name,
+            middle_name=middle_name,
+            username=username,
+            email=email,
+            phone_number=phone_number,
+            address=address,
+            password=password,
+            gender=gender,
+            date_of_birth=date_of_birth,
+            is_active=is_active
+        )
+        return redirect('manage_admin')
+    return render(request, "web/admin/add_admin.html")
+            
+def manage_admin(request):
+    admins = AdminAccounts.objects.all()
+    return render(request, "web/admin/manage_admins.html", {
+        "admins": admins
+    })
+
+def edit_admin(request, admin_id):
+    admin = AdminAccounts.objects.get(id=admin_id)
+    if request.method == "POST":
+        admin.first_name = request.POST.get("first_name")
+        admin.last_name = request.POST.get("last_name")
+        admin.middle_name = request.POST.get("middle_name")
+        admin.username = request.POST.get("username")
+        admin.email = request.POST.get("email")
+        admin.phone_number = request.POST.get("phone_number")
+        admin.address = request.POST.get("address")
+        admin.password = request.POST.get("password")
+        admin.gender = request.POST.get("gender")
+        admin.date_of_birth = request.POST.get("date_of_birth")
+        admin.is_active = request.POST.get("is_active")
+        admin.save()
+        return redirect('manage_admins')
+    return render(request, "web/admin/edit_admin.html", {
+        "admin": admin
+    })
+
+def delete_admin(request, admin_id):
+    admin = AdminAccounts.objects.get(id=admin_id)
+    if request.method == "POST":
+        admin.delete()
+        return redirect('manage_admins')
+    return render(request, "web/admin/confirm_delete_admin.html", {
+        "admin": admin
+    })

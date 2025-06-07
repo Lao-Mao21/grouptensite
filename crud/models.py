@@ -42,7 +42,6 @@ class ManageRoom(models.Model):
     available_at = models.DateTimeField(blank=False, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
 
 class AdminAccounts(models.Model):
     class Meta:

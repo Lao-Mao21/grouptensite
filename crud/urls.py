@@ -18,4 +18,8 @@ urlpatterns = [
     path('pricing/', views.pricing, name='pricing'),
     path('set_price/', views.set_price, name='set_price'),
     path('edit_guest/<int:guest_id>/', views.edit_guest, name='edit_guest'),
+    path('add_admin/', views.add_admin, name='add_admin'),
+    path('manage_admin/', views.manage_admin, name='manage_admin'),
+    path('edit_admin/<int:admin_id>/', views.edit_admin, name='edit_admin'),
+    path('delete_admin/<int:admin_id>/', views.delete_admin, name='delete_admin'),
 ]

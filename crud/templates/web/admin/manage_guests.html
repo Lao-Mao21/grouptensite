@@ -97,10 +97,10 @@
                     </div>
                     <!-- Buttons for Add Guest and Book Guest -->
                     <div class="flex gap-2">
-                        <button onclick="document.getElementById('add-guest-form-modal').style.display='flex'"
-                            class="px-6 py-2 rounded bg-blue-700 text-white font-semibold shadow hover:bg-blue-800 transition">
+                        <a href="{% url 'add_guest' %}"
+                            class="px-6 py-2 rounded bg-blue-700 text-white font-semibold shadow hover:bg-blue-800 transition text-center">
                             Add Guest
-                        </button>
+                        </a>
                         <a href="{% url 'book_guest' %}"
                             class="px-6 py-2 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition text-center">
                             Book Guest
@@ -176,7 +176,8 @@
                             <th class="px-4 py-2 border">Name</th>
                             <th class="px-4 py-2 border">Bed Type</th>
                             <th class="px-4 py-2 border">Expected Arrival</th>
-                            <th class="px-4 py-2 border">Duration</th>
+                            <th class="px-4 py-2 border">Check in</th>
+                            <th class="px-4 py-2 border">Check out</th>
                             <th class="px-4 py-2 border">Payment</th>
                             <th class="px-4 py-2 border">Actions</th>
                         </tr>
@@ -188,7 +189,7 @@
                             <td class="px-4 py-2 border">{{ guest.room_id.room_type }}</td>
                             <td class="px-4 py-2 border">{{ guest.guest_id.full_name }}</td>
                             <td class="px-4 py-2 border">{{ guest.room_id.bed_type }}</td>
-                            <td class="px-4 py-2 border">{{ guest.room_id.room_status }}</td>
+                            <td class="px-4 py-2 border">{{ guest.check_in|date:"m/d/y h:i A" }}</td>
                             <td class="px-4 py-2 border">{{ guest.check_in|date:"m/d/y h:i A" }}</td>
                             <td class="px-4 py-2 border">{{ guest.check_out|date:"m/d/y h:i A" }}</td>
                             <td class="px-4 py-2 border">{{ guest.payment_status }}</td>
@@ -225,10 +226,10 @@
                         {% endif %}
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="document.getElementById('add-guest-form-modal').style.display='flex'"
-                            class="px-6 py-2 rounded bg-blue-700 text-white font-semibold shadow hover:bg-blue-800 transition">
+                        <a href="{% url 'add_guest' %}"
+                            class="px-6 py-2 rounded bg-blue-700 text-white font-semibold shadow hover:bg-blue-800 transition text-center">
                             Add Guest
-                        </button>
+                        </a>
                         <a href="{% url 'book_guest' %}"
                             class="px-6 py-2 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition text-center">
                             Book Guest
