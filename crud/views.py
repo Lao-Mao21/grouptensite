@@ -2,7 +2,6 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
 from .models import ManageRoom, ManageGuest, GuestAccounts, AdminAccounts
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -12,30 +11,27 @@ from django.db.models import Sum, Count, Q
 from django.shortcuts import render
 
 # Admin Views
-def login(request):
-    if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect("admin_dashboard")
-        else:
-            return render(request, "web/admin/login.html", {"error": "Invalid credentials"})
-    return render(request, "web/admin/login.html")
+@login_required
+def logout_admin(request):
+    logout(request)
+    return redirect('/login_admin/')
 
 def login_admin(request):
     if request.method == "POST":
         username = request.POST.get("username")
         password = request.POST.get("password")
+        print(f"Attempting login with username: {username}")
         user = authenticate(request, username=username, password=password)
         if user is not None:
+            print("Authentication successful")
             login(request, user)
-            return redirect("web/admin/admin_dashboard/")
+            return redirect("/admin_dashboard/")
         else:
-            return render(request, "web/admin/login.html", {"error": "Invalid credentials"})
-    return render(request, "web/admin/login.html")
+            print("Authentication failed")
+            return render(request, "web/admin/login_admin.html", {"error": "Invalid credentials"})
+    return render(request, "web/admin/login_admin.html")
 
+@login_required
 def admin_dashboard(request):
     available_rooms = ManageRoom.objects.filter(room_status="available").count()
     available_rooms_qs = ManageRoom.objects.filter(room_status="available")
@@ -51,6 +47,7 @@ def admin_dashboard(request):
         "todays_bookings": todays_bookings,
     })
 
+@login_required
 def manage_rooms(request):
     status = request.GET.get('room_status', 'available')
     search = request.GET.get('search', '')
@@ -84,6 +81,7 @@ def manage_rooms(request):
         "payment_status_choices": ManageGuest.PAYMENT_STATUS_CHOICES,
     })
 
+@login_required
 def manage_guests(request):
     # Today's bookings
     todays_bookings_list = ManageGuest.objects.filter(check_in__date=timezone.now().date())
@@ -120,6 +118,7 @@ def manage_guests(request):
         "now": timezone.now(),
     })
 
+@login_required
 def add_guest(request):
     if request.method == "POST":
         # Create a new GuestAccounts entry
@@ -155,6 +154,7 @@ def add_guest(request):
         return redirect("/manage_guests/")
     return render(request, "web/admin/add_guest.html")
 
+@login_required
 def add_room(request):
     if request.method == "POST":
         room_number = request.POST.get("room_number")
@@ -183,6 +183,7 @@ def add_room(request):
         return redirect('manage_rooms')
     return render(request, "web/admin/add_room.html")
 
+@login_required
 def set_price(request):
     if request.method == "POST":
         room_id = request.POST.get("room_id")
@@ -201,6 +202,7 @@ def set_price(request):
             
     return redirect('pricing')
 
+@login_required
 def sales_report(request):
     # Annual Revenue by month and room type
     months = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -307,11 +309,13 @@ def sales_report(request):
     }
     return render(request, "web/admin/sales.html", context)
 
+@login_required
 def todays_bookings(request):
     today = timezone.now().date()
     todays_bookings = ManageGuest.objects.filter(check_in__date=today)
     return render(request, "web/admin/todays_bookings.html", {"todays_bookings": todays_bookings})
 
+@login_required
 @csrf_exempt
 def add_reservation(request):
     if request.method == "POST":
@@ -400,8 +404,8 @@ def add_reservation(request):
         "all_rooms": all_rooms,
     })
 
-# @login_required(login_url='login_admin')
-# @csrf_exempt
+@login_required
+@csrf_exempt
 def book_guest(request):
     if request.method == "POST":
         # Get form data
@@ -541,6 +545,7 @@ def edit_room(request, room_id):
         "room": room
     })
 
+@login_required
 def delete_room(request, room_id):
     room = ManageRoom.objects.get(room_id=room_id)
     if request.method == "POST":
@@ -550,6 +555,7 @@ def delete_room(request, room_id):
         "room": room
     })
 
+@login_required
 def pricing(request):
     # Get all rooms with pagination
     search = request.GET.get('search', '')
@@ -582,6 +588,7 @@ def pricing(request):
     
     return render(request, "web/admin/pricing.html", context)
 
+@login_required
 def delete_guest(request, guest_id):
     guest = ManageGuest.objects.get(id=guest_id)
     if request.method == "POST":
@@ -596,6 +603,7 @@ def delete_guest(request, guest_id):
         "guest": guest
     })
 
+@login_required
 def edit_guest(request, guest_id):
     guest = ManageGuest.objects.get(id=guest_id)
     if request.method == "POST":
@@ -618,6 +626,7 @@ def edit_guest(request, guest_id):
         "payment_statuses": ["pending", "paid", "refunded", "cancelled"]
     })
 
+@login_required
 def add_admin(request):
     if request.method == "POST":
         first_name = request.POST.get("first_name")
@@ -652,13 +661,15 @@ def add_admin(request):
         )
         return redirect('manage_admin')
     return render(request, "web/admin/add_admin.html")
-            
+
+@login_required        
 def manage_admin(request):
     admins = AdminAccounts.objects.all()
     return render(request, "web/admin/manage_admins.html", {
         "admins": admins
     })
 
+@login_required
 def edit_admin(request, admin_id):
     admin = AdminAccounts.objects.get(id=admin_id)
     if request.method == "POST":
@@ -679,6 +690,7 @@ def edit_admin(request, admin_id):
         "admin": admin
     })
 
+@login_required
 def delete_admin(request, admin_id):
     admin = AdminAccounts.objects.get(id=admin_id)
     if request.method == "POST":
@@ -691,3 +703,15 @@ def delete_admin(request, admin_id):
 # Guest Views
 def landing_page(request):
     return render(request, "web/guest/Landing_page.html")
+
+# def login(request):
+#     if request.method == "POST":
+#         username = request.POST.get("username")
+#         password = request.POST.get("password")
+#         user = authenticate(request, username=username, password=password)
+#         if user is not None:
+#             login(request, user)
+#             return redirect("admin_dashboard")
+#         else:
+#             return render(request, "web/admin/login.html", {"error": "Invalid credentials"})
+#     return render(request, "web/admin/login.html")

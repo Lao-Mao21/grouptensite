@@ -158,8 +158,24 @@
                 </div>
             </div>
         </div>
+        <div class="my-auto mx-auto gap-4 mt-6 items-stretch">
+        <!-- Annual Revenue Chart -->
+        <div class="bg-white rounded-xl shadow-md p-3 col-span-1 md:col-span-2 flex flex-col" style="height: 270px;">
+            <div class="font-bold text-lg mb-1">Annual Revenue</div>
+                <div class="flex-1 flex items-center justify-center">
+                    <canvas id="annualRevenueChart" height="140"></canvas>
+                </div>
+                <div class="flex justify-center gap-3 mt-1 text-xs">
+                    <span class="text-blue-700 font-bold">■ Single</span>
+                    <span class="text-green-600 font-bold">■ Double</span>
+                    <span class="text-yellow-500 font-bold">■ Suite</span>
+                    <span class="text-cyan-500 font-bold">■ Deluxe</span>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script src="{% static 'js/current_date.js' %}"></script>
+{{ annual_data|safe|json_script:"annual-data" }}
 {% endblock content %}

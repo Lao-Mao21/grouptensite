@@ -5,8 +5,8 @@
 
 <!-- Sidebar Drawer -->
 <div id="sidebar"
-     class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-50 transform h-screen overflow-y-auto sm:overflow-y-visible sm:h-auto sm:overflow-y-auto -translate-x-full transition-transform duration-300 sm:relative sm:translate-x-0 sm:w-64 sm:block">
-    <aside class="w-64 bg-blue-600 shadow-lg min-h-screen flex flex-col justify-between">
+     class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-50 transform h-screen overflow-y-auto sm:overflow-y-visible sm:h-auto -translate-x-full transition-transform duration-300 sm:relative sm:translate-x-0 sm:w-64 sm:block">
+    <aside class="w-64 bg-blue-600 shadow-lg h-full flex flex-col justify-between">
         <div class="flex flex-col p-6 justify-between">
             <div>
                 <h2 class="text-2xl font-bold text-white cursor-pointer mb-8">Admin Panel</h2>
@@ -47,14 +47,14 @@
                             Admin Accounts
                         </a>
                     </li>
-                    <li>    
-                        <a href="#" class="flex items-center text-white hover:text-amber-200 transition mt-72">
-                            <span class="material-icons mr-3">logout</span>
-                            Logout
-                        </a>
-                    </li>
                 </ul>
             </div>
+        </div>
+        <div class="flex flex-col p-6 justify-between">
+            <a href="{% url 'logout_admin' %}" class="flex items-center text-white hover:text-amber-200 transition align-bottom">
+                <span class="material-icons mr-3">logout</span>
+                Logout
+            </a>
         </div>
     </aside>
 </div>
