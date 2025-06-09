@@ -32,13 +32,7 @@
                     </div>
                     <div>
                         <label for="bed_count" class="block text-sm font-medium text-gray-700">Bed Count</label>
-                        <select id="bed_count" name="bed_count" required
-                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Select bed count</option>
-                            <option value="1" {% if room.bed_count == 1 %}selected{% endif %}>1</option>
-                            <option value="2" {% if room.bed_count == 2 %}selected{% endif %}>2</option>
-                            <option value="3" {% if room.bed_count == 3 %}selected{% endif %}>3</option>
-                        </select>
+                        <input id="bed_count" name="bed_count" value="{{ room.bed_count }}" required placeholder="Enter Quantity of Beds" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label for="bed_type" class="block text-sm font-medium text-gray-700">Bed Type</label>

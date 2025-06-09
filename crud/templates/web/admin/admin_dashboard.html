@@ -69,7 +69,7 @@
                             <div class="flex space-x-2">
                                 <input type="text" placeholder="Search" class="px-3 py-1 border rounded-lg text-sm">
                                 <a href="{% url 'manage_guests' %}"
-                                    class="px-6 py-2 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition">
+                                    class="px-3 py-2 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition">
                                     Make Reservation
                                 </a>
                             </div>
@@ -133,11 +133,11 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                {% for booking in todays_bookings_list %}
+                                {% for guests in guests %}
                                 <tr>
-                                    <td class="px-4 py-3 text-sm">{{ booking.guest_name }}</td>
-                                    <td class="px-4 py-3 text-sm">{{ booking.check_out|date:"m/d/Y h:i A" }}</td>
-                                    <td class="px-4 py-3 text-sm">{{ booking.duration }} Hours</td>
+                                    <td class="px-4 py-3 text-sm">{{ guests.guest_name }}</td>
+                                    <td class="px-4 py-3 text-sm">{{ guests.check_out|date:"m/d/Y h:i A" }}</td>
+                                    <td class="px-4 py-3 text-sm">{{ guests.check_in|date:"m/d/Y h:i A" }} Hours</td>
                                 </tr>
                                 {% empty %}
                                     <tr>

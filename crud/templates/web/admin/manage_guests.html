@@ -104,6 +104,9 @@
                             class="px-6 py-2 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition text-center">
                             Book Guest
                         </a>
+                        <a href="{% url 'checkout_form' %}?guest_id={{ guest.guest_id }}" class="text-blue-600 hover:text-blue-800 mx-1" title="Go to Checkout">
+                            <span class="material-icons align-middle text-base">exit_to_app</span>
+                        </a>
                     </div>
                 </div>
             </div>

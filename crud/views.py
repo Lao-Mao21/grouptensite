@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -9,6 +9,10 @@ from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Sum, Count, Q
 from django.shortcuts import render
+from django.conf import settings
+from django.shortcuts import get_object_or_404, redirect
+from django.utils import timezone
+from django.contrib import messages
 
 # Admin Views
 @login_required
@@ -164,7 +168,6 @@ def add_room(request):
         bed_type = request.POST.get("bed_type")
         room_status = request.POST.get("room_status")
         available_at = request.POST.get("available_at")
-        payment_status = request.POST.get("payment_status", "pending")
         room_price_type = request.POST.get("room_price_type", "custom")
         room_price = request.POST.get("room_price", 0)
 
@@ -177,7 +180,6 @@ def add_room(request):
             room_status=room_status,
             room_price_type=room_price_type,
             available_at=available_at,
-            payment_status=payment_status,
             room_price=room_price
         )
         return redirect('manage_rooms')
@@ -316,7 +318,6 @@ def todays_bookings(request):
     return render(request, "web/admin/todays_bookings.html", {"todays_bookings": todays_bookings})
 
 @login_required
-@csrf_exempt
 def add_reservation(request):
     if request.method == "POST":
         guest_id = request.POST.get("guest_id")
@@ -405,7 +406,6 @@ def add_reservation(request):
     })
 
 @login_required
-@csrf_exempt
 def book_guest(request):
     if request.method == "POST":
         # Get form data
@@ -420,6 +420,9 @@ def book_guest(request):
         check_in_time = request.POST.get("check_in")
         check_out_time = request.POST.get("check_out")
         payment_mode = request.POST.get("payment_mode")
+        room_status = request.POST.get("room_status")
+        booking_type = request.POST.get('booking_type')
+        payment_status = request.POST.get("room_status")
 
         # Print received data for debugging
         print("Received form data:")
@@ -433,7 +436,9 @@ def book_guest(request):
         print(f"guest_count: {guest_count}")
         print(f"check_in_time: {check_in_time}")
         print(f"check_out_time: {check_out_time}")
+        print(f"payment_status: {payment_status}")
         print(f"payment_mode: {payment_mode}")
+        print(f"booking_type:' {booking_type}")
 
         # Validate required fields
         if not all([full_name, gender, contact_number, nationality, address, 
@@ -448,7 +453,9 @@ def book_guest(request):
             if not guest_count: missing_fields.append("Guest Count")
             if not check_in_time: missing_fields.append("Check In Time")
             if not check_out_time: missing_fields.append("Check Out Time")
+            if not payment_status: missing_fields.append("Payment Status")
             if not payment_mode: missing_fields.append("Payment Mode")
+            if not booking_type: missing_fields.append("Booking Type")
             
             return HttpResponse(f"Missing required fields: {', '.join(missing_fields)}", status=400)
 
@@ -498,18 +505,29 @@ def book_guest(request):
                 guest_id=guest,
                 guest_name=guest.full_name,
                 room_id=room,
-                status="reserved",
+                status=booking_type,
                 guest_count=int(guest_count),
                 check_in=check_in,
                 check_out=check_out,
                 expected_arrival=expected_arrival_dt,
-                payment_status="pending",
+                payment_status="paid", #payment status when submitting
                 payment_mode=payment_mode
             )
 
             # Update room status
-            room.room_status = "reserved"
-            room.save()
+            if booking_type == 'reservation':
+                room.room_status = 'reserved'
+            else:
+                room.room_status = 'occupied'
+            # Set payment status accordingly
+            if payment_status == 'paid':
+                room.payment_status = 'paid'
+            elif payment_status == 'refunded':
+                room.payment_status = 'refunded'
+            elif payment_status == 'cancelled':
+                room.payment_status = 'cancelled'
+            else:
+                room.payment_status = 'pending'
 
             return redirect(request.META.get('HTTP_REFERER', '/'))
 
@@ -538,7 +556,6 @@ def edit_room(request, room_id):
         room.room_status = request.POST.get("room_status")
         room.room_price = request.POST.get("room_price")
         room.available_at = request.POST.get("available_at")
-        room.payment_status = request.POST.get("payment_status", room.payment_status)
         room.save()
         return redirect('manage_rooms')
     return render(request, "web/admin/edit_room.html", {
@@ -615,7 +632,6 @@ def edit_guest(request, guest_id):
         guest.expected_arrival = request.POST.get("expected_arrival")
         guest.payment_mode = request.POST.get("payment_mode")
         guest.payment_status = request.POST.get("payment_status", guest.payment_status)
-        guest.status = request.POST.get("status", guest.status)
         guest.save()
         return redirect('manage_guests')
     
@@ -703,6 +719,13 @@ def delete_admin(request, admin_id):
 # Guest Views
 def landing_page(request):
     return render(request, "web/guest/Landing_page.html")
+
+def logo(request):
+    context = {
+        'MEDIA_URL': settings.MEDIA_URL,
+        # other context variables
+    }
+    return render(request, 'navbar.html', context)
 
 # def login(request):
 #     if request.method == "POST":

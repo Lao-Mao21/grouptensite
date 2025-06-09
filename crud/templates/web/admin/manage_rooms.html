@@ -14,25 +14,37 @@
                 <div class="text-2xl font-semibold text-gray-600">Welcome back, Admin</div>
             </div>
             <!-- Room Status Switcher and Search -->
-            <form method="get" class="flex items-center gap-x-6 mb-4">
-                <label class="flex items-center gap-x-2">
-                    <input type="radio" name="room_status" value="available" {% if selected_status == "available" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
-                    <span>Available Now</span>
-                </label>
-                <label class="flex items-center gap-x-2">
-                    <input type="radio" name="room_status" value="occupied" {% if selected_status == "occupied" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
-                    <span>Occupied</span>
-                </label>
-                <label class="flex items-center gap-x-2">
-                    <input type="radio" name="room_status" value="reserved" {% if selected_status == "reserved" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
-                    <span>Reserved</span>
-                </label>
-                <input type="text" name="search" placeholder="Search" class="flex-1 px-4 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ search }}">
-                <button type="submit" class="px-4 py-2 bg-blue-700 text-white rounded-r-md hover:bg-blue-800">Search</button>
+            <form method="get" class="flex flex-col space-y-2">
+                <div class="flex items-center gap-x-6 mb-4">
+                    <label class="flex items-center gap-x-2">
+                        <input type="radio" name="room_status" value="available" {% if selected_status == "available" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
+                        <span>Available Now</span>
+                    </label>
+                    <label class="flex items-center gap-x-2">
+                        <input type="radio" name="room_status" value="occupied" {% if selected_status == "occupied" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
+                        <span>Occupied</span>
+                    </label>
+                    <label class="flex items-center gap-x-2">
+                        <input type="radio" name="room_status" value="reserved" {% if selected_status == "reserved" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
+                        <span>Reserved</span>
+                    </label>
+                    <label class="flex items-center gap-x-2">
+                        <input type="radio" name="room_status" value="maintenance" {% if selected_status == "maintenance" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
+                        <span>Maintenance</span>
+                    </label>
+                    <label class="flex items-center gap-x-2">
+                        <input type="radio" name="room_status" value="cleaning" {% if selected_status == "cleaning" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
+                        <span>Cleaning</span>
+                    </label>
+                </div>
+                <div class="flex items-center gap-x-2 mb-2">
+                    <input type="text" name="search" placeholder="Search" class="flex-1 px-4 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ search }}">
+                    <button type="submit" class="px-4 py-2 bg-blue-700 text-white rounded-r-md hover:bg-blue-800">Search</button>
+                </div>
             </form>
 
             <!-- Table Filter -->
-            <div class="mb-4">
+            <div class="mt-2 mb-4">
                 <input type="text" id="rooms-filter" placeholder="Filter table..." class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 

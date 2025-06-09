@@ -5,6 +5,7 @@
 
 {% block content %}
 <div class="min-h-screen flex items-center justify-center bg-gray-100">
+    {% csrf_token %}
     <div class="flex w-full max-w-md shadow-lg overflow-hidden">
         <!-- Left: Login Form -->
         <div class="w-1/2 bg-white p-12 flex flex-col justify-center">
@@ -25,10 +26,8 @@
             </form>
         </div>
         <!-- Right: Brand Panel -->
-        <div class="w-1/2 bg-blue-700 flex items-start justify-start p-6">
-            <span class="text-white text-2xl font-sans text-left leading-tight tracking-wide">
-                NOVA<br>DOORS<br>HOTEL
-            </span> 
+        <div class="w-1/2 bg-blue-700 flex">
+            <img src="{{ MEDIA_URL }}NOVA DOORS HOTEL.png" class="my-auto mx-auto" alt="Logo"/> 
         </div>
     </div>
 </div>

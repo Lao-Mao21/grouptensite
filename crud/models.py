@@ -135,6 +135,7 @@ class ManageGuest(models.Model):
     PAYMENT_STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('paid', 'Paid'),
+        ('refunded', 'Refunded'),
         ('cancelled', 'Cancelled'),
     ]
     payment_status = models.CharField(max_length=40, choices=PAYMENT_STATUS_CHOICES, default='pending', blank=False, null=False)
