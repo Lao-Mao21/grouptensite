@@ -68,14 +68,26 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: 'Sales (₱)',
                 data: {{ monthly_sales|safe }},
-                backgroundColor: '#1a56db'
+                backgroundColor: '#1a56db',
+                borderRadius: 4
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₱' + value.toLocaleString();
+                        }
+                    }
                 }
             }
         }
@@ -97,6 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     position: 'bottom'

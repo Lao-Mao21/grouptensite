@@ -51,26 +51,67 @@ def login_admin(request):
                 "error_type": "password",
                 "error": error_message
             })
-    
+        
     return render(request, "web/admin/login_admin.html")
 
 @login_required
 def admin_dashboard(request):
+    # Get current year and month
+    current_year = timezone.now().year
+    current_month = timezone.now().month
+
+    # Get main statistics
     available_rooms = ManageRoom.objects.filter(room_status="available").count()
     available_rooms_qs = ManageRoom.objects.filter(room_status="available")
     reserved_rooms = ManageRoom.objects.filter(room_status="reserved").count()
-    monthly_sales = ManageGuest.objects.filter(payment_status="paid").count()
     today = timezone.now().date()
     todays_bookings = ManageGuest.objects.filter(check_in__date=today).count()
     todays_reservations = ManageRoom.objects.filter(room_status="reserved").count()
-    return render(request, "web/admin/admin_dashboard.html", {
-        "available_rooms": available_rooms,
-        "available_rooms": available_rooms_qs,
-        "reserved_rooms": reserved_rooms,
-        "monthly_sales": monthly_sales,
-        "todays_bookings": todays_bookings,
-        "todays_reservations": todays_reservations,
-    })
+
+    # Get monthly sales data for bar chart
+    monthly_sales = [0] * 12  # Initialize array with zeros
+    yearly_sales = ManageGuest.objects.filter(
+        check_in__year=current_year,
+        payment_status='paid'
+    ).values('check_in__month').annotate(
+        total=Sum('room_id__room_price')
+    )
+    
+    for sale in yearly_sales:
+        month_idx = sale['check_in__month'] - 1
+        monthly_sales[month_idx] = float(sale['total'] or 0)
+
+    # Get room type distribution for pie chart
+    room_sales = ManageGuest.objects.filter(
+        check_in__year=current_year,
+        check_in__month=current_month,
+        payment_status='paid'
+    ).values(
+        'room_id__room_type'
+    ).annotate(
+        total=Sum('room_id__room_price')
+    )
+
+    pie_data = []
+    for sale in room_sales:
+        pie_data.append({
+            'name': sale['room_id__room_type'],
+            'value': float(sale['total'] or 0)
+        })
+
+    context = {
+        'available_rooms': available_rooms,
+        'available_rooms_qs': available_rooms_qs,
+        'reserved_rooms': reserved_rooms,
+        'todays_bookings': todays_bookings,
+        'todays_reservations': todays_reservations,
+        'current_year': current_year,
+        'current_month': timezone.now().strftime('%B'),
+        'monthly_sales': monthly_sales,
+        'pie_data': pie_data,
+    }
+
+    return render(request, "web/admin/admin_dashboard.html", context)
 
 @login_required
 def manage_rooms(request):
