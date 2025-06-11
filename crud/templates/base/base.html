@@ -10,6 +10,7 @@
     <title>{% block 'title'%} {% endblock 'title' %}</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     {% if messages %}
@@ -32,5 +33,6 @@
     <script src="{% static 'js/manage_guests.js' %}"></script>
     <script src="{% static 'js/table_filters.js' %}"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    {% block scripts %}{% endblock scripts %}
 </body>
 </html>

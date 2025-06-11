@@ -226,98 +226,71 @@ def set_price(request):
 
 @login_required
 def sales_report(request):
-    # Annual Revenue by month and room type
-    months = ['January','February','March','April','May','June','July','August','September','October','November','December']
-    room_types = ['single', 'double', 'suite', 'deluxe']  # Updated to match model's ROOM_TYPE_CHOICES
-    annual_data = {rtype: [0]*12 for rtype in room_types}
-
+    # Get year and month from request, default to current
     current_year = timezone.now().year
     current_month = timezone.now().month
-    current_month_name = months[current_month - 1]  # Get current month name
+    
+    year = int(request.GET.get('year', current_year))
+    month_num = int(request.GET.get('month', current_month))
 
-    for idx, month in enumerate(months, 1):
-        for rtype in room_types:
-            # Get all paid bookings for this room type and month
-            bookings = ManageGuest.objects.filter(
+    # Get room types from model
+    room_types = [choice[0] for choice in ManageRoom.ROOM_TYPE_CHOICES]
+    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    
+    # Annual Revenue Data
+    annual_data = {rtype: [0]*12 for rtype in room_types}
+    for rtype in room_types:
+        for i in range(1, 13):
+            total = ManageGuest.objects.filter(
                 room_id__room_type=rtype,
                 payment_status='paid',
-                check_in__year=current_year,
-                check_in__month=idx
-            ).select_related('room_id')
-            
-            # Calculate total revenue by summing room prices
-            total = sum(booking.room_id.room_price for booking in bookings)
-            annual_data[rtype][idx-1] = float(total)
+                check_in__year=year,
+                check_in__month=i
+            ).aggregate(total_sales=Sum('room_id__room_price'))['total_sales'] or 0
+            annual_data[rtype][i-1] = float(total)
 
-    # Monthly Top Sales (Pie Chart)
+    # Monthly Sales Data for Pie Chart
     pie_data = []
-    total_monthly_sales = 0
     monthly_sales_by_type = {}
-
+    total_monthly_sales = 0
     for rtype in room_types:
-        # Get all paid bookings for this room type in current month
-        bookings = ManageGuest.objects.filter(
+        total = ManageGuest.objects.filter(
             room_id__room_type=rtype,
             payment_status='paid',
-            check_in__year=current_year,
-            check_in__month=current_month
-        ).select_related('room_id')
-        
-        # Calculate total revenue
-        total = sum(booking.room_id.room_price for booking in bookings)
+            check_in__year=year,
+            check_in__month=month_num
+        ).aggregate(total_sales=Sum('room_id__room_price'))['total_sales'] or 0
         monthly_sales_by_type[rtype] = float(total)
         total_monthly_sales += float(total)
-
-    # Calculate percentages for pie chart
+    
     for rtype in room_types:
         percentage = (monthly_sales_by_type[rtype] / total_monthly_sales * 100) if total_monthly_sales > 0 else 0
-        pie_data.append(percentage)
+        pie_data.append(round(percentage, 2))
 
-    # Daily sales for current month
+    # Daily Sales Data
     from calendar import monthrange
-    days_in_month = monthrange(current_year, current_month)[1]
+    days_in_month = monthrange(year, month_num)[1]
     daily_sales = []
-    
     for day in range(1, days_in_month + 1):
-        # Get paid bookings for this day
         paid_bookings = ManageGuest.objects.filter(
-            payment_status='paid',
-            check_in__year=current_year,
-            check_in__month=current_month,
-            check_in__day=day
-        ).select_related('room_id')
-        
-        total_booking = paid_bookings.count()
-        
-        # Get cancelled bookings
-        total_cancellation = ManageGuest.objects.filter(
-            payment_status='cancelled',
-            check_in__year=current_year,
-            check_in__month=current_month,
-            check_in__day=day
-        ).count()
-        
-        # Calculate refunded amount
-        refunded_bookings = ManageGuest.objects.filter(
-            payment_status='refunded',
-            check_in__year=current_year,
-            check_in__month=current_month,
-            check_in__day=day
-        ).select_related('room_id')
-        refunded = sum(booking.room_id.room_price for booking in refunded_bookings)
-        
-        # Calculate total sales
-        total_sales = sum(booking.room_id.room_price for booking in paid_bookings)
+            payment_status='paid', check_in__year=year, check_in__month=month_num, check_in__day=day
+        )
+        total_sales = paid_bookings.aggregate(total=Sum('room_id__room_price'))['total'] or 0
         
         daily_sales.append({
             "day": day,
-            "total_booking": total_booking,
-            "total_cancellation": total_cancellation,
-            "refunded": float(refunded),
+            "total_booking": paid_bookings.count(),
+            "total_cancellation": ManageGuest.objects.filter(
+                payment_status='cancelled', check_in__year=year, check_in__month=month_num, check_in__day=day
+            ).count(),
+            "refunded": ManageGuest.objects.filter(
+                payment_status='refunded', check_in__year=year, check_in__month=month_num, check_in__day=day
+            ).aggregate(total=Sum('room_id__room_price'))['total'] or 0,
             "total_sales": float(total_sales),
         })
 
-    paginator = Paginator(daily_sales, 7)  # Show 7 rows per page
+    # Pagination for daily sales
+    paginator = Paginator(daily_sales, 10) #limit to 10 entries per page
     page_number = request.GET.get('page', 1)
     sales_page = paginator.get_page(page_number)
 
@@ -327,7 +300,10 @@ def sales_report(request):
         "annual_data": annual_data,
         "pie_data": pie_data,
         "sales_report": sales_page,
-        "current_month_name": current_month_name,  # Add current month name to context
+        "current_month_name": months[month_num - 1],
+        "current_year": year,
+        "current_month_num": month_num,
+        "years": range(current_year, current_year - 5, -1),
     }
     return render(request, "web/admin/sales.html", context)
 
