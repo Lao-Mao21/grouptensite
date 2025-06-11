@@ -61,12 +61,14 @@ def admin_dashboard(request):
     monthly_sales = ManageGuest.objects.filter(payment_status="paid").count()
     today = timezone.now().date()
     todays_bookings = ManageGuest.objects.filter(check_in__date=today).count()
+    todays_reservations = ManageRoom.objects.filter(room_status="reserved").count()
     return render(request, "web/admin/admin_dashboard.html", {
         "available_rooms": available_rooms,
         "available_rooms": available_rooms_qs,
         "reserved_rooms": reserved_rooms,
         "monthly_sales": monthly_sales,
         "todays_bookings": todays_bookings,
+        "todays_reservations": todays_reservations,
     })
 
 @login_required
@@ -720,26 +722,56 @@ def check_out(request, guest_id):
 #     })
 
 @login_required
-def edit_guest(request, guest_id):
-    guest = ManageGuest.objects.get(id=guest_id)
-    if request.method == "POST":
-        # Get form data
-        guest.guest_name = request.POST.get("guest_name")
-        guest.guest_count = request.POST.get("guest_count")
-        guest.check_in = request.POST.get("check_in")
-        guest.check_out = request.POST.get("check_out")
-        guest.expected_arrival = request.POST.get("expected_arrival")
-        guest.payment_mode = request.POST.get("payment_mode")
-        guest.payment_status = request.POST.get("payment_status", guest.payment_status)
-        guest.save()
-        return redirect('manage_guests')
+def edit_guest(request, booking_id):
+    # Get the booking or return 404
+    booking = get_object_or_404(ManageGuest, id=booking_id)
     
-    return render(request, "web/admin/edit_guest.html", {
-        "guest": guest,
-        "payment_modes": ["cash", "card", "gcash"],
-        "statuses": ["reserved", "checked_in", "checked_out", "cancelled"],
-        "payment_statuses": ["pending", "paid", "refunded", "cancelled"]
-    })
+    if request.method == "POST":
+        try:
+            with transaction.atomic():
+                # Update guest booking details
+                booking.guest_id = get_object_or_404(GuestAccounts, full_name=request.POST.get('full_name'))
+                booking.room_id = get_object_or_404(ManageRoom, room_id=request.POST.get('room_number'))
+                booking.check_in = request.POST.get('check_in')
+                booking.check_out = request.POST.get('check_out')
+                booking.guest_count = request.POST.get('guest_count')
+                booking.payment_status = request.POST.get('payment_status')
+                booking.payment_mode = request.POST.get('payment_mode')
+                
+                if request.POST.get('booking_type') == 'reservation':
+                    booking.expected_arrival = request.POST.get('expected_arrival')
+                
+                booking.save()
+
+                # Update room status based on payment status
+                room = booking.room_id
+                if booking.payment_status == 'cancelled':
+                    room.room_status = 'available'
+                elif booking.payment_status == 'paid':
+                    room.room_status = 'occupied'
+                elif booking.payment_status == 'pending':
+                    room.room_status = 'reserved'
+                room.save()
+
+                messages.success(request, 'Booking updated successfully!')
+                return redirect('manage_guests')
+
+        except Exception as e:
+            messages.error(request, f'Error updating booking: {str(e)}')
+    
+    # Get available rooms (including currently assigned room)
+    available_rooms = ManageRoom.objects.filter(
+        Q(room_status='available') | 
+        Q(room_id=booking.room_id.room_id)
+    )
+
+    context = {
+        'guest': booking,
+        'all_guests': GuestAccounts.objects.all(),
+        'available_rooms': available_rooms,
+    }
+    
+    return render(request, 'web/admin/edit_guest.html', context)
 
 @login_required
 def add_admin(request):

@@ -59,7 +59,9 @@
                             <th class="px-4 py-2 border">Bed Size</th>
                             <th class="px-4 py-2 border">Floor</th>
                             <th class="px-4 py-2 border">Payment Status</th>
+                            {% if selected_status != 'occupied' and selected_status != 'reserved' %}
                             <th class="px-4 py-2 border text-center">Actions</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -70,8 +72,8 @@
                             <td class="px-4 py-2 border">{{ room.bed_count }}</td>
                             <td class="px-4 py-2 border">{{ room.bed_type }}</td>
                             <td class="px-4 py-2 border">{{ room.floor }}</td>
-                            <td class="px-4 py-2 border">
-                                <span class="px-2 py-1 rounded text-sm 
+                            <td class="px-4 py-2 border text-center">
+                                <span class="px-2 py-1 rounded text-sm
                                     {% if room.current_payment_status == 'paid' %}bg-green-100 text-green-800
                                     {% elif room.current_payment_status == 'pending' %}bg-yellow-100 text-yellow-800
                                     {% elif room.current_payment_status == 'cancelled' %}bg-red-100 text-red-800
@@ -79,6 +81,7 @@
                                     {{ room.current_payment_status|title }}
                                 </span>
                             </td>
+                            {% if selected_status != 'occupied' and selected_status != 'reserved' %}
                             <td class="px-4 py-2 border text-center">
                                 <a href="{% url 'edit_room' room.room_id %}" class="text-green-600 hover:text-green-800 mx-1" title="Edit">
                                     <span class="material-icons align-middle text-base">edit</span>
@@ -87,6 +90,7 @@
                                     <span class="material-icons align-middle text-base">delete</span>
                                 </a>
                             </td>
+                            {% endif %}
                         </tr>
                         {% empty %}
                         <tr>

@@ -44,15 +44,14 @@
                     </div>
                 </div>
 
-                <!-- Monthly Sales Card -->
+                <!-- Todays Reservations Card -->
                 <div class="bg-white rounded-lg shadow p-4">
                     <div class="flex justify-between items-start">
                         <div>
-                            <h3 class="text-sm font-medium text-gray-500">Monthly Sales</h3>
-                            <p class="text-2xl font-bold text-indigo-600 mt-1">₱ {{ monthly_sales }}</p>
-                            <p class="text-xs text-gray-400">Month of {{ current_month }}</p>
+                            <h3 class="text-sm font-medium text-gray-500">Today's Reservations</h3>
+                            <p class="text-2xl font-bold text-indigo-600 mt-1">{{ todays_reservations }}</p>
                         </div>
-                        <a href="{% url 'sales_report' %}" class="px-3 py-1 bg-green-500 text-white text-xs rounded-full hover:bg-green-600">
+                        <a href="{% url 'manage_guests' %}" class="px-3 py-1 bg-green-500 text-white text-xs rounded-full hover:bg-green-600">
                             Manage
                         </a>
                     </div>
