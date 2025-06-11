@@ -12,17 +12,25 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body>
+    {% if messages %}
+        <div id="toast-container" class="fixed top-5 right-5 z-50">
+            {% for message in messages %}
+                <div class="toast {{ message.tags }} bg-red-500 text-white p-4 rounded-lg shadow-lg mb-2" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
     {% block content %} {% endblock content %}
     <script src="{% static 'js/sidebar.js' %}"></script>
     <script src="{% static 'js/pagination.js' %}"></script>
     <script src="{% static 'js/current_date.js' %}"></script>
     <script src="{% static 'js/reservation.js' %}"></script>
     <script src="{% static 'js/sales.js' %}"></script>
+    <script src="{% static 'js/toast_message.js' %}"></script>
     <!-- manage -->
     <script src="{% static 'js/manage_guests.js' %}"></script>
     <script src="{% static 'js/table_filters.js' %}"></script>
-    <script src="{% static 'js/form_validation.js' %}"></script>
-    <script src="{% static 'js/booking_form.js' %}"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </body>
 </html>

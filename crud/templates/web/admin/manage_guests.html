@@ -25,7 +25,7 @@
                 </label>
             </div>
             <!-- Search Bar -->
-            <form method="get" class="flex items-center mb-4">
+            <form method="get" class="flex items-center space-x-2 mb-4">
                 <input type="text" name="search" placeholder="Search" class="flex-1 px-4 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ request.GET.search }}">
                 <button type="submit" class="px-4 py-2 bg-blue-700 text-white rounded-r-md hover:bg-blue-800">Search</button>
             </form>
@@ -62,12 +62,12 @@
                             <td class="px-4 py-2 border">{{ guest.check_in|date:"m/d/y h:i A" }}</td>
                             <td class="px-4 py-2 border">{{ guest.check_out|date:"m/d/y h:i A" }}</td>
                             <td class="px-4 py-2 border">{{ guest.payment_status }}</td>
-                            <td class="px-4 py-2 border text-center">
+                            <td class="px-4 py-2 border text-center align-middle">
                                 <a href="{% url 'edit_guest' guest.id %}" class="text-green-600 hover:text-green-800 mx-1" title="Edit">
-                                    <span class="material-icons align-middle text-base">edit</span>
+                                    <span class="material-icons text-base">edit</span>
                                 </a>
-                                <a href="{% url 'delete_guest' guest.id %}" class="text-red-600 hover:text-red-800 mx-1" title="Delete">
-                                    <span class="material-icons align-middle text-base">delete</span>
+                                <a href="{% url 'check_out' guest.id %}" class="text-red-600 hover:text-red-800 mx-1" title="Check-Out">
+                                    <span class="material-icons align-middle text-base">check_circle</span>
                                 </a>
                             </td>
                         </tr>
@@ -103,9 +103,6 @@
                         <a href="{% url 'book_guest' %}"
                             class="px-6 py-2 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition text-center">
                             Book Guest
-                        </a>
-                        <a href="{% url 'checkout_form' %}?guest_id={{ guest.guest_id }}" class="text-blue-600 hover:text-blue-800 mx-1" title="Go to Checkout">
-                            <span class="material-icons align-middle text-base">exit_to_app</span>
                         </a>
                     </div>
                 </div>
@@ -199,7 +196,7 @@
                                 <a href="{% url 'edit_guest' guest.id %}" class="text-green-600 hover:text-green-800 mx-1" title="Edit">
                                     <span class="material-icons align-middle text-base">edit</span>
                                 </a>
-                                <a href="{% url 'delete_guest' guest.id %}" class="text-red-600 hover:text-red-800 mx-1" title="Delete">
+                                <a href="{% url 'delete_guest' guest.id %}" id="delete-btn" class="text-red-600 hover:text-red-800 mx-1" title="Delete">
                                     <span class="material-icons align-middle text-base">delete</span>
                                 </a>
                             </td>
@@ -242,7 +239,5 @@
         </div>
     </div>
 </div>
-    
-
 
 {% endblock content %}

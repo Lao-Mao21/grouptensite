@@ -2,7 +2,10 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .models import ManageRoom, ManageGuest, GuestAccounts, AdminAccounts
+from django.urls import reverse
+from django.http import JsonResponse
+import json
+from .models import ManageRoom, ManageGuest, GuestAccounts, AdminAccounts, GuestArchive
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.core.paginator import Paginator
@@ -13,6 +16,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.contrib import messages
+from django.db import transaction
 
 # Admin Views
 @login_required
@@ -136,9 +140,19 @@ def add_guest(request):
         phone_number = request.POST.get("phone_number")
         address = request.POST.get("address")
         password = request.POST.get("password")
+        confirm_password = request.POST.get("confirm_password")
         nationality = request.POST.get("nationality")
         emergency_contact = request.POST.get("emergency_contact")
         notes = request.POST.get("notes")
+
+        if password != confirm_password:
+            messages.error(request, "Passwords do not match")
+            return redirect('add_guest')
+        
+        if not all([first_name, last_name, username, gender, email, phone_number, address, password]):
+            messages.error(request, "Please fill in all required fields.")
+            return redirect('add_guest')
+
         new_guest = GuestAccounts(
             first_name=first_name,
             last_name=last_name,
@@ -155,6 +169,7 @@ def add_guest(request):
             notes=notes,
         )
         new_guest.save()
+        messages.success(request, "Guest added successfully!")
         return redirect("/manage_guests/")
     return render(request, "web/admin/add_guest.html")
 
@@ -171,6 +186,10 @@ def add_room(request):
         room_price_type = request.POST.get("room_price_type", "custom")
         room_price = request.POST.get("room_price", 0)
 
+        if not all([room_number, room_type, bed_count, floor, bed_type, room_status, available_at, room_price]):
+            messages.error(request, "Please fill in all required fields.")
+            return redirect('add_room')
+
         ManageRoom.objects.create(
             room_number=room_number,
             room_type=room_type,
@@ -182,6 +201,7 @@ def add_room(request):
             available_at=available_at,
             room_price=room_price
         )
+        messages.success(request, "Room added successfully!")
         return redirect('manage_rooms')
     return render(request, "web/admin/add_room.html")
 
@@ -422,7 +442,7 @@ def book_guest(request):
         payment_mode = request.POST.get("payment_mode")
         room_status = request.POST.get("room_status")
         booking_type = request.POST.get('booking_type')
-        payment_status = request.POST.get("room_status")
+        payment_status = request.POST.get("payment_status")
 
         # Print received data for debugging
         print("Received form data:")
@@ -482,7 +502,7 @@ def book_guest(request):
                     'email': f"guest_{first_name.lower()}_{last_name.lower()}@example.com"  # You should collect email in form
                 }
             )
-
+            
             # Get the room
             room = ManageRoom.objects.get(room_id=room_id)
             if room.room_status != "available":
@@ -517,19 +537,26 @@ def book_guest(request):
             # Update room status
             if booking_type == 'reservation':
                 room.room_status = 'reserved'
+                room.save()
             else:
                 room.room_status = 'occupied'
+                room.save()
+            
             # Set payment status accordingly
             if payment_status == 'paid':
                 room.payment_status = 'paid'
+                room.save()
             elif payment_status == 'refunded':
                 room.payment_status = 'refunded'
+                room.save()
             elif payment_status == 'cancelled':
                 room.payment_status = 'cancelled'
+                room.save()
             else:
                 room.payment_status = 'pending'
+                room.save()
 
-            return redirect(request.META.get('HTTP_REFERER', '/'))
+            return redirect('/manage_guests/')
 
         except Exception as e:
             return HttpResponse(str(e), status=400)
@@ -606,19 +633,60 @@ def pricing(request):
     return render(request, "web/admin/pricing.html", context)
 
 @login_required
-def delete_guest(request, guest_id):
-    guest = ManageGuest.objects.get(id=guest_id)
+def check_out(request, guest_id):
+    guest = get_object_or_404(ManageGuest, id=guest_id)
+    
     if request.method == "POST":
-        # Update room status back to available if it was occupied by this guest
-        room = guest.room_id
-        if room.room_status in ['occupied', 'reserved']:
-            room.room_status = 'available'
-            room.save()
-        guest.delete()
+        try:
+            with transaction.atomic():
+                # Archive guest info
+                GuestArchive.objects.create(
+                    guest_id=guest.guest_id,
+                    guest_name=guest.guest_name,
+                    room_id=guest.room_id,
+                    status='checked-out',
+                    guest_count=guest.guest_count,
+                    check_in=guest.check_in,
+                    check_out=timezone.now(),
+                    payment_status=guest.payment_status,
+                    nationality=guest.guest_id.nationality,
+                    payment_mode=guest.payment_mode
+                )
+
+                # Update room status to available
+                room = guest.room_id
+                room.room_status = 'available'
+                room.save()
+
+                # Delete the ManageGuest record
+                guest.delete()
+                
+                messages.success(request, "Guest checked out successfully.")
+        except Exception as e:
+            messages.error(request, f"An error occurred during check-out: {e}")
+        
         return redirect('manage_guests')
-    return render(request, "web/admin/confirm_delete_guest.html", {
-        "guest": guest
-    })
+
+    return render(request, "web/admin/check_out.html", {"guest": guest})
+
+# @login_required #backup
+# def delete_guest(request, guest_id):
+#     guest = ManageGuest.objects.get(id=guest_id)
+#     if request.method == "POST":
+#         try:
+#             # Update room status back to available if it was occupied by this guest
+#             room = guest.room_id
+#             if room.room_status in ['occupied', 'reserved']:
+#                 room.room_status = 'available'
+#                 guest.payment_status = 'no booking' # reset payment status
+#                 room.save()
+#             guest.delete()
+#         except Exception as e:
+#             print(f"Error deleting guest: {e}")
+#         return redirect('manage_guests')
+#     return render(request, "web/admin/delete_guest.html", {
+#         "guest": guest
+#     })
 
 @login_required
 def edit_guest(request, guest_id):
@@ -659,7 +727,8 @@ def add_admin(request):
         is_active = request.POST.get("is_active")
         
         if password != confirm_password:
-            return HttpResponse("Passwords do not match", status=400)
+            messages.error(request, "Passwords do not match")
+            return redirect('add_admin')
         
         # Create admin account
         admin = AdminAccounts.objects.create(
@@ -675,6 +744,7 @@ def add_admin(request):
             date_of_birth=date_of_birth,
             is_active=is_active
         )
+        admin.save()
         return redirect('manage_admin')
     return render(request, "web/admin/add_admin.html")
 

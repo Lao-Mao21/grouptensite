@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
 
 # Create your models here.
 
@@ -80,6 +80,17 @@ class AdminAccounts(models.Model):
             self.password = make_password(self.password)
         super().save(*args, **kwargs)
 
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.password)
+
+    @property
+    def is_anonymous(self):
+        return False
+
+    @property
+    def is_authenticated(self):
+        return True
+
 class GuestAccounts(models.Model):
     class Meta:
         db_table = 'guestaccounts_tbl'
@@ -137,7 +148,22 @@ class ManageGuest(models.Model):
         ('paid', 'Paid'),
         ('refunded', 'Refunded'),
         ('cancelled', 'Cancelled'),
+        ('no booking','No Booking'),
     ]
-    payment_status = models.CharField(max_length=40, choices=PAYMENT_STATUS_CHOICES, default='pending', blank=False, null=False)
+    payment_status = models.CharField(max_length=40, choices=PAYMENT_STATUS_CHOICES, default='no booking', blank=False, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+class GuestArchive(models.Model):
+    class Meta:
+        db_table = 'guestarchive_tbl'
+    guest_name = models.CharField(max_length=255)
+    room_id = models.ForeignKey(ManageRoom, on_delete=models.CASCADE)
+    status = models.CharField(max_length=50)
+    guest_count = models.IntegerField()
+    check_in = models.DateTimeField()
+    check_out = models.DateTimeField()
+    payment_status = models.CharField(max_length=50)
+    nationality = models.CharField(max_length=100)
+    payment_mode = models.CharField(max_length=50)
+    guest_id = models.ForeignKey(GuestAccounts, on_delete=models.CASCADE)
