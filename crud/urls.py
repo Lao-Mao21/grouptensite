@@ -2,29 +2,30 @@ from django.urls import path
 from . import views 
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth.decorators import login_required
 
 urlpatterns = [
     # Admin URLs
     path('login_admin/', views.login_admin, name='login_admin'),
-    path('logout_admin/', views.logout_admin, name='logout_admin'),
-    path('admin_dashboard/', views.admin_dashboard, name='admin_dashboard'),
-    path('manage_rooms/', views.manage_rooms, name='manage_rooms'),
-    path('manage_guests/', views.manage_guests, name='manage_guests'),
-    path('add_guest/', views.add_guest, name='add_guest'),
-    path('book_guest/', views.book_guest, name='book_guest'),
-    path('add_room/', views.add_room, name='add_room'),
-    path('edit_room/<int:room_id>/', views.edit_room, name='edit_room'),
-    path('delete_room/<int:room_id>/', views.delete_room, name='delete_room'),
-    path('check_out/<int:guest_id>/', views.check_out, name='check_out'),
-    path('sales_report/', views.sales_report, name='sales_report'),
-    path('add_reservation/', views.add_reservation, name='add_reservation'),
-    path('pricing/', views.pricing, name='pricing'),
-    path('set_price/', views.set_price, name='set_price'),
-    path('edit_guest/<int:guest_id>/', views.edit_guest, name='edit_guest'),
-    path('add_admin/', views.add_admin, name='add_admin'),
-    path('manage_admin/', views.manage_admin, name='manage_admin'),
-    path('edit_admin/<int:admin_id>/', views.edit_admin, name='edit_admin'),
-    path('delete_admin/<int:admin_id>/', views.delete_admin, name='delete_admin'),
+    path('logout_admin/', login_required(views.logout_admin), name='logout_admin'),
+    path('admin_dashboard/', login_required(views.admin_dashboard), name='admin_dashboard'),
+    path('manage_rooms/', login_required(views.manage_rooms), name='manage_rooms'),
+    path('manage_guests/', login_required(views.manage_guests), name='manage_guests'),
+    path('add_guest/', login_required(views.add_guest), name='add_guest'),
+    path('book_guest/', login_required(views.book_guest), name='book_guest'),
+    path('add_room/', login_required(views.add_room), name='add_room'),
+    path('edit_room/<int:room_id>/', login_required(views.edit_room), name='edit_room'),
+    path('delete_room/<int:room_id>/', login_required(views.delete_room), name='delete_room'),
+    path('check_out/<int:guest_id>/', login_required(views.check_out), name='check_out'),
+    path('sales_report/', login_required(views.sales_report), name='sales_report'),
+    path('add_reservation/', login_required(views.add_reservation), name='add_reservation'),
+    path('pricing/', login_required(views.pricing), name='pricing'),
+    path('set_price/', login_required(views.set_price), name='set_price'),
+    path('edit_guest/<int:guest_id>/', login_required(views.edit_guest), name='edit_guest'),
+    path('add_admin/', login_required(views.add_admin), name='add_admin'),
+    path('manage_admin/', login_required(views.manage_admin), name='manage_admin'),
+    path('edit_admin/<int:admin_id>/', login_required(views.edit_admin), name='edit_admin'),
+    path('delete_admin/<int:admin_id>/', login_required(views.delete_admin), name='delete_admin'),
     # Guest URLs
     path('landing_page/', views.landing_page, name='landing_page'),
 ]

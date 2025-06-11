@@ -23,9 +23,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    todayBtn.addEventListener('click', function() { showTable('today'); });
-    reservationsBtn.addEventListener('click', function() { showTable('reservations'); });
-
+    if (todayBtn && reservationsBtn) {
+        todayBtn.addEventListener('click', function() { showTable('today'); });
+        reservationsBtn.addEventListener('click', function() { showTable('reservations'); });
+    }
     // On page load, show the correct table based on active_table param
     document.addEventListener('DOMContentLoaded', function() {
         const params = new URLSearchParams(window.location.search);

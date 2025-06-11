@@ -2,21 +2,19 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.urls import reverse
-from django.http import JsonResponse
-import json
 from .models import ManageRoom, ManageGuest, GuestAccounts, AdminAccounts, GuestArchive
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Sum, Count, Q
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import render
 from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.contrib import messages
-from django.db import transaction
+from django.db import models, transaction
 
 # Admin Views
 @login_required
@@ -28,15 +26,31 @@ def login_admin(request):
     if request.method == "POST":
         username = request.POST.get("username")
         password = request.POST.get("password")
-        print(f"Attempting login with username: {username}")
+        
+        # Check if username exists
+        if not AdminAccounts.objects.filter(username=username).exists():
+            error_message = "Username does not exist"
+            messages.error(request, error_message)
+            return render(request, "web/admin/login_admin.html", {
+                "username": username,
+                "error_type": "username",
+                "error": error_message
+            })
+            
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            print("Authentication successful")
             login(request, user)
-            return redirect("/admin_dashboard/")
+            messages.success(request, "Login successful!")
+            return redirect('admin_dashboard')
         else:
-            print("Authentication failed")
-            return render(request, "web/admin/login_admin.html", {"error": "Invalid credentials"})
+            error_message = "Incorrect password"
+            messages.error(request, error_message)
+            return render(request, "web/admin/login_admin.html", {
+                "username": username,
+                "error_type": "password",
+                "error": error_message
+            })
+    
     return render(request, "web/admin/login_admin.html")
 
 @login_required
@@ -90,41 +104,54 @@ def manage_rooms(request):
     })
 
 @login_required
+@login_required
 def manage_guests(request):
-    # Today's bookings
-    todays_bookings_list = ManageGuest.objects.filter(check_in__date=timezone.now().date())
-    reservations_list = ManageGuest.objects.filter(status='reserved')
+    search_query = request.GET.get('search', '')
+    active_table = request.GET.get('active_table', 'today')
 
-    today_page_number = request.GET.get('today_page', 1)
-    reservation_page_number = request.GET.get('reservation_page', 1)
+    # Base querysets with search filters
+    base_search = (
+        Q(guest_id__full_name__icontains=search_query) |
+        Q(room_id__room_number__icontains=search_query) |
+        Q(room_id__room_type__icontains=search_query) |
+        Q(room_id__bed_type__icontains=search_query) |
+        Q(payment_status__icontains=search_query)
+    )
 
-    todays_bookings_paginator = Paginator(todays_bookings_list, 10)
-    reservations_paginator = Paginator(reservations_list, 10)
+    # Today's bookings with search
+    today = timezone.now().date()
+    todays_bookings = ManageGuest.objects.filter(
+        Q(check_in__date=today) & base_search
+    ).select_related('guest_id', 'room_id').order_by('check_in')
 
-    todays_bookings = todays_bookings_paginator.get_page(today_page_number)
-    reservations = reservations_paginator.get_page(reservation_page_number)
+    # Reservations with search
+    reservations = ManageGuest.objects.filter(
+        Q(room_id__room_status='reserved') & base_search
+    ).select_related('guest_id', 'room_id').order_by('check_in')
 
-    all_guests = GuestAccounts.objects.all()
-    all_rooms = ManageRoom.objects.all()
-    # Search functionality
-    if request.method == "POST":
-        search = request.POST.get('search', '')
-        if search:
-            todays_bookings = todays_bookings.filter(guest_id__full_name__icontains=search)
-            reservations = reservations.filter(guest_id__full_name__icontains=search)
-    else:
-        search = request.GET.get('search', '')
-        if search:
-            todays_bookings = todays_bookings.filter(guest_id__full_name__icontains=search)
-            reservations = reservations.filter(guest_id__full_name__icontains=search)
-    return render(request, "web/admin/manage_guests.html", {
-        "todays_bookings": todays_bookings,
-        "reservations": reservations,
-        "all_guests": all_guests,
-        "all_rooms": all_rooms,
-        "search": search,
-        "now": timezone.now(),
-    })
+    # Pagination
+    today_page = request.GET.get('today_page', 1)
+    reservation_page = request.GET.get('reservation_page', 1)
+    items_per_page = 10
+
+    today_paginator = Paginator(todays_bookings, items_per_page)
+    reservation_paginator = Paginator(reservations, items_per_page)
+
+    try:
+        todays_bookings = today_paginator.page(today_page)
+        reservations = reservation_paginator.page(reservation_page)
+    except (PageNotAnInteger, EmptyPage):
+        todays_bookings = today_paginator.page(1)
+        reservations = reservation_paginator.page(1)
+
+    context = {
+        'todays_bookings': todays_bookings,
+        'reservations': reservations,
+        'search_query': search_query,
+        'active_table': active_table
+    }
+
+    return render(request, "web/admin/manage_guests.html", context)
 
 @login_required
 def add_guest(request):
@@ -145,13 +172,47 @@ def add_guest(request):
         emergency_contact = request.POST.get("emergency_contact")
         notes = request.POST.get("notes")
 
+        if GuestAccounts.objects.filter(username=username).exists():
+            messages.error(request, "Usernames duplicates are not allowed")
+            # Pass all the form data back to the template
+            context = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "middle_name": middle_name,
+                "username": username,
+                "gender": gender,
+                "email": email,
+                "phone_number": phone_number,
+                "address": address,
+                "nationality": nationality,
+                "emergency_contact": emergency_contact,
+                "notes": notes,
+                # Add any other fields
+            }
+            return render(request, 'web/admin/add_guest.html', context)
+
         if password != confirm_password:
             messages.error(request, "Passwords do not match")
-            return redirect('add_guest')
-        
+            # Pass all the form data back to the template
+            context = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "middle_name": middle_name,
+                "username": username,
+                "gender": gender,
+                "email": email,
+                "phone_number": phone_number,
+                "address": address,
+                "nationality": nationality,
+                "emergency_contact": emergency_contact,
+                "notes": notes,
+                # Add any other fields
+            }
+            return render(request, 'web/admin/add_guest.html', context)
+
         if not all([first_name, last_name, username, gender, email, phone_number, address, password]):
             messages.error(request, "Please fill in all required fields.")
-            return redirect('add_guest')
+            return render(request, 'web/admin/add_admin.html', context)
 
         new_guest = GuestAccounts(
             first_name=first_name,
@@ -226,86 +287,80 @@ def set_price(request):
 
 @login_required
 def sales_report(request):
-    # Get year and month from request, default to current
     current_year = timezone.now().year
     current_month = timezone.now().month
     
     year = int(request.GET.get('year', current_year))
     month_num = int(request.GET.get('month', current_month))
 
-    # Get room types from model
+    months = ['January', 'February', 'March', 'April', 'May', 'June', 
+             'July', 'August', 'September', 'October', 'November', 'December']
     room_types = [choice[0] for choice in ManageRoom.ROOM_TYPE_CHOICES]
-    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-    
-    # Annual Revenue Data
-    annual_data = {rtype: [0]*12 for rtype in room_types}
-    for rtype in room_types:
-        for i in range(1, 13):
-            total = ManageGuest.objects.filter(
-                room_id__room_type=rtype,
-                payment_status='paid',
-                check_in__year=year,
-                check_in__month=i
-            ).aggregate(total_sales=Sum('room_id__room_price'))['total_sales'] or 0
-            annual_data[rtype][i-1] = float(total)
 
-    # Monthly Sales Data for Pie Chart
-    pie_data = []
-    monthly_sales_by_type = {}
-    total_monthly_sales = 0
-    for rtype in room_types:
-        total = ManageGuest.objects.filter(
-            room_id__room_type=rtype,
-            payment_status='paid',
-            check_in__year=year,
-            check_in__month=month_num
-        ).aggregate(total_sales=Sum('room_id__room_price'))['total_sales'] or 0
-        monthly_sales_by_type[rtype] = float(total)
-        total_monthly_sales += float(total)
-    
-    for rtype in room_types:
-        percentage = (monthly_sales_by_type[rtype] / total_monthly_sales * 100) if total_monthly_sales > 0 else 0
-        pie_data.append(round(percentage, 2))
+    # --- Fetch all relevant bookings for the year ---
+    all_bookings_in_year = ManageGuest.objects.filter(check_in__year=year).select_related('room_id')
 
-    # Daily Sales Data
+    # --- Annual Revenue Data ---
+    annual_data = {rtype: [0.0] * 12 for rtype in room_types}
+    for booking in all_bookings_in_year:
+        if booking.payment_status == 'paid':
+            month_index = booking.check_in.month - 1
+            room_type = booking.room_id.room_type
+            if room_type in annual_data:
+                annual_data[room_type][month_index] += float(booking.room_id.room_price)
+
+    # --- Monthly Sales Data for Pie Chart ---
+    bookings_in_month = all_bookings_in_year.filter(check_in__month=month_num)
+    
+    pie_data = {rtype: 0.0 for rtype in room_types}
+    for booking in bookings_in_month:
+        if booking.payment_status == 'paid':
+            room_type = booking.room_id.room_type
+            if room_type in pie_data:
+                pie_data[room_type] += float(booking.room_id.room_price)
+    
+    # Filter out zero values for the pie chart
+    pie_labels = [key.capitalize() for key, value in pie_data.items() if value > 0]
+    pie_values = [value for value in pie_data.values() if value > 0]
+
+    # --- Daily Sales Data ---
     from calendar import monthrange
     days_in_month = monthrange(year, month_num)[1]
-    daily_sales = []
-    for day in range(1, days_in_month + 1):
-        paid_bookings = ManageGuest.objects.filter(
-            payment_status='paid', check_in__year=year, check_in__month=month_num, check_in__day=day
-        )
-        total_sales = paid_bookings.aggregate(total=Sum('room_id__room_price'))['total'] or 0
-        
-        daily_sales.append({
-            "day": day,
-            "total_booking": paid_bookings.count(),
-            "total_cancellation": ManageGuest.objects.filter(
-                payment_status='cancelled', check_in__year=year, check_in__month=month_num, check_in__day=day
-            ).count(),
-            "refunded": ManageGuest.objects.filter(
-                payment_status='refunded', check_in__year=year, check_in__month=month_num, check_in__day=day
-            ).aggregate(total=Sum('room_id__room_price'))['total'] or 0,
-            "total_sales": float(total_sales),
-        })
+    daily_sales_data = {day: {'total_sales': 0, 'total_booking': 0, 'total_cancellation': 0, 'refunded': 0} for day in range(1, days_in_month + 1)}
 
-    # Pagination for daily sales
-    paginator = Paginator(daily_sales, 10) #limit to 10 entries per page
-    page_number = request.GET.get('page', 1)
-    sales_page = paginator.get_page(page_number)
+    for booking in bookings_in_month:
+        day = booking.check_in.day
+        status = booking.payment_status
+        
+        daily_sales_data[day]['total_booking'] += 1
+        if status == 'paid':
+            daily_sales_data[day]['total_sales'] += float(booking.room_id.room_price)
+        elif status == 'cancelled':
+            daily_sales_data[day]['total_cancellation'] += 1
+        elif status == 'refunded':
+            daily_sales_data[day]['refunded'] += float(booking.room_id.room_price)
+
+    daily_sales_list = [{'day': day, **data} for day, data in daily_sales_data.items()]
+
+    # Paginate daily sales
+    paginator = Paginator(daily_sales_list, 10)
+    page = request.GET.get('page', 1)
+    sales_report_page = paginator.get_page(page)
 
     context = {
-        "months": months,
-        "room_types": room_types,
-        "annual_data": annual_data,
-        "pie_data": pie_data,
-        "sales_report": sales_page,
-        "current_month_name": months[month_num - 1],
-        "current_year": year,
-        "current_month_num": month_num,
-        "years": range(current_year, current_year - 5, -1),
+        'current_year': year,
+        'current_month_num': month_num,
+        'current_month_name': months[month_num - 1],
+        'years': range(current_year, current_year - 5, -1),
+        'months': months,
+        'room_types': room_types,
+        'annual_data': annual_data,
+        'pie_labels': pie_labels,
+        'pie_values': pie_values,
+        'sales_report': sales_report_page,
     }
-    return render(request, "web/admin/sales.html", context)
+
+    return render(request, 'web/admin/sales.html', context)
 
 @login_required
 def todays_bookings(request):
@@ -702,9 +757,41 @@ def add_admin(request):
         date_of_birth = request.POST.get("date_of_birth")
         is_active = request.POST.get("is_active")
         
+        if AdminAccounts.objects.filter(username=username).exists():
+            messages.error(request, "Usernames duplicates are not allowed")
+            # Pass all the form data back to the template
+            context = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "middle_name": middle_name,
+                "username": username,
+                "gender": gender,
+                "email": email,
+                "phone_number": phone_number,
+                "address": address,
+                # Add any other fields
+            }
+            return render(request, 'web/admin/add_admin.html', context)
+
         if password != confirm_password:
             messages.error(request, "Passwords do not match")
-            return redirect('add_admin')
+            # Pass all the form data back to the template
+            context = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "middle_name": middle_name,
+                "username": username,
+                "gender": gender,
+                "email": email,
+                "phone_number": phone_number,
+                "address": address,
+                # Add any other fields
+            }
+            return render(request, 'web/admin/add_admin.html', context)
+
+        if not all([first_name, last_name, username, gender, email, phone_number, address, password]):
+            messages.error(request, "Please fill in all required fields.")
+            return render(request, 'web/admin/add_admin.html', context)
         
         # Create admin account
         admin = AdminAccounts.objects.create(

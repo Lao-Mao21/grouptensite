@@ -1,38 +1,37 @@
 // Table switcher logic
-function initializeTableSwitcher() {
-    const todayRadio = document.getElementById('show-today');
-    const reservationsRadio = document.getElementById('show-reservations');
+document.addEventListener('DOMContentLoaded', function() {
     const todayTable = document.getElementById('today-table');
     const reservationsTable = document.getElementById('reservations-table');
-    const reservationsFilterContainer = document.getElementById('reservations-filter-container');
-    const todayBookingsFilter = document.getElementById('today-bookings-filter');
+    const showToday = document.getElementById('show-today');
+    const showReservations = document.getElementById('show-reservations');
 
-    function showTable(active) {
-        if (active === 'reservations') {
-            todayTable.style.display = 'none';
-            reservationsTable.style.display = '';
-            reservationsFilterContainer.style.display = '';
-            todayBookingsFilter.style.display = 'none';
-            reservationsRadio.checked = true;
-            todayRadio.checked = false;
-        } else {
-            todayTable.style.display = '';
+    function updateTable() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeTable = urlParams.get('active_table') || 'today';
+        
+        if (activeTable === 'today') {
+            todayTable.style.display = 'block';
             reservationsTable.style.display = 'none';
-            reservationsFilterContainer.style.display = 'none';
-            todayBookingsFilter.style.display = '';
-            todayRadio.checked = true;
-            reservationsRadio.checked = false;
+            showToday.checked = true;
+        } else {
+            todayTable.style.display = 'none';
+            reservationsTable.style.display = 'block';
+            showReservations.checked = true;
         }
     }
 
-    todayRadio.addEventListener('change', () => showTable('today'));
-    reservationsRadio.addEventListener('change', () => showTable('reservations'));
+    // Handle radio button changes
+    document.querySelectorAll('input[name="active_table"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('active_table', this.value);
+            window.location.search = urlParams.toString();
+        });
+    });
 
-    // On page load, show the correct table based on active_table param
-    const params = new URLSearchParams(window.location.search);
-    const activeTable = params.get('active_table');
-    showTable(activeTable === 'reservations' ? 'reservations' : 'today');
-}
+    // Initial table state
+    updateTable();
+});
 
 // Modal handling
 function setupModal(buttonId, modalId, closeButtonId) {

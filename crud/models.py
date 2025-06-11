@@ -106,7 +106,7 @@ class GuestAccounts(models.Model):
         ('other', 'Other'),
     ]
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=False, null=False)
-    email = models.EmailField(max_length=255, unique=True)
+    email = models.EmailField(max_length=255, unique=False)
     phone_number = models.CharField(max_length=20, blank=False, null=False)
     address = models.CharField(max_length=255, blank=False, null=False)
     password = models.CharField(max_length=255, blank=False, null=False)
@@ -125,6 +125,9 @@ class GuestAccounts(models.Model):
         if not self.password.startswith('pbkdf2_'):
             self.password = make_password(self.password)
         super().save(*args, **kwargs)
+        
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.password)
 
 class ManageGuest(models.Model):
     class Meta:

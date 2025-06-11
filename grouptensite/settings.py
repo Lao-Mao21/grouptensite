@@ -124,7 +124,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
-LOGIN_URL = '/login_admin/'
+LOGIN_URL = '/login_admin/'  # URL where users will be redirected when login is required
+LOGIN_REDIRECT_URL = '/admin_dashboard/'  # URL to redirect after successful login
 
 import pathlib
 
@@ -142,3 +143,7 @@ AUTHENTICATION_BACKENDS = [
     'crud.backends.AdminAccountsBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True

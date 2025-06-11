@@ -105,7 +105,8 @@
 <!-- Chart Data -->
 {{ months|safe|json_script:"months-data" }}
 {{ annual_data|safe|json_script:"annual-data" }}
-{{ pie_data|safe|json_script:"pie-data" }}
+{{ pie_labels|safe|json_script:"pie-labels" }}
+{{ pie_values|safe|json_script:"pie-values" }}
 {{ room_types|safe|json_script:"room-types-data" }}
 
 {% endblock content %}

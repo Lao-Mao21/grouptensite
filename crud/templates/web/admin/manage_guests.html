@@ -4,6 +4,8 @@
 {% block title %}Manage Guests{% endblock title %}
 
 {% block content %}
+<script src="{% static 'js/manage_guests.js' %}"></script>
+<script src="{% static 'js/pagination.js' %}"></script>
 <div class="min-h-screen bg-gray-100 flex sm:flex-row flex-col">
     {% include "attachments/sidebar.html" %}
     <div class="max-w-5xl mx-auto my-auto h-full bg-white rounded-xl shadow-md p-6">
@@ -26,9 +28,38 @@
             </div>
             <!-- Search Bar -->
             <form method="get" class="flex items-center space-x-2 mb-4">
-                <input type="text" name="search" placeholder="Search" class="flex-1 px-4 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ request.GET.search }}">
-                <button type="submit" class="px-4 py-2 bg-blue-700 text-white rounded-r-md hover:bg-blue-800">Search</button>
+                <input type="text" 
+                    name="search" 
+                    placeholder="Search guests, rooms, or status..." 
+                    class="flex-1 px-4 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                    value="{{ search_query }}">
+                <input type="hidden" name="active_table" value="{{ active_table }}">
+                {% if request.GET.today_page %}
+                    <input type="hidden" name="today_page" value="{{ request.GET.today_page }}">
+                {% endif %}
+                {% if request.GET.reservation_page %}
+                    <input type="hidden" name="reservation_page" value="{{ request.GET.reservation_page }}">
+                {% endif %}
+                <button type="submit" 
+                        class="px-4 py-2 bg-blue-700 text-white rounded-r-md hover:bg-blue-800 flex items-center gap-2">
+                    <span class="material-icons text-base">search</span>
+                    Search
+                </button>
             </form>
+
+            <!-- Clear Search -->
+            {% if search_query %}
+            <div class="mb-4 flex justify-between items-center">
+                <p class="text-sm text-gray-600">
+                    Showing results for: "{{ search_query }}"
+                </p>
+                <a href="?active_table={{ active_table }}" 
+                class="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                    <span class="material-icons text-base">clear</span>
+                    Clear search
+                </a>
+            </div>
+            {% endif %}
     
             <!-- Today's Bookings Filter -->
             <div class="mb-4">
@@ -78,7 +109,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
-                <!-- Pagination and Book Button -->
+                <!-- Table List Pagination and Book Button -->
                 <div class="flex items-center justify-between mt-2 px-2">
                     <div class="flex items-center gap-2">
                         {% if todays_bookings.has_previous %}
@@ -108,26 +139,28 @@
                 </div>
             </div>
     
-            <!-- Pagination for Today's Bookings -->
+            <!-- Pagination for Today's Bookings from View -->
             {% if todays_bookings.paginator.num_pages > 1 %}
             <div class="flex justify-center items-center gap-2 mt-2">
                 {% if todays_bookings.has_previous %}
-                    <a href="?today_page={{ todays_bookings.previous_page_number }}&active_table=today"
-                       class="px-3 py-1 border rounded hover:bg-blue-100">
+                    <a href="?today_page={{ todays_bookings.previous_page_number }}&active_table=today&search={{ search_query|urlencode }}"
+                    class="px-3 py-1 border rounded hover:bg-blue-100">
                         <span class="material-icons text-base">arrow_back</span>
                     </a>
                 {% endif %}
+                
                 {% for num in todays_bookings.paginator.page_range %}
                     {% if todays_bookings.number == num %}
                         <span class="px-3 py-1 bg-blue-600 text-white rounded">{{ num }}</span>
                     {% else %}
-                        <a href="?today_page={{ num }}&active_table=today"
-                           class="px-3 py-1 border rounded hover:bg-blue-100">{{ num }}</a>
+                        <a href="?today_page={{ num }}&active_table=today&search={{ search_query|urlencode }}"
+                        class="px-3 py-1 border rounded hover:bg-blue-100">{{ num }}</a>
                     {% endif %}
                 {% endfor %}
+                
                 {% if todays_bookings.has_next %}
-                    <a href="?today_page={{ todays_bookings.next_page_number }}&active_table=today"
-                       class="px-3 py-1 border rounded hover:bg-blue-100">
+                    <a href="?today_page={{ todays_bookings.next_page_number }}&active_table=today&search={{ search_query|urlencode }}"
+                    class="px-3 py-1 border rounded hover:bg-blue-100">
                         <span class="material-icons text-base">arrow_forward</span>
                     </a>
                 {% endif %}
@@ -139,25 +172,27 @@
                 <input type="text" id="reservations-filter" placeholder="Filter reservations..." class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
     
-            <!-- Pagination for Reservations -->
+            <!-- Pagination for Reservations from View -->
             {% if reservations.paginator.num_pages > 1 %}
             <div class="flex justify-center items-center gap-2 mt-2">
                 {% if reservations.has_previous %}
-                    <a href="?reservation_page={{ reservations.previous_page_number }}&active_table=reservations"
+                    <a href="?reservation_page={{ reservations.previous_page_number }}&active_table=reservations&search={{ search_query|urlencode }}"
                     class="px-3 py-1 border rounded hover:bg-blue-100">
                         <span class="material-icons text-base">arrow_back</span>
                     </a>
                 {% endif %}
+
                 {% for num in reservations.paginator.page_range %}
                     {% if reservations.number == num %}
                         <span class="px-3 py-1 bg-blue-600 text-white rounded">{{ num }}</span>
                     {% else %}
-                        <a href="?reservation_page={{ num }}&active_table=reservations"
+                        <a href="?reservation_page={{ num }}&active_table=reservations&search={{ search_query|urlencode }}"
                         class="px-3 py-1 border rounded hover:bg-blue-100">{{ num }}</a>
                     {% endif %}
                 {% endfor %}
+
                 {% if reservations.has_next %}
-                    <a href="?reservation_page={{ reservations.next_page_number }}&active_table=reservations"
+                    <a href="?reservation_page={{ reservations.next_page_number }}&active_table=reservations&search={{ search_query|urlencode }}"
                     class="px-3 py-1 border rounded hover:bg-blue-100">
                         <span class="material-icons text-base">arrow_forward</span>
                     </a>
@@ -196,19 +231,19 @@
                                 <a href="{% url 'edit_guest' guest.id %}" class="text-green-600 hover:text-green-800 mx-1" title="Edit">
                                     <span class="material-icons align-middle text-base">edit</span>
                                 </a>
-                                <a href="{% url 'delete_guest' guest.id %}" id="delete-btn" class="text-red-600 hover:text-red-800 mx-1" title="Delete">
-                                    <span class="material-icons align-middle text-base">delete</span>
+                                <a href="{% url 'check_out' guest.id %}" class="text-red-600 hover:text-red-800 mx-1" title="Check-Out">
+                                    <span class="material-icons align-middle text-base">check_circle</span>
                                 </a>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center py-2 px-4 border">No reservations found.</td>
+                            <td colspan="9" class="text-center py-2 px-4 border">No reservations found.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                <!-- Pagination and Reservation Button -->
+                <!-- Table List Pagination and Reservation Button -->
                 <div class="flex items-center justify-between mt-2 px-2">
                     <div class="flex items-center gap-2">
                         {% if reservations.has_previous %}
@@ -231,7 +266,7 @@
                         </a>
                         <a href="{% url 'book_guest' %}"
                             class="px-6 py-2 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition text-center">
-                            Book Guest
+                            Reserve
                         </a>
                     </div>
                 </div>
