@@ -2,6 +2,10 @@
 {% load static %}
 
 {% block title %}Edit Room{% endblock title %}
+<!-- Add Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Add Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 {% block content %}
 <div class="min-h-screen bg-gray-100 flex sm:flex-row flex-col">
@@ -106,3 +110,16 @@
     </div>
 </div>
 {% endblock content %} 
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    flatpickr("input[name='available_at']", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        minDate: "today",
+        allowInput: true
+    });
+});
+</script>
+{% endblock %}

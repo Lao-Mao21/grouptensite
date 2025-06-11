@@ -1,116 +1,109 @@
 {% extends 'base/base.html' %}
 {% load static %}
-{% load humanize %}
-
-{% block title %}Sales Report{% endblock title %}
 
 {% block content %}
 <div class="min-h-screen bg-gray-100 flex">
-    {% include "attachments/sidebar.html" %}
+    {% include 'attachments/sidebar.html' %}
     <div class="flex-1 p-4">
         <div class="max-w-7xl mx-auto">
             <!-- Header -->
-            <div class="mb-4">
-                <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Sales Report</h1>
-                <p class="text-gray-600">Analytics and sales data for {{ current_month_name }} {{ current_year }}</p>
+            <div class="bg-white rounded-xl shadow-md p-4 mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Sales Report - {{ current_month }} {{ current_year }}</h2>
             </div>
 
-            <!-- Filter Form -->
-            <form method="get" class="bg-white rounded-xl shadow-md p-4 mb-4 flex items-center gap-4">
-                <h2 class="font-semibold text-lg">Filter by Date</h2>
-                <select name="year" class="px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    {% for y in years %}
-                        <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
-                    {% endfor %}
-                </select>
-                <select name="month" class="px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    {% for month_name in months %}
-                        <option value="{{ forloop.counter }}" {% if forloop.counter == current_month_num %}selected{% endif %}>{{ month_name }}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit" class="px-4 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 flex items-center gap-2">
-                    <span class="material-icons align-middle text-base">filter_alt</span>
-                    Filter
-                </button>
-            </form>
-
-            <!-- Charts -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-                <!-- Annual Revenue Chart -->
-                <div class="bg-white rounded-xl shadow-md p-4 lg:col-span-2">
-                    <h3 class="font-bold text-lg mb-2">Annual Revenue ({{ current_year }})</h3>
-                    <div class="relative h-64">
-                        <canvas id="annualRevenueChart"></canvas>
-                    </div>
+            <div class="flex flex-col md:flex-row justify-between mx-auto my-auto gap-4 mb-4">
+                <!-- Simple Bar Chart -->
+                <div class="bg-white rounded-xl shadow-md w-full p-4 mb-4">
+                    <h3 class="text-xl font-bold mb-4 h-fit w-full">Monthly Sales {{ current_year }}</h3>
+                    <canvas id="salesChart" height="100"></canvas>
                 </div>
-                <!-- Monthly Top Sales Pie Chart -->
-                <div class="bg-white rounded-xl shadow-md p-4">
-                    <h3 class="font-bold text-lg mb-2 text-center">Top Sales for {{ current_month_name }}</h3>
-                    <div class="relative h-64 flex items-center justify-center">
-                        <canvas id="monthlyTopSalesChart"></canvas>
-                    </div>
+                <!-- Pie Chart -->
+                <div class="bg-white rounded-xl shadow-md p-4 mb-4">
+                    <h3 class="text-xl font-bold mb-4 h-fit w-full">Room Type Distribution - {{ current_month }}</h3>
+                    <canvas id="roomTypeChart" height="100"></canvas>
                 </div>
             </div>
 
-            <!-- Daily Sales Table -->
+            <!-- Sales Table -->
             <div class="bg-white rounded-xl shadow-md p-4">
-                <h3 class="font-bold text-lg mb-2">Daily Sales for {{ current_month_name }} {{ current_year }}</h3>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white border border-gray-200 text-sm">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-3 py-2 border font-bold text-left">Day</th>
-                                <th class="px-3 py-2 border font-bold text-left">Bookings</th>
-                                <th class="px-3 py-2 border font-bold text-left">Cancellations</th>
-                                <th class="px-3 py-2 border font-bold text-left">Refunded</th>
-                                <th class="px-3 py-2 border font-bold text-left">Total Sales</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for report in sales_report %}
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-3 py-2 border">{{ report.day }}</td>
-                                <td class="px-3 py-2 border">{{ report.total_booking }}</td>
-                                <td class="px-3 py-2 border">{{ report.total_cancellation }}</td>
-                                <td class="px-3 py-2 border">₱{{ report.refunded|floatformat:2|intcomma }}</td>
-                                <td class="px-3 py-2 border font-semibold">₱{{ report.total_sales|floatformat:2|intcomma }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center py-4 px-4 border text-gray-500">No sales data found for this period.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                <!-- Pagination -->
-                <div class="flex justify-center items-center gap-2 mt-4">
-                    {% if sales_report.has_previous %}
-                        <a href="?page={{ sales_report.previous_page_number }}&year={{ current_year }}&month={{ current_month_num }}" class="p-2 border rounded-full hover:bg-blue-100">
-                            <span class="material-icons text-lg align-middle">arrow_back</span>
-                        </a>
-                    {% endif %}
-                    <span class="text-sm">Page {{ sales_report.number }} of {{ sales_report.paginator.num_pages }}</span>
-                    {% if sales_report.has_next %}
-                        <a href="?page={{ sales_report.next_page_number }}&year={{ current_year }}&month={{ current_month_num }}" class="p-2 border rounded-full hover:bg-blue-100">
-                            <span class="material-icons text-lg align-middle">arrow_forward</span>
-                        </a>
-                    {% endif %}
-                </div>
+                <h3 class="text-xl font-bold mb-4">Daily Sales Summary - {{ current_month }}</h3>
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-2">Date</th>
+                            <th class="px-4 py-2">Sales</th>
+                            <th class="px-4 py-2">Bookings</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales_report %}
+                        <tr>
+                            <td class="px-4 py-2">{{ current_month }} {{ sale.day }}, {{ current_year }}</td>
+                            <td class="px-4 py-2">₱{{ sale.total_sales|default:"0.00" }}</td>
+                            <td class="px-4 py-2">{{ sale.total_booking }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="px-4 py-2 text-center text-gray-500">No sales data for this month</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Chart Data -->
-{{ months|safe|json_script:"months-data" }}
-{{ annual_data|safe|json_script:"annual-data" }}
-{{ pie_labels|safe|json_script:"pie-labels" }}
-{{ pie_values|safe|json_script:"pie-values" }}
-{{ room_types|safe|json_script:"room-types-data" }}
-
-{% endblock content %}
+{% endblock %}
 
 {% block scripts %}
-<script src="{% static 'js/sales.js' %}"></script>
-{% endblock scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Bar Chart
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Sales (₱)',
+                data: {{ monthly_sales|safe }},
+                backgroundColor: '#1a56db'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Pie Chart
+    const pieCtx = document.getElementById('roomTypeChart').getContext('2d');
+    const pieData = {{ pie_data|safe }};
+    new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+            labels: pieData.map(item => item.name),
+            datasets: [{
+                data: pieData.map(item => item.value),
+                backgroundColor: [
+                    '#1a56db', '#16bdca', '#9061f9', '#dc2626', '#fbbf24'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

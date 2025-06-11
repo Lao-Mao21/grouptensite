@@ -2,6 +2,10 @@
 {% load static %}
 
 {% block title %}Add Room{% endblock title %}
+<!-- Add Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Add Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 {% block content %}
 <div id="add-room-form-modal" class="min-h-screen bg-gray-100 flex sm:flex-row flex-col">
@@ -84,7 +88,7 @@
                 </select>
             </div>
             <div>
-                <label for="available_at" class="block text-sm font-medium text-gray-700">Available At</label>
+                <label for="available_at" id="room-available-at" class="block text-sm font-medium text-gray-700">Available At</label>
                 <input type="datetime-local" id="available_at" name="available_at" required
                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
             </div>
@@ -102,3 +106,16 @@
     </div>
 </div>
 {% endblock content %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    flatpickr("input[name='available_at']", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        minDate: "today",
+        allowInput: true
+    });
+});
+</script>
+{% endblock %}

@@ -2,6 +2,10 @@
 {% load static %}
 
 {% block title %}Add Guest{% endblock title %}
+<!-- Add Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Add Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 {% block content %}
 <div id="add-guest-form-modal" class="min-h-screen bg-gray-100 flex sm:flex-row flex-col">
@@ -73,14 +77,19 @@
                             class="mt-1 block w-fit px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
+                        <label for="date_of_birth" class="block text-sm font-medium text-gray-700">Date of Birth</label>
+                        <input type="text" id="date_of_birth" name="date_of_birth" required 
+                            class="datepicker mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
                         <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
                         <input id="address" name="address" rows="3" required value="{{ address|default:'' }}"
-                                class="mt-1 block w-fit px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></input>
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></input>
                     </div>
                     <div>
                         <label for="notes" class="block text-sm font-medium text-gray-700">Notes</label>
-                        <textarea id="notes" name="notes" rows="3"
-                                class="mt-1 block w-fit px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">{{ notes|default:'' }}</textarea>
+                        <textarea id="notes" name="notes" rows="2"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">{{ notes|default:'' }}</textarea>
                     </div>
                 </div>
                 <div class="flex justify-end space-x-3">
@@ -98,3 +107,30 @@
     </div>
 </div>
 {% endblock content %} 
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize date pickers
+    flatpickr(".datepicker", {
+        dateFormat: "Y-m-d",
+        maxDate: "today", // For date of birth
+        allowInput: true
+    });
+
+    flatpickr("input[name='available_at']", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        minDate: "today",
+        allowInput: true
+    });
+
+    flatpickr("input[name='check_in'], input[name='check_out'], input[name='expected_arrival']", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        minDate: "today",
+        allowInput: true
+    });
+});
+</script>
+{% endblock %}

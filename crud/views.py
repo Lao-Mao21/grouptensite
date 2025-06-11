@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, Case, When, DecimalField, F
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import render
 from django.conf import settings
@@ -15,6 +15,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.contrib import messages
 from django.db import models, transaction
+from django import template
 
 # Admin Views
 @login_required
@@ -171,6 +172,7 @@ def add_guest(request):
         password = request.POST.get("password")
         confirm_password = request.POST.get("confirm_password")
         nationality = request.POST.get("nationality")
+        date_of_birth = request.POST.get('date_of_birth')
         emergency_contact = request.POST.get("emergency_contact")
         notes = request.POST.get("notes")
 
@@ -187,6 +189,7 @@ def add_guest(request):
                 "phone_number": phone_number,
                 "address": address,
                 "nationality": nationality,
+                "date_of_birth": date_of_birth,
                 "emergency_contact": emergency_contact,
                 "notes": notes,
                 # Add any other fields
@@ -206,6 +209,7 @@ def add_guest(request):
                 "phone_number": phone_number,
                 "address": address,
                 "nationality": nationality,
+                "date_of_birth": date_of_birth,
                 "emergency_contact": emergency_contact,
                 "notes": notes,
                 # Add any other fields
@@ -228,6 +232,7 @@ def add_guest(request):
             address=address,
             password=password,
             nationality=nationality,
+            date_of_birth=date_of_birth,
             emergency_contact=emergency_contact,
             notes=notes,
         )
@@ -289,77 +294,58 @@ def set_price(request):
 
 @login_required
 def sales_report(request):
+    # Get current year and month
     current_year = timezone.now().year
     current_month = timezone.now().month
+
+    # Get current month's sales data
+    sales = ManageGuest.objects.filter(
+        check_in__year=current_year,
+        check_in__month=current_month,
+        payment_status='paid'
+    ).values('check_in__day').annotate(
+        day=F('check_in__day'),
+        total_sales=Sum('room_id__room_price'),
+        total_booking=Count('id')
+    ).order_by('check_in__day')
+
+    # Get room type distribution for pie chart
+    room_sales = ManageGuest.objects.filter(
+        check_in__year=current_year,
+        check_in__month=current_month,
+        payment_status='paid'
+    ).values(
+        'room_id__room_type'
+    ).annotate(
+        total=Sum('room_id__room_price')
+    )
+
+    pie_data = []
+    for sale in room_sales:
+        pie_data.append({
+            'name': sale['room_id__room_type'],
+            'value': float(sale['total'] or 0)
+        })
+
+    # Get monthly sales for the year
+    monthly_sales = [0] * 12
+    yearly_sales = ManageGuest.objects.filter(
+        check_in__year=current_year,
+        payment_status='paid'
+    ).values('check_in__month').annotate(
+        total=Sum('room_id__room_price')
+    )
     
-    year = int(request.GET.get('year', current_year))
-    month_num = int(request.GET.get('month', current_month))
-
-    months = ['January', 'February', 'March', 'April', 'May', 'June', 
-             'July', 'August', 'September', 'October', 'November', 'December']
-    room_types = [choice[0] for choice in ManageRoom.ROOM_TYPE_CHOICES]
-
-    # --- Fetch all relevant bookings for the year ---
-    all_bookings_in_year = ManageGuest.objects.filter(check_in__year=year).select_related('room_id')
-
-    # --- Annual Revenue Data ---
-    annual_data = {rtype: [0.0] * 12 for rtype in room_types}
-    for booking in all_bookings_in_year:
-        if booking.payment_status == 'paid':
-            month_index = booking.check_in.month - 1
-            room_type = booking.room_id.room_type
-            if room_type in annual_data:
-                annual_data[room_type][month_index] += float(booking.room_id.room_price)
-
-    # --- Monthly Sales Data for Pie Chart ---
-    bookings_in_month = all_bookings_in_year.filter(check_in__month=month_num)
-    
-    pie_data = {rtype: 0.0 for rtype in room_types}
-    for booking in bookings_in_month:
-        if booking.payment_status == 'paid':
-            room_type = booking.room_id.room_type
-            if room_type in pie_data:
-                pie_data[room_type] += float(booking.room_id.room_price)
-    
-    # Filter out zero values for the pie chart
-    pie_labels = [key.capitalize() for key, value in pie_data.items() if value > 0]
-    pie_values = [value for value in pie_data.values() if value > 0]
-
-    # --- Daily Sales Data ---
-    from calendar import monthrange
-    days_in_month = monthrange(year, month_num)[1]
-    daily_sales_data = {day: {'total_sales': 0, 'total_booking': 0, 'total_cancellation': 0, 'refunded': 0} for day in range(1, days_in_month + 1)}
-
-    for booking in bookings_in_month:
-        day = booking.check_in.day
-        status = booking.payment_status
-        
-        daily_sales_data[day]['total_booking'] += 1
-        if status == 'paid':
-            daily_sales_data[day]['total_sales'] += float(booking.room_id.room_price)
-        elif status == 'cancelled':
-            daily_sales_data[day]['total_cancellation'] += 1
-        elif status == 'refunded':
-            daily_sales_data[day]['refunded'] += float(booking.room_id.room_price)
-
-    daily_sales_list = [{'day': day, **data} for day, data in daily_sales_data.items()]
-
-    # Paginate daily sales
-    paginator = Paginator(daily_sales_list, 10)
-    page = request.GET.get('page', 1)
-    sales_report_page = paginator.get_page(page)
+    for sale in yearly_sales:
+        month_idx = sale['check_in__month'] - 1
+        monthly_sales[month_idx] = float(sale['total'] or 0)
 
     context = {
-        'current_year': year,
-        'current_month_num': month_num,
-        'current_month_name': months[month_num - 1],
-        'years': range(current_year, current_year - 5, -1),
-        'months': months,
-        'room_types': room_types,
-        'annual_data': annual_data,
-        'pie_labels': pie_labels,
-        'pie_values': pie_values,
-        'sales_report': sales_report_page,
+        'current_year': current_year,
+        'current_month': timezone.now().strftime('%B'),  # Full month name
+        'monthly_sales': monthly_sales,
+        'pie_data': pie_data,
+        'sales_report': sales
     }
 
     return render(request, 'web/admin/sales.html', context)
@@ -892,7 +878,7 @@ def logo(request):
     }
     return render(request, 'navbar.html', context)
 
-# def login(request):
+# def login(request): # backup
 #     if request.method == "POST":
 #         username = request.POST.get("username")
 #         password = request.POST.get("password")

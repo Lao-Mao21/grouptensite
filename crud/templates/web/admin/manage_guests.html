@@ -228,7 +228,7 @@
                             <td class="px-4 py-2 border">{{ guest.check_out|date:"m/d/y h:i A" }}</td>
                             <td class="px-4 py-2 border">{{ guest.payment_status }}</td>
                             <td class="px-4 py-2 border text-center">
-                                <a href="{% url 'edit_guest' guest.booking_id %}" 
+                                <a href="{% url 'edit_guest' guest.id %}" 
                                 class="text-blue-600 hover:text-blue-800 mx-1" 
                                 title="Edit">
                                     <span class="material-icons align-middle text-base">edit</span>
