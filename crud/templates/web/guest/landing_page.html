@@ -121,7 +121,15 @@
       </div>
     </div>
     <div class="flex justify-center mt-9 mb-32">
-      <a href="{% url 'booking_web' %}" class="block py-2 px-4 border bg-orange-200 rounded-full w-fit md:border-0 font-bold text-white md:hover:text-black">BOOK NOW</a>
+      {% if request.session.guest_id %}
+        {% if not has_active_booking %}
+          <a href="{% url 'booking_web' %}" class="block py-2 px-4 border bg-orange-200 rounded-full w-fit md:border-0 font-bold text-white md:hover:text-black">BOOK NOW</a>
+        {% else %}
+          <div class="text-gray-500 italic">You have an active booking. Please wait until check-out to book again.</div>
+        {% endif %}
+      {% else %}
+        <button onclick="document.getElementById('openLoginBtn').click()" class="block py-2 px-4 border bg-orange-200 rounded-full w-fit md:border-0 font-bold text-white md:hover:text-black">BOOK NOW</button>
+      {% endif %}
     </div>
   </div>
   {% comment %} review section {% endcomment %}
@@ -132,21 +140,6 @@
         <div class="mt-4space-y-3 p-6">
           <div class="flex space-x-1 pb-32 text-yellow-400">
             <!-- Filled stars -->
-            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
-            </svg>
-            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
-            </svg>
-            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
-            </svg>
-            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
-            </svg>
-            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
-            </svg>
             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
             </svg>
@@ -773,7 +766,7 @@
       const modalContent = modal.querySelector('div');
       modalContent.classList.remove('scale-95');
       modalContent.classList.add('scale-100');
-    }
+}
 
     function hideModal(modal) {
       const modalContent = modal.querySelector('div');
@@ -807,8 +800,8 @@
         } else {
           indicator.classList.remove('text-orange-500', 'text-black');
           indicator.classList.add('text-gray-400');
-        }
-      });
+  }
+});
     }
 
     function updateFormState() {
@@ -914,7 +907,7 @@
           const errorMessage = field.nextElementSibling;
           if (errorMessage && errorMessage.classList.contains('error-message')) {
             errorMessage.style.display = 'block';
-          }
+  }
           isValid = false;
         } else {
           field.classList.remove('field-error');
@@ -926,7 +919,7 @@
       });
 
       return isValid;
-    }
+  }
 
     // Event Listeners for form navigation
     if (nextBtn) {

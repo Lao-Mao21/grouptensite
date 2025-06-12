@@ -33,6 +33,8 @@ urlpatterns = [
     path('register/', views.register, name='register'),
     path('guest/login/', views.guest_login, name='guest_login'),
     path('guest/logout/', views.guest_logout, name='guest_logout'),
+    path('process-payment/', views.process_payment, name='process_payment'),
+    path('confirm-payment/', views.confirm_payment, name='confirm_payment'),
 ]
 
 if settings.DEBUG:

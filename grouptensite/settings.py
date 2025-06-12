@@ -148,3 +148,8 @@ AUTHENTICATION_BACKENDS = [
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# Stripe Settings
+STRIPE_PUBLIC_KEY = 'your_stripe_publishable_key'  # Replace with your actual publishable key
+STRIPE_SECRET_KEY = 'your_stripe_secret_key'  # Replace with your actual secret key
+STRIPE_WEBHOOK_SECRET = 'your_stripe_webhook_secret'  # Optional: for webhook handling

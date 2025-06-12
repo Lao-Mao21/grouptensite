@@ -203,27 +203,22 @@ class PaymentTransaction(models.Model):
         db_table = 'payment_transactions_tbl'
     
     transaction_id = models.AutoField(primary_key=True)
-    guest = models.ForeignKey(GuestAccounts, on_delete=models.CASCADE)
+    guest = models.ForeignKey(GuestAccounts, on_delete=models.CASCADE, null=True, blank=True)
     booking = models.ForeignKey(ManageGuest, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    PAYMENT_STATUS_CHOICES = [
+    status = models.CharField(max_length=20, choices=[
         ('pending', 'Pending'),
-        ('processing', 'Processing'),
         ('completed', 'Completed'),
         ('failed', 'Failed'),
         ('refunded', 'Refunded')
-    ]
-    status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
-    PAYMENT_METHOD_CHOICES = [
-        ('credit_card', 'Credit Card'),
-        ('debit_card', 'Debit Card'),
-        ('gcash', 'GCash'),
-    ]
-    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
-    transaction_reference = models.CharField(max_length=100, unique=True)
+    ])
+    payment_method = models.CharField(max_length=50)
+    transaction_reference = models.CharField(max_length=100, unique=True, blank=True, null=True)
     payment_details = models.JSONField(default=dict)
+    stripe_payment_intent_id = models.CharField(max_length=100, blank=True, null=True)
+    stripe_client_secret = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Transaction {self.transaction_id} - {self.guest.full_name}"
+        return f"Transaction {self.transaction_id} - {self.status}"

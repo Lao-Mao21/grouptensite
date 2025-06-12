@@ -21,7 +21,8 @@ from django.db import IntegrityError
 from django.contrib.auth.hashers import check_password
 from django.views.decorators.http import require_POST
 from django.http import HttpResponseRedirect
-from .backends import MockPaymentService
+from .backends import MockPaymentService, StripePaymentService
+import json
 
 # Admin Views
 @login_required
@@ -290,67 +291,61 @@ def add_guest(request):
 
 @login_required
 def add_room(request):
-    if request.method == 'POST':
-        form_data = {
-            'room_number': request.POST.get('room_number'),
-            'room_type': request.POST.get('room_type'),
-            'bed_count': request.POST.get('bed_count'),
-            'bed_type': request.POST.get('bed_type'),
-            'floor': request.POST.get('floor'),
-            'room_status': request.POST.get('room_status'),
-            'room_price': request.POST.get('room_price'),
-            'available_at': request.POST.get('available_at')
-        }
-        
+    if request.method == "POST":
         try:
-            # Check if room number already exists
-            room_number = form_data['room_number']
-            if ManageRoom.objects.filter(room_number=room_number).exists():
-                messages.error(request, f'Room number {room_number} already exists. Please use a different room number.')
-                return render(request, 'web/admin/add_room.html', {'form': form_data})
-
-            # If room number doesn't exist, create the room
-            room = ManageRoom(
-                room_type=form_data['room_type'],
+            room_number = request.POST.get("room_number")
+            room_type = request.POST.get("room_type")
+            bed_type = request.POST.get("bed_type")
+            room_price = request.POST.get("room_price")
+            room_status = request.POST.get("room_status", "available")
+            
+            # Create new room
+            room = ManageRoom.objects.create(
                 room_number=room_number,
-                bed_count=form_data['bed_count'],
-                bed_type=form_data['bed_type'],
-                floor=form_data['floor'],
-                room_status=form_data['room_status'],
-                room_price=form_data['room_price'],
-                room_price_type='per day/night',  # Default value
-                available_at=form_data['available_at']
+                room_type=room_type,
+                bed_type=bed_type,
+                room_price=room_price,
+                room_status=room_status
             )
-            room.save()
-            messages.success(request, 'Room added successfully!')
+            
+            messages.success(request, 'Room added successfully.')
             return redirect('manage_rooms')
         except IntegrityError:
-            messages.error(request, 'Room number already exists. Please use a different room number.')
-            return render(request, 'web/admin/add_room.html', {'form': form_data})
+            messages.error(request, 'Room number already exists.')
+            return render(request, "web/admin/add_room.html", {
+                "room_number": room_number,
+                "room_type": room_type,
+                "bed_type": bed_type,
+                "room_price": room_price,
+                "room_status": room_status
+            })
         except Exception as e:
             messages.error(request, f'Error adding room: {str(e)}')
-            return render(request, 'web/admin/add_room.html', {'form': form_data})
-    
-    return render(request, 'web/admin/add_room.html')
+            return redirect('manage_rooms')
+            
+    return render(request, "web/admin/add_room.html")
 
 @login_required
 def set_price(request):
     if request.method == "POST":
-        room_id = request.POST.get("room_id")
-        room_price = request.POST.get("room_price")
-        
-        if not room_id or not room_price:
-            return HttpResponse("Room ID and price are required", status=400)
-            
         try:
-            room = ManageRoom.objects.get(room_id=room_id)
-            room.room_price = room_price
-            room.save()
-            return redirect('pricing')
-        except ManageRoom.DoesNotExist:
-            return HttpResponse("Room not found", status=404)
+            room_id = request.POST.get("room_id")
+            new_price = request.POST.get("room_price")
             
-    return redirect('pricing')
+            room = ManageRoom.objects.get(room_id=room_id)
+            room.room_price = new_price
+            room.save()
+            
+            messages.success(request, 'Room price updated successfully.')
+            return redirect('manage_rooms')
+        except ManageRoom.DoesNotExist:
+            messages.error(request, 'Room not found.')
+            return redirect('manage_rooms')
+        except Exception as e:
+            messages.error(request, f'Error updating room price: {str(e)}')
+            return redirect('manage_rooms')
+            
+    return redirect('manage_rooms')
 
 @login_required
 def sales_report(request):
@@ -651,32 +646,45 @@ def book_guest(request):
         "all_guests": all_guests,  # Pass all_guests to template
     })
 
+@login_required
 def edit_room(request, room_id):
-    room = ManageRoom.objects.get(room_id=room_id)
-    if request.method == "POST":
-        room.room_number = request.POST.get("room_number")
-        room.room_type = request.POST.get("room_type")
-        room.bed_count = request.POST.get("bed_count")
-        room.floor = request.POST.get("floor")
-        room.bed_type = request.POST.get("bed_type")
-        room.room_status = request.POST.get("room_status")
-        room.room_price = request.POST.get("room_price")
-        room.available_at = request.POST.get("available_at")
-        room.save()
+    try:
+        room = get_object_or_404(ManageRoom, room_id=room_id)
+        if request.method == "POST":
+            room.room_number = request.POST.get("room_number")
+            room.room_type = request.POST.get("room_type")
+            room.bed_type = request.POST.get("bed_type")
+            room.room_price = request.POST.get("room_price")
+            room.room_status = request.POST.get("room_status")
+            room.save()
+            
+            messages.success(request, 'Room updated successfully.')
+            return redirect('manage_rooms')
+            
+        return render(request, "web/admin/edit_room.html", {
+            "room": room
+        })
+    except Exception as e:
+        messages.error(request, f'Error updating room: {str(e)}')
         return redirect('manage_rooms')
-    return render(request, "web/admin/edit_room.html", {
-        "room": room
-    })
 
 @login_required
 def delete_room(request, room_id):
-    room = ManageRoom.objects.get(room_id=room_id)
-    if request.method == "POST":
-        room.delete()
+    try:
+        room = ManageRoom.objects.get(room_id=room_id)
+        if request.method == "POST":
+            room.delete()
+            messages.success(request, 'Room deleted successfully.')
+            return redirect('manage_rooms')
+        return render(request, "web/admin/confirm_delete_room.html", {
+            "room": room
+        })
+    except ManageRoom.DoesNotExist:
+        messages.error(request, 'Room not found.')
         return redirect('manage_rooms')
-    return render(request, "web/admin/confirm_delete_room.html", {
-        "room": room
-    })
+    except Exception as e:
+        messages.error(request, f'Error deleting room: {str(e)}')
+        return redirect('manage_rooms')
 
 @login_required
 def pricing(request):
@@ -713,40 +721,37 @@ def pricing(request):
 
 @login_required
 def check_out(request, guest_id):
-    guest = get_object_or_404(ManageGuest, id=guest_id)
-    
-    if request.method == "POST":
-        try:
-            with transaction.atomic():
-                # Archive guest info
-                GuestArchive.objects.create(
-                    guest_id=guest.guest_id,
-                    guest_name=guest.guest_name,
-                    room_id=guest.room_id,
-                    status='checked-out',
-                    guest_count=guest.guest_count,
-                    check_in=guest.check_in,
-                    check_out=timezone.now(),
-                    payment_status=guest.payment_status,
-                    nationality=guest.guest_id.nationality,
-                    payment_mode=guest.payment_mode
-                )
-
-                # Update room status to available
-                room = guest.room_id
-                room.room_status = 'available'
-                room.save()
-
-                # Delete the ManageGuest record
-                guest.delete()
-                
-                messages.success(request, "Guest checked out successfully.")
-        except Exception as e:
-            messages.error(request, f"An error occurred during check-out: {e}")
+    try:
+        guest = ManageGuest.objects.get(id=guest_id)
+        room = guest.room_id
         
+        # Update guest status
+        guest.status = 'checked_out'
+        guest.check_out = timezone.now()
+        guest.save()
+        
+        # Update room status
+        room.room_status = 'available'
+        room.save()
+        
+        # Create archive entry
+        GuestArchive.objects.create(
+            guest_id=guest.guest_id,
+            room_id=room,
+            check_in=guest.check_in,
+            check_out=guest.check_out,
+            payment_status=guest.payment_status,
+            total_amount=guest.room_id.room_price
+        )
+        
+        messages.success(request, 'Guest checked out successfully.')
         return redirect('manage_guests')
-
-    return render(request, "web/admin/check_out.html", {"guest": guest})
+    except ManageGuest.DoesNotExist:
+        messages.error(request, 'Guest booking not found.')
+        return redirect('manage_guests')
+    except Exception as e:
+        messages.error(request, f'Error during check out: {str(e)}')
+        return redirect('manage_guests')
 
 # @login_required #backup
 # def delete_guest(request, guest_id):
@@ -769,55 +774,25 @@ def check_out(request, guest_id):
 
 @login_required
 def edit_guest(request, booking_id):
-    # Get the booking or return 404
-    booking = get_object_or_404(ManageGuest, id=booking_id)
-    
-    if request.method == "POST":
-        try:
-            with transaction.atomic():
-                # Update guest booking details
-                booking.guest_id = get_object_or_404(GuestAccounts, full_name=request.POST.get('full_name'))
-                booking.room_id = get_object_or_404(ManageRoom, room_id=request.POST.get('room_number'))
-                booking.check_in = request.POST.get('check_in')
-                booking.check_out = request.POST.get('check_out')
-                booking.guest_count = request.POST.get('guest_count')
-                booking.payment_status = request.POST.get('payment_status')
-                booking.payment_mode = request.POST.get('payment_mode')
-                
-                if request.POST.get('booking_type') == 'reservation':
-                    booking.expected_arrival = request.POST.get('expected_arrival')
-                
-                booking.save()
-
-                # Update room status based on payment status
-                room = booking.room_id
-                if booking.payment_status == 'cancelled':
-                    room.room_status = 'available'
-                elif booking.payment_status == 'paid':
-                    room.room_status = 'occupied'
-                elif booking.payment_status == 'pending':
-                    room.room_status = 'reserved'
-                room.save()
-
-                messages.success(request, 'Booking updated successfully!')
-                return redirect('manage_guests')
-
-        except Exception as e:
-            messages.error(request, f'Error updating booking: {str(e)}')
-    
-    # Get available rooms (including currently assigned room)
-    available_rooms = ManageRoom.objects.filter(
-        Q(room_status='available') | 
-        Q(room_id=booking.room_id.room_id)
-    )
-
-    context = {
-        'guest': booking,
-        'all_guests': GuestAccounts.objects.all(),
-        'available_rooms': available_rooms,
-    }
-    
-    return render(request, 'web/admin/edit_guest.html', context)
+    try:
+        booking = get_object_or_404(ManageGuest, id=booking_id)
+        if request.method == "POST":
+            # Update guest booking details
+            booking.check_in = parse_datetime(request.POST.get('check_in'))
+            booking.check_out = parse_datetime(request.POST.get('check_out'))
+            booking.payment_status = request.POST.get('payment_status')
+            booking.save()
+            
+            messages.success(request, 'Guest booking updated successfully.')
+            return redirect('manage_guests')
+            
+        return render(request, "web/admin/edit_guest.html", {
+            "booking": booking,
+            "payment_status_choices": ManageGuest.PAYMENT_STATUS_CHOICES
+        })
+    except Exception as e:
+        messages.error(request, f'Error updating guest booking: {str(e)}')
+        return redirect('manage_guests')
 
 @login_required
 def add_admin(request):
@@ -929,7 +904,27 @@ def delete_admin(request, admin_id):
 
 # Guest Views
 def landing_page(request):
-    return render(request, "web/guest/landing_page.html")
+    context = {}
+    
+    # Check if user is logged in as guest
+    if 'guest_id' in request.session:
+        try:
+            guest = GuestAccounts.objects.get(guest_id=request.session['guest_id'])
+            # Check if guest has any active bookings (not checked out)
+            active_booking = ManageGuest.objects.filter(
+                guest_id=guest,
+                status__in=['pending', 'confirmed', 'occupied']
+            ).first()
+            
+            context.update({
+                'guest': guest,
+                'has_active_booking': bool(active_booking)
+            })
+            
+        except GuestAccounts.DoesNotExist:
+            pass
+    
+    return render(request, 'web/guest/landing_page.html', context)
 
 def register(request):
     if request.method == 'POST':
@@ -1081,122 +1076,39 @@ def guest_change_password(request):
 
 @login_required
 def booking_web(request):
-    # Get the current guest's account information
+    # Get the logged-in guest
     guest_account = None
     if 'guest_id' in request.session:
-        try:
-            guest_account = GuestAccounts.objects.get(guest_id=request.session['guest_id'])
-        except GuestAccounts.DoesNotExist:
-            return redirect('landing_page')
+        guest_account = GuestAccounts.objects.get(guest_id=request.session['guest_id'])
 
-    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        try:
-            # Get form data
-            room_id = request.POST.get('room_id')
-            check_in = request.POST.get('check_in')
-            check_out = request.POST.get('check_out')
-            guest_count = request.POST.get('guest_count')
-            payment_mode = request.POST.get('payment_mode')
-            
-            # Validate room availability
-            room = get_object_or_404(ManageRoom, room_id=room_id, room_status='available')
-            
-            # Create booking
-            booking = ManageGuest.objects.create(
-                guest_id=guest_account,
-                guest_name=guest_account.full_name,
-                room_id=room,
-                status='occupied',
-                guest_count=guest_count,
-                check_in=check_in,
-                check_out=check_out,
-                expected_arrival=check_in,
-                payment_status='paid',
-                payment_mode=payment_mode
-            )
-            
-            # Create payment transaction
-            payment_details = {}
-            if payment_mode in ['credit_card', 'debit_card']:
-                card_number = request.POST.get('card_number')
-                payment_details = {
-                    'card_last_four': card_number[-4:],
-                    'card_holder': request.POST.get('card_name'),
-                    'expiry': request.POST.get('expiry'),
-                    'amount': str(room.room_price)
-                }
-                # Update guest account with card info
-                guest_account.card_last_four = card_number[-4:]
-                guest_account.card_holder_name = request.POST.get('card_name')
-                guest_account.card_expiry = request.POST.get('expiry')
-                guest_account.save()
-            elif payment_mode == 'gcash':
-                payment_details = {
-                    'gcash_number': request.POST.get('gcash_number'),
-                    'amount': str(room.room_price)
-                }
-            
-            PaymentTransaction.objects.create(
-                guest=guest_account,
-                booking=booking,
-                amount=room.room_price,
-                status='completed',
-                payment_method=payment_mode,
-                transaction_reference=f'BOOK-{booking.id}-{timezone.now().strftime("%Y%m%d%H%M%S")}',
-                payment_details=payment_details
-            )
-            
-            # Update room status
-            room.room_status = 'occupied'
-            room.save()
-            
-            return JsonResponse({
-                'success': True,
-                'message': 'Booking successful!'
-            })
-            
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'error': str(e)
-            })
-
-    # Get all room types from the database
+    # Get all available rooms grouped by type
+    available_rooms = ManageRoom.objects.filter(room_status='available')
+    
+    # Create room type summary with counts and pricing
     room_types = []
-    for room_type_choice in ManageRoom.ROOM_TYPE_CHOICES:
-        room_type_id = room_type_choice[0]
-        rooms = ManageRoom.objects.filter(room_type=room_type_id)
-        if rooms.exists():
-            # Get min and max prices for this room type
-            min_price = rooms.order_by('room_price').first().room_price
-            max_price = rooms.order_by('-room_price').first().room_price
-            available_count = rooms.filter(room_status='available').count()
-            
-            room_types.append({
-                'id': room_type_id,
-                'name': room_type_choice[1],
-                'price': min_price,
-                'max_price': max_price,
-                'image': f"{room_type_id}.jpg",  # Assuming images are named after room types
-                'available': available_count
-            })
+    room_type_data = {}
     
-    # Get available rooms with their price types
-    available_rooms = []
-    for room in ManageRoom.objects.filter(room_status='available').order_by('room_number'):
-        available_rooms.append({
-            'room_id': room.room_id,
-            'room_number': room.room_number,
-            'room_type': room.room_type,
-            'get_room_type_display': room.get_room_type_display(),
-            'room_price': room.room_price,
-            'room_price_type': room.room_price_type
-        })
-    
+    for room in available_rooms:
+        if room.room_type not in room_type_data:
+            room_type_data[room.room_type] = {
+                'id': room.room_type,
+                'name': room.get_room_type_display(),
+                'price': room.room_price,
+                'max_price': room.room_price,  # Will be updated if higher prices exist
+                'available': 0,
+                'image': f"{room.room_type.lower()}.jpg"  # Assuming images follow this naming convention
+            }
+        room_type_data[room.room_type]['available'] += 1
+        if room.room_price > room_type_data[room.room_type]['max_price']:
+            room_type_data[room.room_type]['max_price'] = room.room_price
+
+    room_types = list(room_type_data.values())
+
     context = {
+        'guest_account': guest_account,
         'room_types': room_types,
         'available_rooms': available_rooms,
-        'guest_account': guest_account  # Pass the guest account to the template
+        'stripe_public_key': settings.STRIPE_PUBLIC_KEY
     }
     
     return render(request, 'web/guest/booking_web.html', context)
@@ -1265,65 +1177,219 @@ def guest_logout(request):
         messages.error(request, 'An error occurred during logout. Please try again.')
         return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
+@login_required
 def process_booking_payment(request):
-    """Handle booking payment processing"""
-    if not (request.method == 'POST' and request.is_ajax()):
-        return JsonResponse({'success': False, 'error': 'Invalid request method'})
+    if request.method != "POST":
+        return JsonResponse({'error': 'Invalid request method'}, status=400)
         
     try:
-        # Get payment data from request
-        payment_data = {
-            'amount': float(request.POST.get('amount')),
-            'currency': 'PHP',
-            'payment_method': request.POST.get('payment_mode'),
-        }
+        data = json.loads(request.body)
+        booking_id = data.get('booking_id')
+        amount = data.get('amount')
         
-        # Add payment method specific data
-        if payment_data['payment_method'] == 'credit_card':
-            payment_data.update({
-                'card_number': request.POST.get('card_number'),
-                'card_name': request.POST.get('card_name'),
-                'expiry': request.POST.get('expiry'),
-            })
-        elif payment_data['payment_method'] == 'gcash':
-            payment_data.update({
-                'gcash_number': request.POST.get('gcash_number'),
-                'gcash_name': request.POST.get('gcash_name'),
-            })
+        if not booking_id or not amount:
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+            
+        booking = ManageGuest.objects.get(id=booking_id)
         
-        # Process payment using mock service
-        payment_service = MockPaymentService()
-        result = payment_service.process_payment(payment_data)
+        # Create payment transaction
+        payment = PaymentTransaction.objects.create(
+            booking=booking,
+            amount=amount,
+            status='pending'
+        )
         
-        if not result['success']:
+        # Initialize payment service
+        if settings.USE_STRIPE:
+            payment_service = StripePaymentService()
+        else:
+            payment_service = MockPaymentService()
+            
+        # Process payment
+        result = payment_service.process_payment(payment)
+        
+        if result.get('success'):
+            booking.payment_status = 'paid'
+            booking.save()
+            payment.status = 'completed'
+            payment.save()
+            
             return JsonResponse({
-                'success': False,
+                'success': True,
+                'message': 'Payment processed successfully'
+            })
+        else:
+            payment.status = 'failed'
+            payment.save()
+            return JsonResponse({
                 'error': result.get('error', 'Payment processing failed')
+            }, status=400)
+            
+    except ManageGuest.DoesNotExist:
+        return JsonResponse({'error': 'Booking not found'}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+def process_payment(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            amount = float(data.get('amount'))
+            room_id = data.get('booking_id')  # This is actually the room_id from the frontend
+            card_data = data.get('card_data', {})
+            
+            # Validate card data
+            if not card_data.get('number') or not card_data.get('expiry') or not card_data.get('cvv'):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid card details'
+                })
+            
+            # For mock payment, we'll consider it successful if:
+            # 1. Card number is 16 digits
+            # 2. Expiry date is in MM/YY format
+            # 3. CVV is 3-4 digits
+            card_number = card_data['number'].replace(' ', '')
+            expiry = card_data['expiry']
+            cvv = card_data['cvv']
+            
+            if not (len(card_number) == 16 and card_number.isdigit()):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid card number'
+                })
+                
+            if not (len(expiry) == 5 and expiry[2] == '/' and 
+                   expiry[:2].isdigit() and expiry[3:].isdigit()):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid expiry date'
+                })
+                
+            if not (len(cvv) in [3, 4] and cvv.isdigit()):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid CVV'
+                })
+
+            # Get the room
+            room = ManageRoom.objects.get(room_id=room_id)
+            
+            # Get the guest from session
+            guest = GuestAccounts.objects.get(guest_id=request.session.get('guest_id'))
+            
+            # Create booking
+            booking = ManageGuest.objects.create(
+                guest_id=guest,
+                guest_name=guest.full_name,
+                room_id=room,
+                status='confirmed',
+                check_in=timezone.now(),  # You should get these from the form
+                check_out=timezone.now() + timezone.timedelta(days=1),  # You should get these from the form
+                expected_arrival=timezone.now(),  # You should get these from the form
+                guest_count=1,  # You should get this from the form
+                payment_mode='card',
+                payment_status='paid'
+            )
+            
+            # Create payment transaction
+            transaction = PaymentTransaction.objects.create(
+                guest=guest,
+                booking=booking,
+                amount=amount,
+                status='completed',
+                payment_method='card',
+                payment_details={
+                    'card_holder': card_data.get('card_holder', ''),
+                    'billing_address': card_data.get('billing_address', ''),
+                    'last4': card_number[-4:],
+                    'brand': 'visa' if card_number.startswith('4') else 'mastercard'
+                }
+            )
+            
+            # Update room status
+            room.room_status = 'occupied'
+            room.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Payment processed successfully',
+                'transaction_id': transaction.transaction_id,
+                'booking_id': booking.id
             })
             
-        # Store transaction details in session for booking completion
-        request.session['payment_transaction'] = {
-            'transaction_id': result['transaction_id'],
-            'amount': payment_data['amount'],
-            'payment_method': payment_data['payment_method'],
-            'timestamp': result['timestamp']
-        }
-        
-        # Verify payment
-        verification = payment_service.verify_payment(result['transaction_id'])
-        if not verification['success']:
+        except ManageRoom.DoesNotExist:
             return JsonResponse({
                 'success': False,
-                'error': 'Payment verification failed'
+                'error': 'Room not found'
             })
-        
-        return JsonResponse({
-            'success': True,
-            'transaction_id': result['transaction_id']
-        })
+        except GuestAccounts.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Guest account not found'
+            })
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid JSON data'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Invalid request method'
+    })
+
+@csrf_exempt
+def confirm_payment(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            payment_intent_id = data.get('payment_intent_id')
             
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        })
+            # Confirm payment with Stripe
+            payment_service = StripePaymentService()
+            confirmation = payment_service.confirm_payment(payment_intent_id)
+            
+            if not confirmation['success']:
+                return JsonResponse({
+                    'success': False,
+                    'error': confirmation['error']
+                })
+            
+            # Update transaction status
+            transaction = PaymentTransaction.objects.get(stripe_payment_intent_id=payment_intent_id)
+            transaction.status = 'completed' if confirmation['status'] == 'succeeded' else 'failed'
+            transaction.payment_details = confirmation
+            transaction.save()
+            
+            # Update booking status if payment successful
+            if confirmation['status'] == 'succeeded':
+                booking = transaction.booking
+                booking.status = 'confirmed'
+                booking.save()
+            
+            return JsonResponse({
+                'success': True,
+                'status': confirmation['status']
+            })
+            
+        except PaymentTransaction.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Transaction not found'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})

@@ -3,6 +3,10 @@ from .models import AdminAccounts, GuestAccounts
 from datetime import datetime
 import random
 import time
+import stripe
+from django.conf import settings
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 class AdminAccountsBackend(BaseBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
@@ -129,3 +133,127 @@ class MockPaymentService:
             'error': 'Invalid transaction ID',
             'error_code': 'INVALID_TRANSACTION'
         }
+
+class StripePaymentService:
+    """Stripe payment service to handle payment processing"""
+    
+    @staticmethod
+    def create_payment_intent(amount, currency='php', payment_method_types=None):
+        """
+        Create a PaymentIntent with Stripe
+        Args:
+            amount: float (amount in PHP)
+            currency: str (default: 'php')
+            payment_method_types: list of payment methods to accept
+        Returns:
+            dict: Payment intent details
+        """
+        if payment_method_types is None:
+            payment_method_types = ['card']
+            
+        try:
+            # Convert amount to cents/smallest currency unit
+            amount_in_cents = int(amount * 100)
+            
+            # Create payment intent
+            intent = stripe.PaymentIntent.create(
+                amount=amount_in_cents,
+                currency=currency,
+                payment_method_types=payment_method_types,
+                metadata={
+                    'integration_check': 'accept_a_payment',
+                }
+            )
+            
+            return {
+                'success': True,
+                'client_secret': intent.client_secret,
+                'payment_intent_id': intent.id,
+                'amount': amount,
+                'currency': currency.upper()
+            }
+            
+        except stripe.error.StripeError as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'error_code': e.code if hasattr(e, 'code') else 'stripe_error'
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'error_code': 'server_error'
+            }
+    
+    @staticmethod
+    def confirm_payment(payment_intent_id):
+        """
+        Confirm a payment intent
+        Args:
+            payment_intent_id: str
+        Returns:
+            dict: Confirmation result
+        """
+        try:
+            intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+            
+            return {
+                'success': True,
+                'status': intent.status,
+                'amount': intent.amount / 100,  # Convert from cents back to original currency
+                'currency': intent.currency.upper(),
+                'payment_method': intent.payment_method_types[0],
+                'created': datetime.fromtimestamp(intent.created).isoformat()
+            }
+            
+        except stripe.error.StripeError as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'error_code': e.code if hasattr(e, 'code') else 'stripe_error'
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'error_code': 'server_error'
+            }
+    
+    @staticmethod
+    def refund_payment(payment_intent_id, amount=None):
+        """
+        Refund a payment
+        Args:
+            payment_intent_id: str
+            amount: float (optional - if not provided, full amount will be refunded)
+        Returns:
+            dict: Refund result
+        """
+        try:
+            refund_params = {'payment_intent': payment_intent_id}
+            if amount:
+                refund_params['amount'] = int(amount * 100)
+                
+            refund = stripe.Refund.create(**refund_params)
+            
+            return {
+                'success': True,
+                'refund_id': refund.id,
+                'status': refund.status,
+                'amount': refund.amount / 100,
+                'currency': refund.currency.upper()
+            }
+            
+        except stripe.error.StripeError as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'error_code': e.code if hasattr(e, 'code') else 'stripe_error'
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'error_code': 'server_error'
+            }
