@@ -1,6 +1,6 @@
 <nav id="scrollNavbg" class="bg-transparent fixed top-0 w-full z-50 transition duration-500 ease-in-out">
   <div id="scrollNavborder" class="max-w-screen-xl mx-auto py-0 flex flex-wrap items-center justify-between border-b-2 border-gray-200">
-    <a href="{% url 'landing_page' %}" class="flex items-center space-x-3 rtl:space-x-reverse">
+    <a href="#home" class="flex items-center space-x-3 rtl:space-x-reverse">
         <img src="{{ MEDIA_URL }}NOVA DOORS HOTEL CUSTOMER PAGE.png" class="h-24 w-auto" alt="Logo"/>
     </a>
     {% comment %} 
@@ -14,26 +14,23 @@
       <ul id="scrollText" class="font-medium text-xl text-white flex flex-col justify-center transition duration-500 ease-in-out 
       p-4 md:p-0 mt-4 md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0 md:bg-transparent">
         <li>
-          <a href="{% url 'landing_page' %}" class="block py-2 px-3 rounded-sm md:border-0 md:hover:text-blue-300 md:p-0" aria-current="page">Home</a>
+          <a href="#home" class="block py-2 px-3 rounded-sm md:border-0 md:hover:text-blue-300 md:p-0" aria-current="page">Home</a>
         </li>
         <li>
-          <a href="#" class="block py-2 px-3 rounded-sm md:border-0 md:hover:text-blue-300 md:p-0">About</a>
+          <a href="#about" class="block py-2 px-3 rounded-sm md:border-0 md:hover:text-blue-300 md:p-0">About</a>
         </li>
         <li>
-          <a href="#" class="block py-2 px-3 rounded-sm md:border-0 md:hover:text-blue-300 md:p-0">Services</a>
+          <a href="#rooms" class="block py-2 px-3 rounded-sm md:border-0 md:hover:text-blue-300 md:p-0">Rooms</a>
         </li>
         <li>
-          <a href="#" class="block py-2 px-3 rounded-sm md:border-0 md:hover:text-blue-300 md:p-0">Pricing</a>
-        </li>
-        <li>
-          <a href="#" class="block py-2 px-3 rounded-sm md:border-0 md:hover:text-blue-300 md:p-0">Contact</a>
+          <a href="#contact" class="block py-2 px-3 rounded-sm md:border-0 md:hover:text-blue-300 md:p-0">Contact</a>
         </li>
       </ul>
     </div>
     <div id="scrollText" class="hidden w-full md:flex md:w-auto 
     text-xl text-white font-semibold space-x-4 rtl:space-x-reverse">
-      <a href="#" class="block py-2 px-4 border bg-orange-200 rounded-full md:border-0 md:hover:text-black">BOOK NOW</a>
-      <a href="#" class="block py-2 px-4 rounded-sm md:border-0 md:hover:text-blue-300">
+      <a href="{% url 'booking_web' %}" class="block py-2 px-4 border bg-orange-200 rounded-full md:border-0 md:hover:text-black">BOOK NOW</a>
+      <a href="{% url 'guest_account' %}" class="block py-2 px-4 rounded-sm md:border-0 md:hover:text-blue-300">
         Profile
       </a>
     </div>
@@ -43,7 +40,8 @@
 {% comment %} scroll change text color {% endcomment %}
 
 <script>
-const element = document.getElementById('scrollText');   {% comment %} fetch id {% endcomment %}
+// fetch id
+const element = document.getElementById('scrollText'); 
 
   window.addEventListener('scroll', () => {
     if (window.scrollY > 600) {

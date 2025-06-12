@@ -13,6 +13,17 @@
     <div class="w-fit mx-auto my-auto bg-white rounded-xl shadow-md p-6">
         <div class="flex-1 p-4 sm:p-8">
             <h2 class="text-2xl font-semibold mb-6 text-gray-800">Add New Room</h2>
+            
+            {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                <div class="{% if message.tags == 'error' %}bg-red-100 border-l-4 border-red-500 text-red-700{% else %}bg-green-100 border-l-4 border-green-500 text-green-700{% endif %} p-4 mb-4">
+                    <p class="font-medium">{{ message }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <form action="{% url 'add_room' %}" method="post" class="space-y-4">
             {% csrf_token %}
             <div class="grid grid-cols-2 gap-4">
@@ -20,36 +31,39 @@
                     <label for="room_number" class="block text-sm font-medium text-gray-700">Room Number</label>
                     <input type="text" id="room_number" name="room_number" required placeholder="Enter Room Number"
                            pattern="[0-9]+" title="Please enter a valid room number"
-                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 {% if form.room_number.errors %}border-red-500{% endif %}"
+                           value="{{ form.room_number }}">
                 </div>
                 <div>
                     <label for="room_type" class="block text-sm font-medium text-gray-700">Room Type</label>
                     <select id="room_type" name="room_type" required
                             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Select room type</option>
-                        <option value="single">Single</option>
-                        <option value="double">Double</option>
-                        <option value="suite">Suite</option>
-                        <option value="deluxe">Deluxe</option>
+                        <option value="single" {% if form.room_type == 'single' %}selected{% endif %}>Single</option>
+                        <option value="double" {% if form.room_type == 'double' %}selected{% endif %}>Double</option>
+                        <option value="suite" {% if form.room_type == 'suite' %}selected{% endif %}>Suite</option>
+                        <option value="deluxe" {% if form.room_type == 'deluxe' %}selected{% endif %}>Deluxe</option>
                     </select>
                 </div>
                 <div>
                     <label for="bed_count" class="block text-sm font-medium text-gray-700">Bed Count</label>
-                    <input id="bed_count" name="bed_count" value="{{ room.bed_count }}" required placeholder="Enter Quantity of Beds" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <input id="bed_count" name="bed_count" required placeholder="Enter Quantity of Beds" 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                           value="{{ form.bed_count }}">
                 </div>
                 <div>
                     <label for="bed_type" class="block text-sm font-medium text-gray-700">Bed Type</label>
                     <select id="bed_type" name="bed_type" required
                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Select bed type</option>
-                        <option value="single">Single</option>
-                        <option value="double">Double</option>
-                        <option value="deluxe">Deluxe</option>
-                        <option value="VIP">VIP</option>
-                        <option value="king">King</option>
-                        <option value="queen">Queen</option>
-                        <option value="bunk">Bunk Bed</option>
-                        <option value="futon">Futon</option>
+                        <option value="single" {% if form.bed_type == 'single' %}selected{% endif %}>Single</option>
+                        <option value="double" {% if form.bed_type == 'double' %}selected{% endif %}>Double</option>
+                        <option value="deluxe" {% if form.bed_type == 'deluxe' %}selected{% endif %}>Deluxe</option>
+                        <option value="VIP" {% if form.bed_type == 'VIP' %}selected{% endif %}>VIP</option>
+                        <option value="king" {% if form.bed_type == 'king' %}selected{% endif %}>King</option>
+                        <option value="queen" {% if form.bed_type == 'queen' %}selected{% endif %}>Queen</option>
+                        <option value="bunk" {% if form.bed_type == 'bunk' %}selected{% endif %}>Bunk Bed</option>
+                        <option value="futon" {% if form.bed_type == 'futon' %}selected{% endif %}>Futon</option>
                     </select>
                 </div>
                 <div>
@@ -57,11 +71,11 @@
                     <select id="floor" name="floor" required
                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Select floor</option>
-                        <option value="1">1st Floor</option>
-                        <option value="2">2nd Floor</option>
-                        <option value="3">3rd Floor</option>
-                        <option value="4">4th Floor</option>
-                        <option value="5">5th Floor</option>
+                        <option value="1" {% if form.floor == '1' %}selected{% endif %}>1st Floor</option>
+                        <option value="2" {% if form.floor == '2' %}selected{% endif %}>2nd Floor</option>
+                        <option value="3" {% if form.floor == '3' %}selected{% endif %}>3rd Floor</option>
+                        <option value="4" {% if form.floor == '4' %}selected{% endif %}>4th Floor</option>
+                        <option value="5" {% if form.floor == '5' %}selected{% endif %}>5th Floor</option>
                     </select>
                 </div>
                 <div>
@@ -71,7 +85,8 @@
                             <span class="text-gray-500 sm:text-sm">₱</span>
                         </div>
                         <input type="number" id="room_price" name="room_price" required min="0" step="0.01"
-                               class="block w-full pl-7 pr-12 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                               class="block w-full pl-7 pr-12 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                               value="{{ form.room_price }}">
                     </div>
                 </div>
             </div>
@@ -80,17 +95,18 @@
                 <select id="room_status" name="room_status" required
                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     <option value="">Select room status</option>
-                    <option value="available">Available</option>
-                    <option value="maintenance">Maintenance</option>
-                    <option value="cleaning">Cleaning</option>
-                    <option value="reserved">Reserved</option>
-                    <option value="occupied">Occupied</option>
+                    <option value="available" {% if form.room_status == 'available' %}selected{% endif %}>Available</option>
+                    <option value="maintenance" {% if form.room_status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                    <option value="cleaning" {% if form.room_status == 'cleaning' %}selected{% endif %}>Cleaning</option>
+                    <option value="reserved" {% if form.room_status == 'reserved' %}selected{% endif %}>Reserved</option>
+                    <option value="occupied" {% if form.room_status == 'occupied' %}selected{% endif %}>Occupied</option>
                 </select>
             </div>
             <div>
                 <label for="available_at" id="room-available-at" class="block text-sm font-medium text-gray-700">Available At</label>
                 <input type="datetime-local" id="available_at" name="available_at" required
-                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                       value="{{ form.available_at }}">
             </div>
             <div class="flex justify-end space-x-3 mt-6">
                 <a href="{% url 'manage_rooms' %}"
@@ -110,11 +126,12 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    flatpickr("input[name='available_at']", {
+    flatpickr("#available_at", {
         enableTime: true,
         dateFormat: "Y-m-d H:i",
         minDate: "today",
-        allowInput: true
+        allowInput: true,
+        defaultDate: "{{ form.available_at }}" || "today"
     });
 });
 </script>

@@ -3,7 +3,6 @@ from . import views
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth.decorators import login_required
-
 urlpatterns = [
     # Admin URLs
     path('login_admin/', views.login_admin, name='login_admin'),
@@ -28,6 +27,11 @@ urlpatterns = [
     path('delete_admin/<int:admin_id>/', login_required(views.delete_admin), name='delete_admin'),
     # Guest URLs
     path('landing_page/', views.landing_page, name='landing_page'),
+    path('guest/account/', views.guest_account, name='guest_account'),
+    path('guest/account/change-password/', views.guest_change_password, name='guest_change_password'),
+    path('booking/', views.booking_web, name='booking_web'),
+    path('register/', views.register, name='register'),
+    path('guest/login/', views.guest_login, name='guest_login'),
 ]
 
 if settings.DEBUG:

@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from .models import ManageRoom, ManageGuest, GuestAccounts, AdminAccounts, GuestArchive
@@ -16,6 +16,8 @@ from django.utils import timezone
 from django.contrib import messages
 from django.db import models, transaction
 from django import template
+from django.contrib import messages
+from django.db import IntegrityError
 
 # Admin Views
 @login_required
@@ -284,35 +286,49 @@ def add_guest(request):
 
 @login_required
 def add_room(request):
-    if request.method == "POST":
-        room_number = request.POST.get("room_number")
-        room_type = request.POST.get("room_type")
-        bed_count = request.POST.get("bed_count")
-        floor = request.POST.get("floor")
-        bed_type = request.POST.get("bed_type")
-        room_status = request.POST.get("room_status")
-        available_at = request.POST.get("available_at")
-        room_price_type = request.POST.get("room_price_type", "custom")
-        room_price = request.POST.get("room_price", 0)
+    if request.method == 'POST':
+        form_data = {
+            'room_number': request.POST.get('room_number'),
+            'room_type': request.POST.get('room_type'),
+            'bed_count': request.POST.get('bed_count'),
+            'bed_type': request.POST.get('bed_type'),
+            'floor': request.POST.get('floor'),
+            'room_status': request.POST.get('room_status'),
+            'room_price': request.POST.get('room_price'),
+            'available_at': request.POST.get('available_at')
+        }
+        
+        try:
+            # Check if room number already exists
+            room_number = form_data['room_number']
+            if ManageRoom.objects.filter(room_number=room_number).exists():
+                messages.error(request, f'Room number {room_number} already exists. Please use a different room number.')
+                return render(request, 'web/admin/add_room.html', {'form': form_data})
 
-        if not all([room_number, room_type, bed_count, floor, bed_type, room_status, available_at, room_price]):
-            messages.error(request, "Please fill in all required fields.")
-            return redirect('add_room')
-
-        ManageRoom.objects.create(
-            room_number=room_number,
-            room_type=room_type,
-            bed_count=bed_count,
-            floor=floor,
-            bed_type=bed_type,
-            room_status=room_status,
-            room_price_type=room_price_type,
-            available_at=available_at,
-            room_price=room_price
-        )
-        messages.success(request, "Room added successfully!")
-        return redirect('manage_rooms')
-    return render(request, "web/admin/add_room.html")
+            # If room number doesn't exist, create the room
+            room = ManageRoom(
+                room_type=form_data['room_type'],
+                room_number=room_number,
+                bed_count=form_data['bed_count'],
+                bed_type=form_data['bed_type'],
+                floor=form_data['floor'],
+                room_status=form_data['room_status'],
+                room_price=form_data['room_price'],
+                room_price_type='per day/night',  # Default value
+                available_at=form_data['available_at']
+            )
+            room.save()
+            messages.success(request, 'Room added successfully!')
+            return redirect('manage_rooms')
+            
+        except IntegrityError:
+            messages.error(request, 'Room number already exists. Please use a different room number.')
+            return render(request, 'web/admin/add_room.html', {'form': form_data})
+        except Exception as e:
+            messages.error(request, f'Error adding room: {str(e)}')
+            return render(request, 'web/admin/add_room.html', {'form': form_data})
+    
+    return render(request, 'web/admin/add_room.html')
 
 @login_required
 def set_price(request):
@@ -910,7 +926,83 @@ def delete_admin(request, admin_id):
 
 # Guest Views
 def landing_page(request):
-    return render(request, "web/guest/Landing_page.html")
+    return render(request, "web/guest/landing_page.html")
+
+def register(request):
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # Get form data
+                first_name = request.POST.get('first_name')
+                middle_name = request.POST.get('middle_name')
+                last_name = request.POST.get('last_name')
+                email = request.POST.get('email')
+                phone_number = request.POST.get('phone_number')
+                gender = request.POST.get('gender')
+                date_of_birth = request.POST.get('date_of_birth')
+                nationality = request.POST.get('nationality')
+                emergency_contact = request.POST.get('emergency_contact')
+                address = request.POST.get('address')
+                notes = request.POST.get('notes')
+                username = request.POST.get('username')
+                password = request.POST.get('password')
+
+                # Validate required fields
+                if not all([first_name, last_name, email, phone_number, gender, 
+                          date_of_birth, nationality, emergency_contact, address,
+                          username, password]):
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Please fill in all required fields.'
+                    })
+
+                # Check if username already exists
+                if GuestAccounts.objects.filter(username=username).exists():
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Username already exists. Please choose another.'
+                    })
+
+                # Create GuestAccounts instance
+                guest = GuestAccounts(
+                    first_name=first_name,
+                    middle_name=middle_name,
+                    last_name=last_name,
+                    full_name=f"{first_name} {middle_name if middle_name else ''} {last_name}".strip(),
+                    username=username,
+                    email=email,
+                    phone_number=phone_number,
+                    gender=gender,
+                    date_of_birth=date_of_birth,
+                    nationality=nationality,
+                    emergency_contact=emergency_contact,
+                    address=address,
+                    notes=notes,
+                    password=password,  # Model's save method will hash this
+                    is_active=True,
+                    last_login=timezone.now()
+                )
+                guest.save()
+
+                # Set session data
+                request.session['guest_id'] = guest.guest_id
+                request.session['guest_name'] = guest.full_name
+
+                return JsonResponse({
+                    'success': True,
+                    'redirect_url': '/booking/'
+                })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+
+    return JsonResponse({
+        'success': False,
+        'error': 'Invalid request method'
+    })
 
 def logo(request):
     context = {
@@ -918,6 +1010,23 @@ def logo(request):
         # other context variables
     }
     return render(request, 'navbar.html', context)
+
+def guest_account(request):
+    # Placeholder view - will add functionality later
+    context = {
+        'full_name': '',
+        'username': '',
+        'gender': '',
+        'email': '',
+        'address': '',
+        'contact_number': '',
+    }
+    return render(request, 'web/guest/guest_account.html', context)
+
+def guest_change_password(request):
+    # Placeholder for password change functionality
+    # Will be implemented later
+    return HttpResponseRedirect(reverse('guest_account'))
 
 # def login(request):
 #     if request.method == "POST":
@@ -930,3 +1039,64 @@ def logo(request):
 #         else:
 #             return render(request, "web/admin/login.html", {"error": "Invalid credentials"})
 #     return render(request, "web/admin/login.html")
+
+def booking_web(request):
+    # Get all room types from the database
+    room_types = []
+    for room_type_choice in ManageRoom.ROOM_TYPE_CHOICES:
+        room_type_id = room_type_choice[0]
+        rooms = ManageRoom.objects.filter(room_type=room_type_id)
+        if rooms.exists():
+            # Get min and max prices for this room type
+            min_price = rooms.order_by('room_price').first().room_price
+            max_price = rooms.order_by('-room_price').first().room_price
+            available_count = rooms.filter(room_status='available').count()
+            
+            room_types.append({
+                'id': room_type_id,
+                'name': room_type_choice[1],
+                'price': min_price,
+                'max_price': max_price,
+                'image': f"{room_type_id}.jpg",  # Assuming images are named after room types
+                'available': available_count
+            })
+    
+    return render(request, 'web/guest/booking_web.html', {
+        'room_types': room_types
+    })
+
+def guest_login(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        try:
+            guest = GuestAccounts.objects.get(username=username)
+            if guest.check_password(password):
+                # Update last login
+                guest.last_login = timezone.now()
+                guest.save()
+                
+                # Set session data
+                request.session['guest_id'] = guest.guest_id
+                request.session['guest_name'] = guest.full_name
+                
+                return JsonResponse({
+                    'success': True,
+                    'redirect_url': '/booking/'
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid password'
+                })
+        except GuestAccounts.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Account not found'
+            })
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Invalid request method'
+    })

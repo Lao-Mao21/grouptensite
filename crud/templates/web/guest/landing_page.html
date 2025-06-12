@@ -2,12 +2,66 @@
 
 {% block title %}Landing Page{% endblock title %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .font-heading {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 600;
+  }
+  .error-message {
+    display: none;
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
+  .field-error {
+    border-color: #ef4444 !important;
+  }
+  .field-error + .error-message {
+    display: block;
+  }
+  .alert {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.375rem;
+  }
+  .alert-error {
+    background-color: #fee2e2;
+    border: 1px solid #ef4444;
+    color: #b91c1c;
+  }
+  .alert-success {
+    background-color: #dcfce7;
+    border: 1px solid #22c55e;
+    color: #15803d;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 {% include 'attachments/navbar.html' %}
+
+<!-- Django Messages -->
+{% if messages %}
+<div class="fixed top-20 right-4 z-50 w-96">
+  {% for message in messages %}
+  <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %} mb-2 transform transition-transform duration-500 ease-in-out animate-slide-in">
+    {{ message }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 <div class="relative w-full h-auto">
+  {% comment %} home section {% endcomment %}
   <img src="{{ MEDIA_URL }}unsplash-img.jpg" alt="landing_img.jpg" class="w-full aspect-[14/6] object-cover"/>
   <!-- Transparent color overlay -->
-  <div class="absolute inset-0 bg-orange-400/50 backdrop-blur-xs">
+  <div id="home" class="absolute inset-0 bg-orange-400/50 backdrop-blur-xs">
     <div class="flex flex-col my-auto mx-24 items-left justify-center h-full text-white">
       <h1 class="text-5xl font-bold text-left">Your Gateway to Blissful Retreats</h1>
       <p class="text-xl mt-2 max-w-4xl text-left">
@@ -17,9 +71,9 @@
     </div>
   </div>
 </div>
-{% comment %} about {% endcomment %}
 <div class="relative w-full min-h-screen">
-  <div class="flex justify-center items-center h-full">
+  {% comment %} about {% endcomment %}
+  <div id="about" class="flex justify-center items-center h-full">
     <div class="flex-col my-36 mx-auto text-center text-black">
       <h1 class="text-5xl font-bold">A FULL HOSPITALITY SERVICE</h1>
       <p class="text-2xl mt-4 font-sans max-w-4xl">
@@ -30,7 +84,7 @@
     </div>
   </div>
   {% comment %} room section {% endcomment %}
-  <div class="flex-col mx-auto text-center text-black">
+  <div id="rooms" class="flex-col mx-auto text-center text-black">
     <h1 class="text-5xl text-center font-bold"> OUR ROOMS </h1>
     <div class="grid grid-rows-1 grid-cols-4 gap-6 px-12 py-8"> <!-- modify grid -->
       <div class="text-black text-center">
@@ -67,7 +121,7 @@
       </div>
     </div>
     <div class="flex justify-center mt-9 mb-32">
-      <a href="#" class="block py-2 px-4 border bg-orange-200 rounded-full w-fit md:border-0 font-bold text-white md:hover:text-black">BOOK NOW</a>
+      <a href="{% url 'booking_web' %}" class="block py-2 px-4 border bg-orange-200 rounded-full w-fit md:border-0 font-bold text-white md:hover:text-black">BOOK NOW</a>
     </div>
   </div>
   {% comment %} review section {% endcomment %}
@@ -78,6 +132,18 @@
         <div class="mt-4space-y-3 p-6">
           <div class="flex space-x-1 pb-32 text-yellow-400">
             <!-- Filled stars -->
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
             </svg>
@@ -117,7 +183,7 @@
             </svg>
             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
-            </svg>
+            </svg> 
             <p class="underline pl-24 text-gray-900">04/14/2025</p>
           </div>
           <h2 class="font-bold text-lg">Jonas Buenavides</h2>
@@ -163,8 +229,31 @@
       </div>
     </div>
 </div>
+
+{% comment %} contact section {% endcomment %}
+<div id="contact" class="flex flex-col items-center justify-center py-16">
+  <h1 class="text-5xl font-bold mb-8">CONTACT US</h1>
+  <p class="text-xl max-w-4xl text-center mb-12">
+    For any inquiries or special requests, please contact us at +63-9094848123. Our dedicated team is available 24 hours a day to assist you and ensure your stay is exceptional. Whether you need help with reservations or local recommendations, we're here to make your experience seamless and enjoyable.
+  </p>
+  <div class="flex space-x-8">
+    <a href="#" class="text-gray-500 hover:text-gray-900 transition-colors">
+      <i class="fa-brands fa-square-facebook text-4xl"></i>
+      <span class="sr-only">Facebook page</span>
+    </a>
+    <a href="#" class="text-gray-500 hover:text-gray-900 transition-colors">
+      <i class="fa-brands fa-square-instagram text-4xl"></i>
+      <span class="sr-only">Instagram</span>
+    </a>
+    <a href="#" class="text-gray-500 hover:text-gray-900 transition-colors">
+      <i class="fa-brands fa-x-twitter text-4xl"></i>
+      <span class="sr-only">X</span>
+    </a>
+  </div>
+</div>
+
 {% comment %} FAQ {% endcomment %}
-<div class="flex-col mx-auto text-center text-black">
+<div id="faq" class="flex-col mx-auto text-center text-black">
   <h1 class="text-5xl text-center font-bold mb-8">Frequently Asked Questions</h1>
   <div class="flex flex-col px-10 md:px-40 pt-12 pb-32 space-y-8"> <!-- spacing between items -->
     <!-- FAQ Item 1 -->
@@ -249,92 +338,237 @@
 
 {% comment %} login form {% endcomment %}
 <!-- Modal wrapper -->
-<div id="loginModal" class="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out">
+<div id="loginModal" class="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out">
   <!-- Modal content -->
-  <div id="modalContent" class="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full transform scale-95 transition-transform duration-300 ease-in-out opacity-0">
+  <div class="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full transform scale-95 transition-transform duration-300 ease-in-out relative">
     <!-- Close Button -->
-    <button id="closeModal" class="absolute top-2 right-2 p-3 text-gray-400 hover:text-gray-600">
-      <i class="fa-solid fa-x"></i>
+    <button class="modal-close absolute top-4 right-4 text-black hover:text-gray-700">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
     </button>
     <!-- Logo/Header -->
-    <div class="flex items-center px-8 space-x-10 mb-4">
-      <img src="{{ MEDIA_URL }}NOVA DOORS HOTEL.png" alt="NOVA DOORS HOTEL" class="h-20">
-      <h2 class="text-xl font-bold text-center">Login</h2>
+    <div class="flex items-center mb-6">
+      <img src="{{ MEDIA_URL }}NOVA DOORS HOTEL.png" alt="NOVA DOORS HOTEL" class="h-16">
     </div>
+    <h2 class="text-2xl font-bold text-center mb-6">Get Started</h2>
     <!-- Login Form -->
-    <form class="space-y-4" action="/submit-login" method="POST">
+    <form class="space-y-4" action="{% url 'guest_login' %}" method="POST" id="loginForm">
       {% csrf_token %}
       <div>
-        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-        <input type="email" id="email" name="email" required
-               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter your email">
+        <input type="text" id="login_username" name="username" required
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" 
+               placeholder="Username">
+        <span class="error-message">Please enter your username</span>
       </div>
       <div>
-        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-        <input type="password" id="password" name="password" required
-               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter your password">
+        <input type="password" id="login_password" name="password" required
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" 
+               placeholder="Password">
+        <span class="error-message">Please enter your password</span>
       </div>
+      <div id="loginError" class="hidden alert alert-error"></div>
       <div class="text-center">
         <button type="submit" 
-                class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-md">
           Login
         </button>
       </div>
       <div class="text-center text-sm mt-2">
-        <a href="#" id="openCreateAccountBtn" class="text-blue-500 hover:underline">Create Account here!</a>
+        <span class="text-gray-600">No account? </span>
+        <a href="#" class="text-orange-500 hover:underline" id="openCreateAccountBtn">Create Account here!</a>
       </div>
     </form>
   </div>
 </div>
 
 {% comment %} create account form {% endcomment %}
-<!-- Modal overlay (covers entire screen) -->
-<div id="createAccountModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out">
+<!-- Modal overlay -->
+<div id="createAccountModal" class="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out overflow-y-auto py-8">
   <!-- Modal content container -->
-  <div id="modalContent" class="bg-white rounded-lg shadow-lg p-6 max-w-xl w-full relative transition-all duration-300 ease-in-out">
-
+  <div class="bg-white rounded-2xl shadow-lg p-8 max-w-6xl w-full mx-4 my-auto relative transform scale-95 transition-all duration-300 ease-in-out">
     <!-- Close button -->
-    <button id="closeCreateAccount" class="absolute top-2 right-2 ...">
-      <span></span>
+    <button class="modal-close absolute top-4 right-4 text-black hover:text-gray-700">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
     </button>
 
-    <!-- Your header/logo -->
-    <div class="flex justify-center mb-4">
-      <img src="{{ MEDIA_URL }}NOVA DOORS HOTEL.png" alt="NOVA DOORS HOTEL" class="h-20">
+    <!-- Header/logo -->
+    <div class="flex items-center mb-6">
+      <img src="{{ MEDIA_URL }}NOVA DOORS HOTEL.png" alt="NOVA DOORS HOTEL" class="h-16">
     </div>
 
-    <!-- Step indicator (optional) -->
-    <div class="flex justify-center mb-4">
-      <!-- your progress indicator here -->
+    <!-- Progress Steps -->
+    <div class="mb-8">
+      <div class="relative">
+        <div class="w-full bg-gray-200 h-1 mb-6">
+          <div class="progress-bar bg-orange-500 h-1 transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between">
+          <span class="step-indicator text-sm font-medium" data-step="1">Personal Information</span>
+          <span class="step-indicator text-sm font-medium text-gray-400" data-step="2">Account Setup</span>
+          <span class="step-indicator text-sm font-medium text-gray-400" data-step="3">Complete</span>
+        </div>
+      </div>
+      <h2 class="text-2xl font-bold text-center step-title mt-4">Personal Information</h2>
     </div>
 
-    <!-- The form with multiple parts -->
-    <form id="multiPartForm" class="space-y-4">
+    <!-- Multi-step Form -->
+    <form id="createAccountForm" class="space-y-6" action="{% url 'register' %}" method="POST">
+      {% csrf_token %}
+      <div id="registrationError" class="hidden alert alert-error"></div>
       
-      <!-- Part 1: Get Started -->
-      <div id="step1">
-        <!-- Your first step content here -->
-        <h2 class="text-xl font-bold text-center mb-4">Get Started</h2>
-        <!-- Your form fields for part 1 -->
-        <!-- Next Button -->
-        <button type="button" id="nextBtn" class="...">Next</button>
+      <!-- Step 1: Personal Information -->
+      <div class="step-content" id="step1">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="space-y-1">
+            <label class="text-sm text-gray-600">First Name *</label>
+            <input type="text" id="first_name" name="first_name" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                   placeholder="First Name">
+            <span class="error-message">Please enter your first name</span>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm text-gray-600">Last Name *</label>
+            <input type="text" id="last_name" name="last_name" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                   placeholder="Last Name">
+            <span class="error-message">Please enter your last name</span>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm text-gray-600">Middle Name</label>
+            <input type="text" id="middle_name" name="middle_name"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                   placeholder="Middle Name">
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm text-gray-600">Email *</label>
+            <input type="email" id="email" name="email" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                   placeholder="Email">
+            <span class="error-message">Please enter a valid email address</span>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm text-gray-600">Phone Number *</label>
+            <input type="tel" id="phone_number" name="phone_number" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                   placeholder="Phone Number">
+            <span class="error-message">Please enter a valid phone number</span>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm text-gray-600">Gender *</label>
+            <select id="gender" name="gender" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+              <option value="" disabled selected>Select gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+            <span class="error-message">Please select your gender</span>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm text-gray-600">Date of Birth *</label>
+            <input type="text" id="date_of_birth" name="date_of_birth" required
+                   class="datepicker w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                   placeholder="YYYY-MM-DD">
+            <span class="error-message">Please enter your date of birth</span>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm text-gray-600">Nationality *</label>
+            <input type="text" id="nationality" name="nationality" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                   placeholder="Nationality">
+            <span class="error-message">Please enter your nationality</span>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm text-gray-600">Emergency Contact *</label>
+            <input type="text" id="emergency_contact" name="emergency_contact" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                   placeholder="Emergency Contact">
+            <span class="error-message">Please enter an emergency contact</span>
+          </div>
+          <div class="space-y-1 md:col-span-3">
+            <label class="text-sm text-gray-600">Address *</label>
+            <input type="text" id="address" name="address" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                   placeholder="Complete Address">
+            <span class="error-message">Please enter your address</span>
+          </div>
+          <div class="space-y-1 md:col-span-3">
+            <label class="text-sm text-gray-600">Notes</label>
+            <textarea id="notes" name="notes" rows="2"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      placeholder="Additional Notes"></textarea>
+          </div>
+        </div>
       </div>
-      
-      <!-- Part 2: (hidden initially) -->
-      <div id="step2" class="hidden">
-        <!-- Content for part 2 -->
+
+      <!-- Step 2: Account Setup -->
+      <div class="step-content hidden" id="step2">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-1">
+            <label class="text-sm text-gray-600">Username *</label>
+            <input type="text" id="username" name="username" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                   placeholder="Username">
+            <span class="error-message">Please enter a username</span>
+          </div>
+          <div></div>
+          <div class="space-y-1">
+            <label class="text-sm text-gray-600">Password *</label>
+            <input type="password" id="password" name="password" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                   placeholder="Password">
+            <span class="error-message">Please enter a password</span>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm text-gray-600">Confirm Password *</label>
+            <input type="password" id="confirm_password" name="confirm_password" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                   placeholder="Confirm Password">
+            <span class="error-message">Passwords do not match</span>
+          </div>
+        </div>
       </div>
-      
-      <!-- Part 3: (hidden initially) -->
-      <div id="step3" class="hidden">
-        <!-- Content for part 3 -->
+
+      <!-- Step 3: Success Message -->
+      <div class="step-content hidden text-center" id="step3">
+        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-green-500 mb-2">Congratulations!</h2>
+        <p class="text-gray-600 mb-6">Your account has been created successfully</p>
+        <div class="animate-pulse">Redirecting to booking page...</div>
       </div>
-      
+
+      <!-- Navigation Buttons -->
+      <div class="flex justify-between mt-8 space-x-4">
+        <button type="button" id="prevBtn" 
+                class="hidden px-8 py-3 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-md transition-all duration-300 flex items-center">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Back
+        </button>
+        <div class="flex-grow"></div>
+        <button type="button" id="nextBtn" 
+                class="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-md transition-all duration-300 flex items-center">
+          Next
+          <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+        <button type="submit" id="createAccountBtn" 
+                class="hidden px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-md transition-all duration-300">
+          Create Account
+        </button>
+      </div>
     </form>
   </div>
 </div>
-
-
 
 <footer class="bg-white dark:bg-gray-600">
     <div class="mx-auto w-full max-w-screen-xl p-4 py-6 lg:py-8">
@@ -405,118 +639,394 @@
 {% endblock %}
 
 {% comment %} script for FAQ {% endcomment %}
-{% block scripts  %}
+{% block scripts %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script>
-  function toggleFAQ(headerElement) {
-    const icon = headerElement.querySelector('i');
-    const paragraph = headerElement.nextElementSibling;
+  document.addEventListener('DOMContentLoaded', function() {
+    // Auto-hide messages after 5 seconds
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(alert => {
+      setTimeout(() => {
+        alert.style.transform = 'translateX(100%)';
+        setTimeout(() => alert.remove(), 500);
+      }, 5000);
+    });
 
-    // Toggle the visibility
-    paragraph.classList.toggle('hidden');
+    // Initialize Flatpickr
+    flatpickr(".datepicker", {
+      dateFormat: "Y-m-d",
+      maxDate: "today",
+      allowInput: true
+    });
 
-    // Rotate the arrow
-    icon.classList.toggle('rotate-180');
-  }
-</script>
+    // Form state
+    let currentStep = 1;
+    const totalSteps = 3;
 
-{% comment %} login form scripts {% endcomment %}
-<script>
-  // Get elements
-  const openBtn = document.getElementById('openLoginBtn');
-const modal = document.getElementById('loginModal');
-const modalContent = document.getElementById('modalContent');
-const closeBtn = document.getElementById('closeModal');
+    // Elements
+    const loginModal = document.getElementById('loginModal');
+    const createAccountModal = document.getElementById('createAccountModal');
+    const loginBtn = document.getElementById('openLoginBtn');
+    const createAccountLink = document.getElementById('openCreateAccountBtn');
+    const closeButtons = document.querySelectorAll('.modal-close');
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const createAcctBtn = document.getElementById('createAccountBtn');
+    const progressBar = document.querySelector('.progress-bar');
+    const stepTitle = document.querySelector('.step-title');
+    const form = document.getElementById('createAccountForm');
+    const loginForm = document.getElementById('loginForm');
 
-function showModal() {
-  // Make visible and animate
-  modal.classList.remove('opacity-0', 'pointer-events-none');
-  modal.classList.add('opacity-100', 'pointer-events-auto');
-  // Animate scale and opacity
-  modalContent.classList.remove('opacity-0', 'scale-95');
-  modalContent.classList.add('opacity-100', 'scale-100');
-}
+    // Handle login form submission
+    if (loginForm) {
+      loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Clear previous errors
+        const errorDiv = document.getElementById('loginError');
+        errorDiv.classList.add('hidden');
+        document.querySelectorAll('.field-error').forEach(field => {
+          field.classList.remove('field-error');
+        });
 
-function hideModal() {
-  // Animate scale and opacity
-  modalContent.classList.remove('opacity-100', 'scale-100');
-  modalContent.classList.add('opacity-0', 'scale-95');
-  // After transition, hide the modal
-  setTimeout(() => {
-    modal.classList.remove('opacity-100', 'pointer-events-auto');
-    modal.classList.add('opacity-0', 'pointer-events-none');
-  }, 300); // match transition duration
-}
+        // Basic validation
+        const username = document.getElementById('login_username');
+        const password = document.getElementById('login_password');
+        let isValid = true;
 
-openBtn.addEventListener('click', showModal);
-closeBtn.addEventListener('click', hideModal);
-window.addEventListener('click', (e) => {
-  if (e.target === modal) {
-    hideModal();
-  }
-});
-</script>
+        if (!username.value.trim()) {
+          username.classList.add('field-error');
+          isValid = false;
+        }
+        if (!password.value.trim()) {
+          password.classList.add('field-error');
+          isValid = false;
+        }
 
-{% comment %} create account here! script {% endcomment %}
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const openBtn = document.getElementById('openCreateAccountBtn');
+        if (!isValid) return;
 
-    function showCreateAccountModal() {
-      const modal = document.getElementById('createAccountModal');
-      modal.classList.remove('opacity-0', 'pointer-events-none');
-      modal.classList.add('opacity-100', 'pointer-events-auto');
+        // Submit form
+        const formData = new FormData(loginForm);
+        try {
+          const response = await fetch(loginForm.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            window.location.href = data.redirect_url;
+          } else {
+            errorDiv.textContent = data.error;
+            errorDiv.classList.remove('hidden');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          errorDiv.textContent = 'An error occurred. Please try again.';
+          errorDiv.classList.remove('hidden');
+        }
+      });
+
+      // Remove error state on input for login form
+      loginForm.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', function() {
+          this.classList.remove('field-error');
+          const errorDiv = document.getElementById('loginError');
+          if (errorDiv) {
+            errorDiv.classList.add('hidden');
+          }
+        });
+      });
     }
 
-    if (openBtn) {
-      openBtn.addEventListener('click', (e) => {
+    // FAQ functionality
+    function toggleFAQ(headerElement) {
+      const icon = headerElement.querySelector('i');
+      const paragraph = headerElement.nextElementSibling;
+      paragraph.classList.toggle('hidden');
+      icon.classList.toggle('rotate-180');
+    }
+
+    // Modal Functions
+    function showModal(modal) {
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modal.classList.add('opacity-100', 'pointer-events-auto');
+      const modalContent = modal.querySelector('div');
+      modalContent.classList.remove('scale-95');
+      modalContent.classList.add('scale-100');
+    }
+
+    function hideModal(modal) {
+      const modalContent = modal.querySelector('div');
+      modalContent.classList.remove('scale-100');
+      modalContent.classList.add('scale-95');
+      setTimeout(() => {
+        modal.classList.remove('opacity-100', 'pointer-events-auto');
+        modal.classList.add('opacity-0', 'pointer-events-none');
+      }, 200);
+    }
+
+    function resetForm() {
+      currentStep = 1;
+      form.reset();
+      updateFormState();
+      const errorDivs = form.querySelectorAll('.alert-error');
+      errorDivs.forEach(div => div.classList.add('hidden'));
+      form.querySelectorAll('.field-error').forEach(field => {
+        field.classList.remove('field-error');
+      });
+    }
+
+    function updateStepIndicators(step) {
+      document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+        if (index + 1 < step) {
+          indicator.classList.remove('text-gray-400');
+          indicator.classList.add('text-orange-500');
+        } else if (index + 1 === step) {
+          indicator.classList.remove('text-gray-400');
+          indicator.classList.add('text-black');
+        } else {
+          indicator.classList.remove('text-orange-500', 'text-black');
+          indicator.classList.add('text-gray-400');
+        }
+      });
+    }
+
+    function updateFormState() {
+      // Update progress bar
+      progressBar.style.width = `${((currentStep - 1) / (totalSteps - 1)) * 100}%`;
+
+      // Update title and indicators
+      stepTitle.textContent = {
+        1: 'Personal Information',
+        2: 'Account Setup',
+        3: "You've Made it!"
+      }[currentStep];
+      updateStepIndicators(currentStep);
+
+      // Hide all steps
+      document.querySelectorAll('.step-content').forEach(step => {
+        step.classList.add('hidden');
+      });
+
+      // Show current step
+      const currentStepElement = document.getElementById(`step${currentStep}`);
+      if (currentStepElement) {
+        currentStepElement.classList.remove('hidden');
+      }
+
+      // Update buttons
+      if (prevBtn && nextBtn && createAcctBtn) {
+        prevBtn.classList.toggle('hidden', currentStep === 1 || currentStep === 3);
+        nextBtn.classList.toggle('hidden', currentStep !== 1);
+        createAcctBtn.classList.toggle('hidden', currentStep !== 2);
+      }
+    }
+
+    // Event Listeners
+    if (loginBtn) {
+      loginBtn.addEventListener('click', () => showModal(loginModal));
+    }
+
+    if (createAccountLink) {
+      createAccountLink.addEventListener('click', (e) => {
         e.preventDefault();
-        showCreateAccountModal();
+        hideModal(loginModal);
+        setTimeout(() => {
+          showModal(createAccountModal);
+          resetForm();
+        }, 300);
+      });
+    }
+
+    if (closeButtons) {
+      closeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const modal = button.closest('[id$="Modal"]');
+          hideModal(modal);
+          if (modal.id === 'createAccountModal') {
+            setTimeout(resetForm, 300);
+          }
+        });
+      });
+    }
+
+    // Close on outside click
+    window.addEventListener('click', (e) => {
+      if (e.target.matches('[id$="Modal"]')) {
+        hideModal(e.target);
+        if (e.target.id === 'createAccountModal') {
+          setTimeout(resetForm, 300);
+        }
+      }
+    });
+
+    // Form validation
+    function validateStep(step) {
+      const currentStepElement = document.getElementById(`step${step}`);
+      const requiredFields = currentStepElement.querySelectorAll('[required]');
+      let isValid = true;
+
+      requiredFields.forEach(field => {
+        const value = field.value.trim();
+        let fieldValid = true;
+
+        // Specific field validations
+        switch(field.id) {
+          case 'email':
+            fieldValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+            break;
+          case 'phone_number':
+            fieldValid = /^\+?[\d\s-]{10,}$/.test(value);
+            break;
+          case 'date_of_birth':
+            fieldValid = /^\d{4}-\d{2}-\d{2}$/.test(value);
+            break;
+          case 'confirm_password':
+            const password = document.getElementById('password').value;
+            fieldValid = value === password;
+            break;
+          default:
+            fieldValid = value.length > 0;
+        }
+
+        if (!fieldValid) {
+          field.classList.add('field-error');
+          const errorMessage = field.nextElementSibling;
+          if (errorMessage && errorMessage.classList.contains('error-message')) {
+            errorMessage.style.display = 'block';
+          }
+          isValid = false;
+        } else {
+          field.classList.remove('field-error');
+          const errorMessage = field.nextElementSibling;
+          if (errorMessage && errorMessage.classList.contains('error-message')) {
+            errorMessage.style.display = 'none';
+          }
+        }
+      });
+
+      return isValid;
+    }
+
+    // Event Listeners for form navigation
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (validateStep(currentStep)) {
+          currentStep++;
+          updateFormState();
+        }
+      });
+    }
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (currentStep > 1) {
+          currentStep--;
+          updateFormState();
+        }
+      });
+    }
+
+    // Handle form submission
+    if (form) {
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Validate current step
+        if (!validateStep(currentStep)) {
+          return;
+        }
+
+        // Additional password validation for step 2
+        if (currentStep === 2) {
+          const password = document.getElementById('password').value;
+          const confirmPassword = document.getElementById('confirm_password').value;
+          
+          if (password !== confirmPassword) {
+            const confirmPasswordField = document.getElementById('confirm_password');
+            confirmPasswordField.classList.add('field-error');
+            const errorMessage = confirmPasswordField.nextElementSibling;
+            if (errorMessage) {
+              errorMessage.style.display = 'block';
+            }
+            return;
+          }
+        }
+
+        const formData = new FormData(form);
+        try {
+          const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            currentStep = 3;
+            updateFormState();
+            setTimeout(() => {
+              window.location.href = data.redirect_url;
+            }, 2000);
+          } else {
+            const errorDiv = document.getElementById('registrationError');
+            errorDiv.textContent = data.error;
+            errorDiv.classList.remove('hidden');
+            // Scroll to error message
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          const errorDiv = document.getElementById('registrationError');
+          errorDiv.textContent = 'An error occurred. Please try again.';
+          errorDiv.classList.remove('hidden');
+          // Scroll to error message
+          errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+
+      // Remove error state on input
+      form.querySelectorAll('input, select, textarea').forEach(field => {
+        field.addEventListener('input', function() {
+          this.classList.remove('field-error');
+          const errorMessage = this.nextElementSibling;
+          if (errorMessage && errorMessage.classList.contains('error-message')) {
+            errorMessage.style.display = 'none';
+          }
+          const errorDiv = document.getElementById('registrationError');
+          if (errorDiv) {
+            errorDiv.classList.add('hidden');
+          }
+        });
       });
     }
   });
 </script>
-
-{% comment %} create account scripts {% endcomment %}
-<script>
-  // Show modal function (if needed)
-  // Example: show modal when a button is clicked
-  // document.getElementById('openCreateAccountBtn').addEventListener('click', showModal);
-
-  const modal = document.getElementById('createAccountModal');
-  const openBtn = document.getElementById('openCreateAccountBtn'); // If you have a button to open
-  const closeBtn = document.getElementById('closeCreateAccount');
-
-  const nextBtn = document.getElementById('nextBtn');
-  const step1 = document.getElementById('step1');
-  const step2 = document.getElementById('step2');
-
-  // Function to open modal
-  function showCreateAccountModal() {
-    modal.classList.remove('opacity-0', 'pointer-events-none');
-    modal.classList.add('opacity-100', 'pointer-events-auto');
-  }
-
-  // Function to close modal
-  function hideCreateAccountModal() {
-    modal.classList.remove('opacity-100', 'pointer-events-auto');
-    modal.classList.add('opacity-0', 'pointer-events-none');
-  }
-
-  // Next button click handler
-  nextBtn.addEventListener('click', () => {
-    // Hide step 1
-    step1.classList.add('hidden');
-    // Show step 2 (when available)
-    step2.classList.remove('hidden');
-    // Update progress indicator if needed
-  });
-
-  // Close modal handler
-  closeBtn.addEventListener('click', hideCreateAccountModal);
-  window.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      hideCreateAccountModal();
-    }
-  });
-</script>
 {% endblock scripts %}
+
+{% block styles %}
+<style>
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.5s ease-out;
+}
+</style>
+{% endblock styles %}
