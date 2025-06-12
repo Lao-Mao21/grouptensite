@@ -1,5 +1,7 @@
 {% extends 'base/base_web.html' %}
 
+{% block title %}Landing Page{% endblock title %}
+
 {% block content %}
 {% include 'attachments/navbar.html' %}
 <div class="relative w-full h-auto">
@@ -236,19 +238,103 @@
     class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition duration-300" 
     aria-label="Back to Top">
     <!-- You can use an icon or text -->
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-    </svg>
+    <i class="fa-solid fa-arrow-up h-5 w-6"></i>
   </button>
 </div>
 
 <div class="fixed bottom-4 right-4 flex flex-row space-y-3 z-50">
-  <!-- Login Button -->
-  <a href="/login" 
-    class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-full shadow-lg text-center transition duration-300">
-    Login
-  </a>
+   <!-- Login Button -->
+  <button id="openLoginBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-full shadow-lg text-center transition duration-300">Login</button>
 </div>
+
+{% comment %} login form {% endcomment %}
+<!-- Modal wrapper -->
+<div id="loginModal" class="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out">
+  <!-- Modal content -->
+  <div id="modalContent" class="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full transform scale-95 transition-transform duration-300 ease-in-out opacity-0">
+    <!-- Close Button -->
+    <button id="closeModal" class="absolute top-2 right-2 p-3 text-gray-400 hover:text-gray-600">
+      <i class="fa-solid fa-x"></i>
+    </button>
+    <!-- Logo/Header -->
+    <div class="flex items-center px-8 space-x-10 mb-4">
+      <img src="{{ MEDIA_URL }}NOVA DOORS HOTEL.png" alt="NOVA DOORS HOTEL" class="h-20">
+      <h2 class="text-xl font-bold text-center">Login</h2>
+    </div>
+    <!-- Login Form -->
+    <form class="space-y-4" action="/submit-login" method="POST">
+      {% csrf_token %}
+      <div>
+        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+        <input type="email" id="email" name="email" required
+               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter your email">
+      </div>
+      <div>
+        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+        <input type="password" id="password" name="password" required
+               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter your password">
+      </div>
+      <div class="text-center">
+        <button type="submit" 
+                class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+          Login
+        </button>
+      </div>
+      <div class="text-center text-sm mt-2">
+        <a href="#" id="openCreateAccountBtn" class="text-blue-500 hover:underline">Create Account here!</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% comment %} create account form {% endcomment %}
+<!-- Modal overlay (covers entire screen) -->
+<div id="createAccountModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out">
+  <!-- Modal content container -->
+  <div id="modalContent" class="bg-white rounded-lg shadow-lg p-6 max-w-xl w-full relative transition-all duration-300 ease-in-out">
+
+    <!-- Close button -->
+    <button id="closeCreateAccount" class="absolute top-2 right-2 ...">
+      <span></span>
+    </button>
+
+    <!-- Your header/logo -->
+    <div class="flex justify-center mb-4">
+      <img src="{{ MEDIA_URL }}NOVA DOORS HOTEL.png" alt="NOVA DOORS HOTEL" class="h-20">
+    </div>
+
+    <!-- Step indicator (optional) -->
+    <div class="flex justify-center mb-4">
+      <!-- your progress indicator here -->
+    </div>
+
+    <!-- The form with multiple parts -->
+    <form id="multiPartForm" class="space-y-4">
+      
+      <!-- Part 1: Get Started -->
+      <div id="step1">
+        <!-- Your first step content here -->
+        <h2 class="text-xl font-bold text-center mb-4">Get Started</h2>
+        <!-- Your form fields for part 1 -->
+        <!-- Next Button -->
+        <button type="button" id="nextBtn" class="...">Next</button>
+      </div>
+      
+      <!-- Part 2: (hidden initially) -->
+      <div id="step2" class="hidden">
+        <!-- Content for part 2 -->
+      </div>
+      
+      <!-- Part 3: (hidden initially) -->
+      <div id="step3" class="hidden">
+        <!-- Content for part 3 -->
+      </div>
+      
+    </form>
+  </div>
+</div>
+
+
 
 <footer class="bg-white dark:bg-gray-600">
     <div class="mx-auto w-full max-w-screen-xl p-4 py-6 lg:py-8">
@@ -332,7 +418,105 @@
     icon.classList.toggle('rotate-180');
   }
 </script>
-{% endblock scripts  %}
 
+{% comment %} login form scripts {% endcomment %}
+<script>
+  // Get elements
+  const openBtn = document.getElementById('openLoginBtn');
+const modal = document.getElementById('loginModal');
+const modalContent = document.getElementById('modalContent');
+const closeBtn = document.getElementById('closeModal');
 
+function showModal() {
+  // Make visible and animate
+  modal.classList.remove('opacity-0', 'pointer-events-none');
+  modal.classList.add('opacity-100', 'pointer-events-auto');
+  // Animate scale and opacity
+  modalContent.classList.remove('opacity-0', 'scale-95');
+  modalContent.classList.add('opacity-100', 'scale-100');
+}
 
+function hideModal() {
+  // Animate scale and opacity
+  modalContent.classList.remove('opacity-100', 'scale-100');
+  modalContent.classList.add('opacity-0', 'scale-95');
+  // After transition, hide the modal
+  setTimeout(() => {
+    modal.classList.remove('opacity-100', 'pointer-events-auto');
+    modal.classList.add('opacity-0', 'pointer-events-none');
+  }, 300); // match transition duration
+}
+
+openBtn.addEventListener('click', showModal);
+closeBtn.addEventListener('click', hideModal);
+window.addEventListener('click', (e) => {
+  if (e.target === modal) {
+    hideModal();
+  }
+});
+</script>
+
+{% comment %} create account here! script {% endcomment %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const openBtn = document.getElementById('openCreateAccountBtn');
+
+    function showCreateAccountModal() {
+      const modal = document.getElementById('createAccountModal');
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modal.classList.add('opacity-100', 'pointer-events-auto');
+    }
+
+    if (openBtn) {
+      openBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        showCreateAccountModal();
+      });
+    }
+  });
+</script>
+
+{% comment %} create account scripts {% endcomment %}
+<script>
+  // Show modal function (if needed)
+  // Example: show modal when a button is clicked
+  // document.getElementById('openCreateAccountBtn').addEventListener('click', showModal);
+
+  const modal = document.getElementById('createAccountModal');
+  const openBtn = document.getElementById('openCreateAccountBtn'); // If you have a button to open
+  const closeBtn = document.getElementById('closeCreateAccount');
+
+  const nextBtn = document.getElementById('nextBtn');
+  const step1 = document.getElementById('step1');
+  const step2 = document.getElementById('step2');
+
+  // Function to open modal
+  function showCreateAccountModal() {
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    modal.classList.add('opacity-100', 'pointer-events-auto');
+  }
+
+  // Function to close modal
+  function hideCreateAccountModal() {
+    modal.classList.remove('opacity-100', 'pointer-events-auto');
+    modal.classList.add('opacity-0', 'pointer-events-none');
+  }
+
+  // Next button click handler
+  nextBtn.addEventListener('click', () => {
+    // Hide step 1
+    step1.classList.add('hidden');
+    // Show step 2 (when available)
+    step2.classList.remove('hidden');
+    // Update progress indicator if needed
+  });
+
+  // Close modal handler
+  closeBtn.addEventListener('click', hideCreateAccountModal);
+  window.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      hideCreateAccountModal();
+    }
+  });
+</script>
+{% endblock scripts %}

@@ -919,7 +919,7 @@ def logo(request):
     }
     return render(request, 'navbar.html', context)
 
-# def login(request): # backup
+# def login(request):
 #     if request.method == "POST":
 #         username = request.POST.get("username")
 #         password = request.POST.get("password")
