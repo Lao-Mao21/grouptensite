@@ -228,6 +228,28 @@
   </div>
 </div>
 
+<!-- Floating Buttons Container -->
+<div class="fixed bottom-4 left-4 flex flex-row space-y-3 z-50">
+  <!-- Back to Top Button -->
+  <button 
+    onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" 
+    class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition duration-300" 
+    aria-label="Back to Top">
+    <!-- You can use an icon or text -->
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+    </svg>
+  </button>
+</div>
+
+<div class="fixed bottom-4 right-4 flex flex-row space-y-3 z-50">
+  <!-- Login Button -->
+  <a href="/login" 
+    class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-full shadow-lg text-center transition duration-300">
+    Login
+  </a>
+</div>
+
 <footer class="bg-white dark:bg-gray-600">
     <div class="mx-auto w-full max-w-screen-xl p-4 py-6 lg:py-8">
         <div class="md:flex md:justify-between">
