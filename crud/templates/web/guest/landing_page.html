@@ -1,15 +1,316 @@
-{% extends 'base/base.html' %}
+{% extends 'base/base_web.html' %}
 
 {% block content %}
 {% include 'attachments/navbar.html' %}
 <div class="relative w-full h-auto">
-  <img src="{{ MEDIA_URL }}unsplash-img.jpg" alt="landing_img.jpg" class="w-full h-96 object-cover"/>
+  <img src="{{ MEDIA_URL }}unsplash-img.jpg" alt="landing_img.jpg" class="w-full aspect-[14/6] object-cover"/>
   <!-- Transparent color overlay -->
-  <div class="absolute inset-0 bg-orange-400/50 backdrop-blur-none"></div>
+  <div class="absolute inset-0 bg-orange-400/50 backdrop-blur-xs">
+    <div class="flex flex-col my-auto mx-24 items-left justify-center h-full text-white">
+      <h1 class="text-5xl font-bold text-left">Your Gateway to Blissful Retreats</h1>
+      <p class="text-xl mt-2 max-w-4xl text-left">
+        Welcome to Nova Doors Hotel - your gateway to comfort, elegance, and unforgettable stay. Experience modern luxury
+        and personalized service in the heart of the city, where every stay feels like a home away from home.
+      </p>
+    </div>
+  </div>
 </div>
-<div class="flex flex-col items-center justify-center h-screen">
-    <div class="flex flex-col items-center justify-center">
-        <h1 class="text-4xl font-bold">Welcome to the Landing Page</h1>
+{% comment %} about {% endcomment %}
+<div class="relative w-full min-h-screen">
+  <div class="flex justify-center items-center h-full">
+    <div class="flex-col my-36 mx-auto text-center text-black">
+      <h1 class="text-5xl font-bold">A FULL HOSPITALITY SERVICE</h1>
+      <p class="text-2xl mt-4 font-sans max-w-4xl">
+        We offer a serene retreat where modern comfort meets warm hospitality. 
+        Our personalized service and elegant accommodations ensure every guest feels at home. 
+        Experience a perfect blend of luxury and tranquility in the heart of the city.
+      </p>
+    </div>
+  </div>
+  {% comment %} room section {% endcomment %}
+  <div class="flex-col mx-auto text-center text-black">
+    <h1 class="text-5xl text-center font-bold"> OUR ROOMS </h1>
+    <div class="grid grid-rows-1 grid-cols-4 gap-6 px-12 py-8"> <!-- modify grid -->
+      <div class="text-black text-center">
+        <img src="{{ MEDIA_URL }}single.jpg" alt="single" class="aspect-[3/4] border border-transparent shadow-md rounded-2xl
+        transition-transform duration-500 ease-in-out hover:scale-105">
+        <div class="mt-4 space-y-3">
+          <h2 class="font-bold text-3xl">SINGLE</h2>
+          <p>Spacious and comfortable, our Family Rooms are designed to accommodate your loved ones with ease. Enjoy thoughtful amenities and a cozy atmosphere perfect for creating lasting memories together</p>
+        </div>
+      </div>
+      <div class="text-black text-center">
+        <img src="{{ MEDIA_URL }}double.jpg" alt="double" class="aspect-[3/4] border border-transparent shadow-md rounded-2xl 
+        transition-transform duration-500 ease-in-out hover:scale-105">
+        <div class="mt-4 space-y-3">
+          <h2 class="font-bold text-3xl">DOUBLE</h2>
+          <p>Experience the pinnacle of luxury in our VIP Rooms, featuring exclusive amenities and personalized services. Designed for discerning guests seeking privacy, elegance, and exceptional comfort</p>
+        </div>
+      </div>
+      <div class="text-black text-center">
+        <img src="{{ MEDIA_URL }}suite.jpg" alt="suite" class="aspect-[3/4] border border-transparent shadow-md rounded-2xl
+        transition-transform duration-500 ease-in-out hover:scale-105">
+        <div class="mt-4 space-y-3">
+          <h2 class="font-bold text-3xl">SUITE</h2>
+          <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quibusdam, eum atque necessitatibus error ad commodi quod libero ut explicabo assumenda. Illum facere autem, eum perspiciatis quos quasi nulla rerum beatae!</p>
+        </div>
+      </div>
+      <div class="text-black text-center">
+        <img src="{{ MEDIA_URL }}deluxe.jpg" alt="deluxe" class="aspect-[3/4] border border-transparent shadow-md rounded-2xl
+        transition-transform duration-500 ease-in-out hover:scale-105">
+        <div class="mt-4 space-y-3">
+          <h2 class="font-bold text-3xl">DELUXE</h2>
+          <p>Our Deluxe Rooms offer a stylish blend of sophistication and convenience. Relax in a beautifully appointed space with modern features that cater to your every need</p>
+        </div>
+      </div>
+    </div>
+    <div class="flex justify-center mt-9 mb-32">
+      <a href="#" class="block py-2 px-4 border bg-orange-200 rounded-full w-fit md:border-0 font-bold text-white md:hover:text-black">BOOK NOW</a>
+    </div>
+  </div>
+  {% comment %} review section {% endcomment %}
+  <div class="flex-col mx-auto text-center text-black">
+    <h1 class="text-5xl text-center font-bold"> REVIEWS </h1>
+    <div class="grid grid-rows-1 grid-cols-3 gap-32 px-40 pt-12 pb-32"> <!-- modify grid -->
+      <div class="text-black text-left border border-gray-200 bg-white shadow-md rounded-xl">
+        <div class="mt-4space-y-3 p-6">
+          <div class="flex space-x-1 pb-32 text-yellow-400">
+            <!-- Filled stars -->
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <p class="underline pl-24 text-gray-900">04/14/2025</p>
+          </div>
+          <h2 class="font-bold text-lg">Jhon Elred Vigo</h2>
+          <p>The stay was absolutely wonderful, the rooms were spotless and beautifully decorated. The staff made me feel truly valued with their warm and attentive service.</p>
+        </div>
+      </div>
+      <div class="text-black text-left border border-gray-200 bg-white shadow-md rounded-xl">
+        <div class="mt-4 space-y-3 p-6">
+          <div class="flex space-x-1 pb-32 text-yellow-400">
+            <!-- Filled stars -->
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <p class="underline pl-24 text-gray-900">04/14/2025</p>
+          </div>
+          <h2 class="font-bold text-lg">Jonas Buenavides</h2>
+          <p>A perfect getaway spot with a peaceful ambiance and stunning views. I loved how the hotel balanced luxury with comfort for a memorable experience.</p>
+        </div>
+      </div>
+      <div class="text-black text-left border border-gray-200 bg-white shadow-md rounded-xl">
+        <div class="mt-4 py-3 p-6">
+          <div class="flex space-x-1 pb-32 text-yellow-400">
+            <!-- Filled stars -->
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg> 
+            <p class="underline pl-24 text-gray-900">04/14/2025</p>
+          </div>
+          <h2 class="font-bold text-lg">Hazel Diwa</h2>
+          <p>Exceptional hospitality and top-notch amenities made my stay unforgettable. I highly recommend this hotel for anyone seeking relaxation and elegance.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% comment %} location section {% endcomment %}
+<div class="flex-col mx-auto text-center text-black">
+  <h1 class="text-5xl text-center font-bold"> WE ARE LOCATED AT </h1>
+  <div class="flex justify-center align-center px-40 pt-12 pb-32"> <!-- modify flex -->
+      <div class="text-black text-left border border-gray-200 bg-white shadow-md rounded-xl">
+        <div class="mt-4space-y-3 p-6">
+          <img src="{{ MEDIA_URL }}location.png" class="size-full" alt="location"/>
+        </div>
+      </div>
     </div>
 </div>
+{% comment %} FAQ {% endcomment %}
+<div class="flex-col mx-auto text-center text-black">
+  <h1 class="text-5xl text-center font-bold mb-8">Frequently Asked Questions</h1>
+  <div class="flex flex-col px-10 md:px-40 pt-12 pb-32 space-y-8"> <!-- spacing between items -->
+    <!-- FAQ Item 1 -->
+    <div class="relative text-black text-left border-b border-gray-300 pb-4">
+      <h2 class="flex items-center justify-between cursor-pointer transition-transform duration-500 ease-in-out" 
+          onclick="toggleFAQ(this)">
+        <span class="mr-2 font-bold text-xl">What amenities are included in the rooms?</span>
+        <i class="fa-solid fa-arrow-down p-3 bg-gray-200 transition-transform duration-300 ease-in-out transform" 
+           ></i>
+      </h2>
+      <p class="mt-2 text-lg hidden transition-all duration-300">
+        All rooms come equipped with free Wi-Fi, flat-screen TVs, air conditioning, and 24-hour room service. 
+        Additional amenities vary by room type to enhance your stay.
+      </p>
+    </div>
+    <!-- FAQ Item 2 -->
+    <div class="relative text-black text-left border-b border-gray-300 pb-4">
+      <h2 class="flex items-center justify-between cursor-pointer transition-transform duration-500 ease-in-out" 
+          onclick="toggleFAQ(this)">
+        <span class="mr-2 font-bold text-xl">Does the hotel offer parking facilities?</span>
+        <i class="fa-solid fa-arrow-down p-3 bg-gray-200 transition-transform duration-300 ease-in-out transform"></i>
+      </h2>
+      <p class="mt-2 text-lg hidden transition-all duration-300">
+        Yes, secure on-site parking is available for all guests at no extra charge. 
+        Valet parking service is also offered for your convenience.
+      </p>
+    </div>
+    <!-- FAQ Item 3 -->
+    <div class="relative text-black text-left border-b border-gray-300 pb-4">
+      <h2 class="flex items-center justify-between cursor-pointer transition-transform duration-500 ease-in-out" 
+          onclick="toggleFAQ(this)">
+        <span class="mr-2 font-bold text-xl">Is breakfast included with the room booking?</span>
+        <i class="fa-solid fa-arrow-down p-3 bg-gray-200 transition-transform duration-300 ease-in-out transform"></i>
+      </h2>
+      <p class="mt-2 text-lg hidden transition-all duration-300">
+        A complimentary breakfast buffet is available for guests who book directly through our website. 
+        Alternatively, a range of delicious breakfast options can be ordered à la carte.
+      </p>
+    </div>
+    <!-- FAQ Item 4 -->
+    <div class="relative text-black text-left border-b border-gray-300 pb-4">
+      <h2 class="flex items-center justify-between cursor-pointer transition-transform duration-500 ease-in-out" 
+          onclick="toggleFAQ(this)">
+        <span class="mr-2 font-bold text-xl">Are pets allowed at the hotel?</span>
+        <i class="fa-solid fa-arrow-down p-3 bg-gray-200 transition-transform duration-300 ease-in-out transform"></i>
+      </h2>
+      <p class="mt-2 text-lg hidden transition-all duration-300">
+        Yes, pets are allowed in designated rooms. Please contact us in advance for pet policies and fees.
+      </p>
+    </div>
+    <!-- FAQ Item 5 -->
+    <div class="relative text-black text-left border-b border-gray-300 pb-4">
+      <h2 class="flex items-center justify-between cursor-pointer transition-transform duration-500 ease-in-out" 
+          onclick="toggleFAQ(this)">
+        <span class="mr-2 font-bold text-xl">What is the cancellation policy?</span>
+        <i class="fa-solid fa-arrow-down p-3 bg-gray-200 transition-transform duration-300 ease-in-out transform"></i>
+      </h2>
+      <p class="mt-2 text-lg hidden transition-all duration-300">
+        Reservations can be canceled free of charge up to 48 hours before the scheduled arrival date. 
+        For cancellations within 48 hours, a fee equal to one night's stay will apply.
+      </p>
+    </div>
+  </div>
+</div>
+
+<footer class="bg-white dark:bg-gray-600">
+    <div class="mx-auto w-full max-w-screen-xl p-4 py-6 lg:py-8">
+        <div class="md:flex md:justify-between">
+          <div class="mb-6 md:mb-0">
+              <a href="#" class="flex items-center">
+                  <img src="{{ MEDIA_URL }}NOVA DOORS HOTEL CUSTOMER PAGE.png" class="h-32" alt="Logo"/>
+              </a>
+          </div>
+          <div class="grid grid-cols-2 gap-8 sm:gap-6 sm:space-x-24 sm:grid-cols-3">
+              <div>
+                  <h2 class="mb-2 text-sm font-semibold text-gray-900 uppercase dark:text-white">Location</h2>
+                  <ul class="text-gray-500 dark:text-gray-400 font-medium space-y-2">
+                      <li class="">
+                          <p class="">Banica, Roxas City, <br>Capiz, Philippines</p>
+                      </li>
+                      <li>
+                          <p>+63-9094848123</p>
+                      </li>
+                  </ul>
+              </div>
+              <div>
+                  <h2 class="mb-2 text-sm font-semibold text-gray-600 uppercase dark:text-white">Legal</h2>
+                  <ul class="text-gray-500 dark:text-gray-400 font-medium space-y-2">
+                      <li class="">
+                          <a href="#" class="hover:underline">Privacy Policy</a>
+                      </li>
+                      <li class="">
+                          <a href="#" class="hover:underline">Cookie Policy</a>
+                      </li>
+                      <li>
+                          <a href="#" class="hover:underline">Terms &amp; Conditions</a>
+                      </li>
+                  </ul>
+              </div>
+              <div>
+                  <h2 class="mb-2 text-sm font-semibold text-gray-900 uppercase dark:text-white">Follow us</h2>
+                  <ul class="text-gray-500 dark:text-gray-400 font-medium space-y-2">
+                    <li>
+                      <a href="#" class="text-gray-500 hover:text-gray-900 dark:hover:text-white ms-7">
+                        <i class="fa-brands fa-square-facebook text-2xl"></i>
+                        <span class="sr-only">Facebook page</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#" class="text-gray-500 hover:text-gray-900 dark:hover:text-white ms-7">
+                        <i class="fa-brands fa-square-instagram text-2xl"></i>
+                        <span class="sr-only">Instagram</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#" class="text-gray-500 hover:text-gray-900 dark:hover:text-white ms-7">
+                        <i class="fa-brands fa-x-twitter text-2xl"></i>
+                        <span class="sr-only">X</span>
+                      </a>
+                    </li>
+                  </ul>
+              </div>
+          </div>
+      </div>
+      <hr class="my-6 sm:mx-auto border-gray-900 lg:my-4"/>
+      <div class="sm:flex sm:items-center sm:justify-center">
+          <span class="text-sm text-gray-500 sm:text-center justify-center dark:text-gray-400">© 2023 <a href="https://flowbite.com/" class="hover:underline">Nova Doors Hotel™</a>. All Rights Reserved.
+          </span>
+      </div>
+    </div>
+</footer>
 {% endblock %}
+
+{% comment %} script for FAQ {% endcomment %}
+{% block scripts  %}
+<script>
+  function toggleFAQ(headerElement) {
+    const icon = headerElement.querySelector('i');
+    const paragraph = headerElement.nextElementSibling;
+
+    // Toggle the visibility
+    paragraph.classList.toggle('hidden');
+
+    // Rotate the arrow
+    icon.classList.toggle('rotate-180');
+  }
+</script>
+{% endblock scripts  %}
+
+
+

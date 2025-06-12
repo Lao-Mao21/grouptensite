@@ -1,0 +1,28 @@
+{% load static %}
+{% load humanize %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static '/css/output.css' %}">
+    <title>{% block 'title'%} {% endblock 'title' %}</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://kit.fontawesome.com/9d6a4b8185.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    {% include 'attachments/toast_message.html' %}
+    {% block content %}{% endblock content %}
+    <script src="{% static 'js/toast_message.js' %}"></script>
+    <script src="{% static 'js/current_date.js' %}"></script>
+    <script src="{% static 'js/reservation.js' %}"></script>
+    <script src="{% static 'js/toast_message.js' %}"></script>
+    <!-- manage -->
+    <script src="{% static 'js/table_filters.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    {% block scripts %}{% endblock scripts %}
+</body>
+</html>
