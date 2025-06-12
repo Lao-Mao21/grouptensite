@@ -32,6 +32,7 @@ urlpatterns = [
     path('booking/', views.booking_web, name='booking_web'),
     path('register/', views.register, name='register'),
     path('guest/login/', views.guest_login, name='guest_login'),
+    path('guest/logout/', views.guest_logout, name='guest_logout'),
 ]
 
 if settings.DEBUG:

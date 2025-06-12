@@ -30,9 +30,11 @@
     <div id="scrollText" class="hidden w-full md:flex md:w-auto 
     text-xl text-white font-semibold space-x-4 rtl:space-x-reverse">
       <a href="{% url 'booking_web' %}" class="block py-2 px-4 border bg-orange-200 rounded-full md:border-0 md:hover:text-black">BOOK NOW</a>
+      {% if request.session.guest_id %}
       <a href="{% url 'guest_account' %}" class="block py-2 px-4 rounded-sm md:border-0 md:hover:text-blue-300">
         Profile
       </a>
+      {% endif %}
     </div>
   </div>
 </nav>

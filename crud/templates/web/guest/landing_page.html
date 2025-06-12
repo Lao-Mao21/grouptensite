@@ -159,6 +159,9 @@
             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
             </svg>
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
+            </svg>
             <p class="underline pl-24 text-gray-900">04/14/2025</p>
           </div>
           <h2 class="font-bold text-lg">Jhon Elred Vigo</h2>
@@ -183,7 +186,7 @@
             </svg>
             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.956a1 1 0 00.95.69h4.179c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.286 3.956c.3.921-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.839-.197-1.54-1.118l1.286-3.956a1 1 0 00-.364-1.118L2.98 9.383c-.783-.57-.38-1.81.588-1.81h4.179a1 1 0 00.95-.69l1.286-3.956z"></path>
-            </svg> 
+            </svg>
             <p class="underline pl-24 text-gray-900">04/14/2025</p>
           </div>
           <h2 class="font-bold text-lg">Jonas Buenavides</h2>
@@ -333,7 +336,9 @@
 
 <div class="fixed bottom-4 right-4 flex flex-row space-y-3 z-50">
    <!-- Login Button -->
+  {% if not request.session.guest_id %}
   <button id="openLoginBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-full shadow-lg text-center transition duration-300">Login</button>
+  {% endif %}
 </div>
 
 {% comment %} login form {% endcomment %}
@@ -503,7 +508,7 @@
           </div>
         </div>
       </div>
-
+      
       <!-- Step 2: Account Setup -->
       <div class="step-content hidden" id="step2">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -531,7 +536,7 @@
           </div>
         </div>
       </div>
-
+      
       <!-- Step 3: Success Message -->
       <div class="step-content hidden text-center" id="step3">
         <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -541,9 +546,9 @@
         </div>
         <h2 class="text-2xl font-bold text-green-500 mb-2">Congratulations!</h2>
         <p class="text-gray-600 mb-6">Your account has been created successfully</p>
-        <div class="animate-pulse">Redirecting to booking page...</div>
+        <div class="animate-pulse">Redirecting to home page...</div>
       </div>
-
+      
       <!-- Navigation Buttons -->
       <div class="flex justify-between mt-8 space-x-4">
         <button type="button" id="prevBtn" 
@@ -686,7 +691,11 @@
         
         // Clear previous errors
         const errorDiv = document.getElementById('loginError');
-        errorDiv.classList.add('hidden');
+        if (errorDiv) {
+          errorDiv.classList.add('hidden');
+        }
+
+        // Remove any existing error states
         document.querySelectorAll('.field-error').forEach(field => {
           field.classList.remove('field-error');
         });
@@ -696,11 +705,11 @@
         const password = document.getElementById('login_password');
         let isValid = true;
 
-        if (!username.value.trim()) {
+        if (username && !username.value.trim()) {
           username.classList.add('field-error');
           isValid = false;
         }
-        if (!password.value.trim()) {
+        if (password && !password.value.trim()) {
           password.classList.add('field-error');
           isValid = false;
         }
@@ -723,13 +732,17 @@
           if (data.success) {
             window.location.href = data.redirect_url;
           } else {
-            errorDiv.textContent = data.error;
-            errorDiv.classList.remove('hidden');
+            if (errorDiv) {
+              errorDiv.textContent = data.error;
+              errorDiv.classList.remove('hidden');
+            }
           }
         } catch (error) {
           console.error('Error:', error);
-          errorDiv.textContent = 'An error occurred. Please try again.';
-          errorDiv.classList.remove('hidden');
+          if (errorDiv) {
+            errorDiv.textContent = 'An error occurred. Please try again.';
+            errorDiv.classList.remove('hidden');
+          }
         }
       });
 
@@ -746,17 +759,17 @@
     }
 
     // FAQ functionality
-    function toggleFAQ(headerElement) {
-      const icon = headerElement.querySelector('i');
-      const paragraph = headerElement.nextElementSibling;
-      paragraph.classList.toggle('hidden');
-      icon.classList.toggle('rotate-180');
-    }
+  function toggleFAQ(headerElement) {
+    const icon = headerElement.querySelector('i');
+    const paragraph = headerElement.nextElementSibling;
+    paragraph.classList.toggle('hidden');
+    icon.classList.toggle('rotate-180');
+  }
 
     // Modal Functions
     function showModal(modal) {
-      modal.classList.remove('opacity-0', 'pointer-events-none');
-      modal.classList.add('opacity-100', 'pointer-events-auto');
+  modal.classList.remove('opacity-0', 'pointer-events-none');
+  modal.classList.add('opacity-100', 'pointer-events-auto');
       const modalContent = modal.querySelector('div');
       modalContent.classList.remove('scale-95');
       modalContent.classList.add('scale-100');
@@ -766,9 +779,9 @@
       const modalContent = modal.querySelector('div');
       modalContent.classList.remove('scale-100');
       modalContent.classList.add('scale-95');
-      setTimeout(() => {
-        modal.classList.remove('opacity-100', 'pointer-events-auto');
-        modal.classList.add('opacity-0', 'pointer-events-none');
+  setTimeout(() => {
+    modal.classList.remove('opacity-100', 'pointer-events-auto');
+    modal.classList.add('opacity-0', 'pointer-events-none');
       }, 200);
     }
 
@@ -917,7 +930,7 @@
 
     // Event Listeners for form navigation
     if (nextBtn) {
-      nextBtn.addEventListener('click', () => {
+  nextBtn.addEventListener('click', () => {
         if (validateStep(currentStep)) {
           currentStep++;
           updateFormState();

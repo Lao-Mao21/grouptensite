@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .models import ManageRoom, ManageGuest, GuestAccounts, AdminAccounts, GuestArchive
+from .models import ManageRoom, ManageGuest, GuestAccounts, AdminAccounts, GuestArchive, PaymentTransaction
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.core.paginator import Paginator
@@ -18,6 +18,10 @@ from django.db import models, transaction
 from django import template
 from django.contrib import messages
 from django.db import IntegrityError
+from django.contrib.auth.hashers import check_password
+from django.views.decorators.http import require_POST
+from django.http import HttpResponseRedirect
+from .backends import MockPaymentService
 
 # Admin Views
 @login_required
@@ -320,7 +324,6 @@ def add_room(request):
             room.save()
             messages.success(request, 'Room added successfully!')
             return redirect('manage_rooms')
-            
         except IntegrityError:
             messages.error(request, 'Room number already exists. Please use a different room number.')
             return render(request, 'web/admin/add_room.html', {'form': form_data})
@@ -990,7 +993,7 @@ def register(request):
 
                 return JsonResponse({
                     'success': True,
-                    'redirect_url': '/booking/'
+                    'redirect_url': '/landing_page/'  # Change to redirect to 
                 })
 
         except Exception as e:
@@ -1012,35 +1015,152 @@ def logo(request):
     return render(request, 'navbar.html', context)
 
 def guest_account(request):
-    # Placeholder view - will add functionality later
-    context = {
-        'full_name': '',
-        'username': '',
-        'gender': '',
-        'email': '',
-        'address': '',
-        'contact_number': '',
-    }
-    return render(request, 'web/guest/guest_account.html', context)
+    try:
+        # Get guest data
+        guest = GuestAccounts.objects.get(guest_id=request.session.get('guest_id'))
+        
+        # Get booking history
+        bookings = ManageGuest.objects.filter(guest_id=guest).order_by('-created_at')
+        
+        context = {
+            'guest': guest,
+            'bookings': bookings,
+        }
+        
+        return render(request, 'web/guest/guest_account.html', context)
+    except GuestAccounts.DoesNotExist:
+        messages.error(request, "Guest account not found.")
+        return redirect('landing_page')
 
 def guest_change_password(request):
-    # Placeholder for password change functionality
-    # Will be implemented later
-    return HttpResponseRedirect(reverse('guest_account'))
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        try:
+            guest = GuestAccounts.objects.get(guest_id=request.session.get('guest_id'))
+            current_password = request.POST.get('current_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
 
-# def login(request):
-#     if request.method == "POST":
-#         username = request.POST.get("username")
-#         password = request.POST.get("password")
-#         user = authenticate(request, username=username, password=password)
-#         if user is not None:
-#             login(request, user)
-#             return redirect("admin_dashboard")
-#         else:
-#             return render(request, "web/admin/login.html", {"error": "Invalid credentials"})
-#     return render(request, "web/admin/login.html")
+            # Validate current password
+            if not guest.check_password(current_password):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Current password is incorrect'
+                })
 
+            # Validate password confirmation
+            if new_password != confirm_password:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Passwords do not match'
+                })
+
+            # Update password
+            guest.password = new_password  # Model's save method will hash the password
+            guest.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Password changed successfully'
+            })
+
+        except GuestAccounts.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Guest account not found'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+
+    return JsonResponse({
+        'success': False,
+        'error': 'Invalid request'
+    })
+
+@login_required
 def booking_web(request):
+    # Get the current guest's account information
+    guest_account = None
+    if 'guest_id' in request.session:
+        try:
+            guest_account = GuestAccounts.objects.get(guest_id=request.session['guest_id'])
+        except GuestAccounts.DoesNotExist:
+            return redirect('landing_page')
+
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        try:
+            # Get form data
+            room_id = request.POST.get('room_id')
+            check_in = request.POST.get('check_in')
+            check_out = request.POST.get('check_out')
+            guest_count = request.POST.get('guest_count')
+            payment_mode = request.POST.get('payment_mode')
+            
+            # Validate room availability
+            room = get_object_or_404(ManageRoom, room_id=room_id, room_status='available')
+            
+            # Create booking
+            booking = ManageGuest.objects.create(
+                guest_id=guest_account,
+                guest_name=guest_account.full_name,
+                room_id=room,
+                status='occupied',
+                guest_count=guest_count,
+                check_in=check_in,
+                check_out=check_out,
+                expected_arrival=check_in,
+                payment_status='paid',
+                payment_mode=payment_mode
+            )
+            
+            # Create payment transaction
+            payment_details = {}
+            if payment_mode in ['credit_card', 'debit_card']:
+                card_number = request.POST.get('card_number')
+                payment_details = {
+                    'card_last_four': card_number[-4:],
+                    'card_holder': request.POST.get('card_name'),
+                    'expiry': request.POST.get('expiry'),
+                    'amount': str(room.room_price)
+                }
+                # Update guest account with card info
+                guest_account.card_last_four = card_number[-4:]
+                guest_account.card_holder_name = request.POST.get('card_name')
+                guest_account.card_expiry = request.POST.get('expiry')
+                guest_account.save()
+            elif payment_mode == 'gcash':
+                payment_details = {
+                    'gcash_number': request.POST.get('gcash_number'),
+                    'amount': str(room.room_price)
+                }
+            
+            PaymentTransaction.objects.create(
+                guest=guest_account,
+                booking=booking,
+                amount=room.room_price,
+                status='completed',
+                payment_method=payment_mode,
+                transaction_reference=f'BOOK-{booking.id}-{timezone.now().strftime("%Y%m%d%H%M%S")}',
+                payment_details=payment_details
+            )
+            
+            # Update room status
+            room.room_status = 'occupied'
+            room.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Booking successful!'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+
     # Get all room types from the database
     room_types = []
     for room_type_choice in ManageRoom.ROOM_TYPE_CHOICES:
@@ -1061,9 +1181,25 @@ def booking_web(request):
                 'available': available_count
             })
     
-    return render(request, 'web/guest/booking_web.html', {
-        'room_types': room_types
-    })
+    # Get available rooms with their price types
+    available_rooms = []
+    for room in ManageRoom.objects.filter(room_status='available').order_by('room_number'):
+        available_rooms.append({
+            'room_id': room.room_id,
+            'room_number': room.room_number,
+            'room_type': room.room_type,
+            'get_room_type_display': room.get_room_type_display(),
+            'room_price': room.room_price,
+            'room_price_type': room.room_price_type
+        })
+    
+    context = {
+        'room_types': room_types,
+        'available_rooms': available_rooms,
+        'guest_account': guest_account  # Pass the guest account to the template
+    }
+    
+    return render(request, 'web/guest/booking_web.html', context)
 
 def guest_login(request):
     if request.method == 'POST':
@@ -1071,32 +1207,123 @@ def guest_login(request):
         password = request.POST.get('password')
         
         try:
-            guest = GuestAccounts.objects.get(username=username)
-            if guest.check_password(password):
-                # Update last login
-                guest.last_login = timezone.now()
-                guest.save()
+            # Use Django's authentication system
+            user = authenticate(request, username=username, password=password, backend='crud.backends.GuestAccountsBackend')
+            if user is not None:
+                # Log the user in
+                login(request, user)
                 
                 # Set session data
-                request.session['guest_id'] = guest.guest_id
-                request.session['guest_name'] = guest.full_name
+                request.session['guest_id'] = user.guest_id
+                request.session['guest_name'] = user.full_name
+                
+                # Update last login
+                user.last_login = timezone.now()
+                user.save()
                 
                 return JsonResponse({
                     'success': True,
-                    'redirect_url': '/booking/'
+                    'redirect_url': '/guest/account/'  # Changed to redirect to guest account page
                 })
             else:
                 return JsonResponse({
                     'success': False,
-                    'error': 'Invalid password'
+                    'error': 'Invalid username or password'
                 })
-        except GuestAccounts.DoesNotExist:
+        except Exception as e:
+            print(f"Login error: {str(e)}")  # For debugging
             return JsonResponse({
                 'success': False,
-                'error': 'Account not found'
+                'error': 'An error occurred during login'
             })
     
     return JsonResponse({
         'success': False,
         'error': 'Invalid request method'
     })
+
+@require_POST
+def guest_logout(request):
+    """Handle guest logout."""
+    try:
+        # Clear any guest-specific session data
+        if 'guest_id' in request.session:
+            del request.session['guest_id']
+        if 'guest_name' in request.session:
+            del request.session['guest_name']
+        
+        # Perform Django logout
+        logout(request)
+        
+        # Add success message
+        messages.success(request, 'You have been successfully logged out.')
+        
+        return HttpResponseRedirect('/landing_page/')
+    except Exception as e:
+        # Log the error (in a real application)
+        print(f"Error during logout: {str(e)}")
+        messages.error(request, 'An error occurred during logout. Please try again.')
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
+def process_booking_payment(request):
+    """Handle booking payment processing"""
+    if not (request.method == 'POST' and request.is_ajax()):
+        return JsonResponse({'success': False, 'error': 'Invalid request method'})
+        
+    try:
+        # Get payment data from request
+        payment_data = {
+            'amount': float(request.POST.get('amount')),
+            'currency': 'PHP',
+            'payment_method': request.POST.get('payment_mode'),
+        }
+        
+        # Add payment method specific data
+        if payment_data['payment_method'] == 'credit_card':
+            payment_data.update({
+                'card_number': request.POST.get('card_number'),
+                'card_name': request.POST.get('card_name'),
+                'expiry': request.POST.get('expiry'),
+            })
+        elif payment_data['payment_method'] == 'gcash':
+            payment_data.update({
+                'gcash_number': request.POST.get('gcash_number'),
+                'gcash_name': request.POST.get('gcash_name'),
+            })
+        
+        # Process payment using mock service
+        payment_service = MockPaymentService()
+        result = payment_service.process_payment(payment_data)
+        
+        if not result['success']:
+            return JsonResponse({
+                'success': False,
+                'error': result.get('error', 'Payment processing failed')
+            })
+            
+        # Store transaction details in session for booking completion
+        request.session['payment_transaction'] = {
+            'transaction_id': result['transaction_id'],
+            'amount': payment_data['amount'],
+            'payment_method': payment_data['payment_method'],
+            'timestamp': result['timestamp']
+        }
+        
+        # Verify payment
+        verification = payment_service.verify_payment(result['transaction_id'])
+        if not verification['success']:
+            return JsonResponse({
+                'success': False,
+                'error': 'Payment verification failed'
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'transaction_id': result['transaction_id']
+        })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })

@@ -141,6 +141,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTHENTICATION_BACKENDS = [
     'crud.backends.AdminAccountsBackend',
+    'crud.backends.GuestAccountsBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
