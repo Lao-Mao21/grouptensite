@@ -28,7 +28,6 @@ class ManageRoom(models.Model):
         ('futon', 'Futon'),
     ]
     bed_type = models.CharField(max_length=100, blank=False, null=False , choices=BED_TYPE_CHOICES)
-    check_in = models.ForeignKey('ManageGuest', on_delete=models.CASCADE, related_name='check_in_room', null=True, blank=True)
     floor = models.CharField(max_length=50, blank=False, null=False)
     ROOM_STATUS_CHOICES = [
         ('available', 'Available'),
@@ -37,7 +36,7 @@ class ManageRoom(models.Model):
         ('reserved', 'Reserved'),
         ('occupied', 'Occupied'),
     ]
-    room_status = models.CharField(max_length=30, choices=ROOM_STATUS_CHOICES, blank=False, null=False)
+    room_status = models.CharField(max_length=30, choices=ROOM_STATUS_CHOICES, default='available', blank=False, null=False)
     room_price = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False)
     PRICE_TYPE_CHOICES = [
         ('per hour', 'Per Hour'),
@@ -45,9 +44,12 @@ class ManageRoom(models.Model):
         ('custom', 'Custom Price'),
     ]
     room_price_type = models.CharField(max_length=100, choices=PRICE_TYPE_CHOICES, blank=False, null=False)
-    available_at = models.DateTimeField(blank=False, null=False)
+    available_at = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Room {self.room_number} - {self.get_room_type_display()}"
 
 class AdminAccounts(models.Model):
     class Meta:

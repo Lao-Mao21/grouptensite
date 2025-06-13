@@ -117,15 +117,15 @@
 
   <!-- Step 1: Choose Room -->
   <div id="step1" class="step-content">
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-6xl mx-auto">
       <h2 class="text-center text-2xl font-heading font-semibold mb-8">Choose your room</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         {% for room_type in room_types %}
         <div class="room-card bg-white p-4 rounded-lg shadow-md">
           <div class="relative">
             <img src="{{ MEDIA_URL }}{{ room_type.image }}" alt="{{ room_type.name }}" 
-                 class="w-full h-48 object-cover rounded-lg mb-3">
-            {% if room_type.available == 0 %}
+                 class="w-full h-64 object-cover rounded-lg mb-3">
+            {% if room_type.room_status != 'available' %}
             <div class="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
               <span class="text-white font-medium px-3 py-1 bg-red-500 rounded-full text-sm">
                 Currently Unavailable
@@ -146,13 +146,13 @@
             </p>
             
             <div class="mb-4">
-              {% if room_type.available > 0 %}
+              {% if room_type.room_status == 'available' %}
               <span class="text-green-600 text-sm font-medium">
-                {{ room_type.available }} room{{ room_type.available|pluralize }} available
+                Room Available
               </span>
               {% else %}
               <span class="text-red-600 text-sm font-medium">
-                No rooms available
+                Room Not Available
               </span>
               {% endif %}
             </div>
@@ -161,14 +161,18 @@
                     data-room-id="{{ room_type.id }}"
                     data-room-name="{{ room_type.name }}"
                     data-room-price="{{ room_type.price }}"
-                    class="select-room-btn w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium {% if room_type.available == 0 %}opacity-50 cursor-not-allowed{% endif %}"
-                    {% if room_type.available == 0 %}disabled{% endif %}>
-              Select Room
+                    class="select-room-btn w-full px-4 py-2 {% if room_type.room_status == 'available' %}bg-orange-500 hover:bg-orange-600{% else %}bg-gray-300{% endif %} text-white rounded-lg transition-colors font-medium"
+                    {% if room_type.room_status != 'available' %}disabled{% endif %}>
+              {% if room_type.room_status == 'available' %}
+                Select Room
+              {% else %}
+                Not Available
+              {% endif %}
             </button>
           </div>
         </div>
         {% empty %}
-        <div class="col-span-3 text-center py-8">
+        <div class="col-span-2 text-center py-8">
           <div class="text-gray-500 text-lg">No rooms are currently available.</div>
           <p class="text-gray-400 mt-2">Please check back later or contact us for assistance.</p>
         </div>
@@ -183,6 +187,10 @@
       <h2 class="text-center text-2xl font-heading font-semibold mb-6">Booking Details</h2>
       <form id="bookingForm" class="space-y-4">
         {% csrf_token %}
+        <!-- Hidden fields for room data -->
+        <input type="hidden" id="selected_room_id" name="room_id">
+        <input type="hidden" id="selected_room_price" name="room_price">
+        
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Left Column -->
           <div>
@@ -365,7 +373,8 @@
         </svg>
       </div>
       <h2 class="text-2xl font-bold text-green-500 mb-2">Congratulations!</h2>
-      <p class="text-gray-600 mb-6">You've Successfully Booked a Room</p>
+      <p class="text-gray-600 mb-6">Your Room Reservation is Confirmed</p>
+      <p class="text-sm text-gray-500 mb-6">Please check your email for the reservation details and check-in instructions.</p>
       <a href="{% url 'landing_page' %}" class="inline-block px-8 py-2 bg-green-500 text-white rounded-full hover:bg-green-600">
         Home
       </a>
@@ -380,6 +389,18 @@ let currentStep = 1;
 const totalSteps = 4;
 let selectedRoom = null;
 let roomPrice = 0;
+
+// Function to check room availability
+async function checkRoomAvailability(roomId) {
+  try {
+    const response = await fetch(`/check-room-availability/${roomId}/`);
+    const data = await response.json();
+    return data.room_status === 'available';
+  } catch (error) {
+    console.error('Error checking room availability:', error);
+    return false;
+  }
+}
 
 function updateProgress() {
   const progressBar = document.querySelector('.bg-orange-500');
@@ -396,8 +417,124 @@ function showStep(step) {
   updateProgress();
 }
 
-// Initialize room selection
+async function selectRoom(roomData) {
+  // Check availability before proceeding
+  const isAvailable = await checkRoomAvailability(roomData.id);
+  if (!isAvailable) {
+    alert('Sorry, this room is no longer available. Please select another room.');
+    window.location.reload(); // Reload to show updated availability
+    return;
+  }
+  
+  selectedRoom = roomData;
+  
+  // Update room select dropdown
+  const roomSelect = document.getElementById('room-select');
+  if (roomSelect) {
+    Array.from(roomSelect.options).forEach(option => {
+      if (option.dataset.roomType === roomData.id) {
+        option.selected = true;
+      }
+    });
+  }
+  
+  // Update hidden fields with room data
+  document.getElementById('selected_room_id').value = roomData.id;
+  document.getElementById('selected_room_price').value = roomData.price;
+  
+  calculateTotal();
+  nextStep();
+}
+
+function calculateTotal() {
+  const checkInInput = document.querySelector('input[name="check_in"]');
+  const checkOutInput = document.querySelector('input[name="check_out"]');
+  
+  if (checkInInput && checkOutInput && selectedRoom) {
+    const checkIn = new Date(checkInInput.value);
+    const checkOut = new Date(checkOutInput.value);
+    
+    if (!isNaN(checkIn) && !isNaN(checkOut) && selectedRoom.price) {
+      const days = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+      const total = days * selectedRoom.price;
+      
+      document.getElementById('finalAmount').textContent = total.toFixed(2);
+    }
+  }
+}
+
+function nextStep() {
+  if (currentStep < totalSteps) {
+    currentStep++;
+    showStep(currentStep);
+  }
+}
+
+function prevStep() {
+  if (currentStep > 1) {
+    currentStep--;
+    showStep(currentStep);
+  }
+}
+
+async function validateAndProceed() {
+  const form = document.getElementById('bookingForm');
+  
+  // Check if a room is selected
+  if (!selectedRoom) {
+    alert('Please select a room first');
+    return;
+  }
+  
+  // Check room availability before proceeding
+  const isAvailable = await checkRoomAvailability(selectedRoom.id);
+  if (!isAvailable) {
+    alert('Sorry, this room is no longer available. Please select another room.');
+    window.location.reload(); // Reload to show updated availability
+    return;
+  }
+  
+  // Check if dates are selected
+  const checkIn = form.querySelector('[name="check_in"]');
+  const checkOut = form.querySelector('[name="check_out"]');
+  const expectedArrival = form.querySelector('[name="expected_arrival"]');
+  
+  if (!checkIn.value || !checkOut.value || !expectedArrival.value) {
+    alert('Please select all required dates');
+    return;
+  }
+  
+  // Check guest count
+  const guestCount = form.querySelector('[name="guest_count"]');
+  if (!guestCount.value) {
+    alert('Please select number of guests');
+    guestCount.focus();
+    return;
+  }
+  
+  // Store booking details in session storage for payment step
+  const bookingDetails = {
+    room_id: selectedRoom.id,
+    room_price: selectedRoom.price,
+    check_in: checkIn.value,
+    check_out: checkOut.value,
+    expected_arrival: expectedArrival.value,
+    guest_count: guestCount.value,
+    total_amount: document.getElementById('finalAmount').textContent
+  };
+  sessionStorage.setItem('bookingDetails', JSON.stringify(bookingDetails));
+  
+  if (form.checkValidity()) {
+    nextStep();
+  } else {
+    form.reportValidity();
+  }
+}
+
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+  updateProgress();
+
   // Add click handlers for room selection buttons
   document.querySelectorAll('.select-room-btn').forEach(button => {
     button.addEventListener('click', function() {
@@ -411,23 +548,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   });
-
-  // Room select dropdown handler
-  const roomSelect = document.getElementById('room-select');
-  if (roomSelect) {
-    roomSelect.addEventListener('change', function() {
-      const selectedOption = this.options[this.selectedIndex];
-      if (selectedOption && selectedOption.value) {
-        if (!selectedRoom) { // Only update if no room is selected yet
-          selectedRoom = {
-            id: selectedOption.value,
-            price: parseFloat(selectedOption.dataset.price) || 0
-          };
-          calculateTotal();
-        }
-      }
-    });
-  }
 
   // Initialize Flatpickr
   const today = new Date();
@@ -484,198 +604,6 @@ document.addEventListener('DOMContentLoaded', function() {
     defaultDate: today
   });
 
-  // Initialize Stripe
-  const stripe = Stripe('{{ stripe_public_key }}');
-  const elements = stripe.elements();
-
-  // Custom styling
-  const style = {
-    base: {
-      fontSize: '16px',
-      color: '#32325d',
-      fontFamily: '"Inter", -apple-system, sans-serif',
-      '::placeholder': {
-        color: '#aab7c4'
-      }
-    },
-    invalid: {
-      color: '#ef4444',
-      iconColor: '#ef4444'
-    }
-  };
-
-  // Create card elements
-  const cardNumber = elements.create('cardNumber', { style });
-  const cardExpiry = elements.create('cardExpiry', { style });
-  const cardCvv = elements.create('cardCvc', { style });
-
-  // Mount card elements
-  cardNumber.mount('#card-number-element');
-  cardExpiry.mount('#card-expiry-element');
-  cardCvv.mount('#card-cvc-element');
-
-  // Handle validation errors
-  [cardNumber, cardExpiry, cardCvv].forEach(element => {
-    element.addEventListener('change', function(event) {
-      const displayError = document.getElementById('card-errors');
-      if (event.error) {
-        displayError.textContent = event.error.message;
-      } else {
-        displayError.textContent = '';
-      }
-    });
-  });
-
-  // Handle payment form submission
-  const form = document.getElementById('paymentForm');
-  const submitButton = document.getElementById('submit-button');
-
-  form.addEventListener('submit', async function(event) {
-    event.preventDefault();
-    
-    submitButton.disabled = true;
-    submitButton.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span> Processing...';
-    
-    try {
-        // Get form data
-        const cardData = {
-            number: cardNumber.value.replace(/\s/g, ''),
-            expiry: cardExpiry.value,
-            cvv: cardCvv.value,
-            card_holder: document.getElementById('cardName').value,
-            billing_address: document.getElementById('billingAddress').value
-        };
-
-        // Get booking details from step 2
-        const bookingForm = document.getElementById('bookingForm');
-        const checkIn = bookingForm.querySelector('[name="check_in"]').value;
-        const checkOut = bookingForm.querySelector('[name="check_out"]').value;
-        const guestCount = bookingForm.querySelector('[name="guest_count"]').value;
-        const expectedArrival = bookingForm.querySelector('[name="expected_arrival"]').value;
-
-        const response = await fetch('/process-payment/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify({
-                amount: parseFloat(document.getElementById('finalAmount').textContent),
-                booking_id: selectedRoom.id,
-                card_data: cardData,
-                booking_details: {
-                    check_in: checkIn,
-                    check_out: checkOut,
-                    guest_count: parseInt(guestCount),
-                    expected_arrival: expectedArrival
-                }
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (!data.success) {
-            throw new Error(data.error);
-        }
-        
-        // If payment successful, proceed to next step
-        nextStep();
-        
-    } catch (error) {
-        const errorElement = document.getElementById('card-errors');
-        errorElement.textContent = error.message;
-        submitButton.disabled = false;
-        submitButton.innerHTML = 'Pay now';
-    }
-  });
-});
-
-function selectRoom(roomData) {
-  selectedRoom = roomData;
-  
-  // Update room select dropdown
-  const roomSelect = document.getElementById('room-select');
-  if (roomSelect) {
-    Array.from(roomSelect.options).forEach(option => {
-      if (option.dataset.roomType === roomData.id) {
-        option.selected = true;
-      }
-    });
-  }
-  
-  calculateTotal();
-  nextStep();
-}
-
-function calculateTotal() {
-  const checkInInput = document.querySelector('input[name="check_in"]');
-  const checkOutInput = document.querySelector('input[name="check_out"]');
-  
-  if (checkInInput && checkOutInput && selectedRoom) {
-    const checkIn = new Date(checkInInput.value);
-    const checkOut = new Date(checkOutInput.value);
-    
-    if (!isNaN(checkIn) && !isNaN(checkOut) && selectedRoom.price) {
-      const days = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
-      const total = days * selectedRoom.price;
-      
-      document.getElementById('finalAmount').textContent = total.toFixed(2);
-    }
-  }
-}
-
-function nextStep() {
-  if (currentStep < totalSteps) {
-    currentStep++;
-    showStep(currentStep);
-  }
-}
-
-function prevStep() {
-  if (currentStep > 1) {
-    currentStep--;
-    showStep(currentStep);
-  }
-}
-
-function validateAndProceed() {
-  const form = document.getElementById('bookingForm');
-  
-  // Check if a room is selected
-  if (!selectedRoom) {
-    alert('Please select a room first');
-    return;
-  }
-  
-  // Check if dates are selected
-  const checkIn = form.querySelector('[name="check_in"]');
-  const checkOut = form.querySelector('[name="check_out"]');
-  const expectedArrival = form.querySelector('[name="expected_arrival"]');
-  
-  if (!checkIn.value || !checkOut.value || !expectedArrival.value) {
-    alert('Please select all required dates');
-    return;
-  }
-  
-  // Check guest count
-  const guestCount = form.querySelector('[name="guest_count"]');
-  if (!guestCount.value) {
-    alert('Please select number of guests');
-    guestCount.focus();
-    return;
-  }
-  
-  if (form.checkValidity()) {
-    nextStep();
-  } else {
-    form.reportValidity();
-  }
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-  updateProgress();
-
   // Initialize card number formatting
   const cardNumber = document.getElementById('card-number');
   cardNumber.addEventListener('input', function(e) {
@@ -706,6 +634,81 @@ document.addEventListener('DOMContentLoaded', function() {
     let value = e.target.value.replace(/\D/g, '');
     if (value.length > 4) value = value.slice(0, 4);
     e.target.value = value;
+  });
+
+  // Handle payment form submission
+  const form = document.getElementById('paymentForm');
+  const submitButton = document.getElementById('submit-button');
+
+  form.addEventListener('submit', async function(event) {
+    event.preventDefault();
+    
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span> Processing...';
+    
+    try {
+      // Get stored booking details
+      const bookingDetails = JSON.parse(sessionStorage.getItem('bookingDetails'));
+      
+      // Check room availability one last time before payment
+      const isAvailable = await checkRoomAvailability(bookingDetails.room_id);
+      if (!isAvailable) {
+        throw new Error('Sorry, this room is no longer available. Please select another room.');
+      }
+      
+      // Get form data
+      const cardData = {
+        number: document.getElementById('card-number').value.replace(/\s/g, ''),
+        expiry: document.getElementById('card-expiry').value,
+        cvv: document.getElementById('card-cvv').value,
+        card_holder: document.getElementById('cardName').value,
+        billing_address: document.getElementById('billingAddress').value
+      };
+
+      const response = await fetch('/process-payment/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+          amount: parseFloat(bookingDetails.total_amount),
+          booking_id: bookingDetails.room_id,
+          card_data: cardData,
+          booking_details: {
+            check_in: bookingDetails.check_in,
+            check_out: bookingDetails.check_out,
+            guest_count: parseInt(bookingDetails.guest_count),
+            expected_arrival: bookingDetails.expected_arrival
+          }
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error);
+      }
+      
+      // Clear booking details from session storage
+      sessionStorage.removeItem('bookingDetails');
+      
+      // If payment successful, proceed to next step
+      nextStep();
+      
+    } catch (error) {
+      const errorElement = document.getElementById('card-errors');
+      errorElement.textContent = error.message;
+      submitButton.disabled = false;
+      submitButton.innerHTML = 'Pay now';
+      
+      // If room is no longer available, redirect back to room selection
+      if (error.message.includes('no longer available')) {
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }
+    }
   });
 });
 </script>
