@@ -23,7 +23,7 @@
                     <div class="flex justify-between items-start">
                         <div>
                             <h3 class="text-sm font-medium text-gray-500">Available Rooms</h3>
-                            <p class="text-2xl font-bold text-indigo-600 mt-1">{{ available_rooms|length }}</p>
+                            <p class="text-2xl font-bold text-indigo-600 mt-1">{{ available_rooms_count }}</p>
                         </div>
                         <a href="{% url 'manage_rooms' %}" class="px-3 py-1 bg-green-500 text-white text-xs rounded-full hover:bg-green-600">
                             Manage
@@ -58,7 +58,7 @@
                 </div>
             </div>
             <!-- Charts Section -->
-            <div class="grid grid-cols-1 grid-rows-1 lg:grid-rows-2 lg:grid-cols-2 gap-6 mb-8">
+            <div class="grid grid-cols-1 grid-rows-1 lg:grid-rows-1 lg:grid-cols-2 gap-6 mb-8 h-fit">
                 <!-- Bar Chart -->
                 <div class="bg-white rounded-lg shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-700 mb-4">Monthly Sales {{ current_year }}</h3>
@@ -82,13 +82,14 @@
 <script src="{% static 'js/current_date.js' %}"></script>
 {% endblock content %}
 
+<!-- linter errors ignore due to django template -->
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Bar Chart
     const ctx = document.getElementById('salesChart').getContext('2d');
-    new Chart(ctx, {
+    const salesChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
@@ -123,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Pie Chart
     const pieCtx = document.getElementById('roomTypeChart').getContext('2d');
     const pieData = {{ pie_data|safe }};
-    new Chart(pieCtx, {
+    const roomTypeChart = new Chart(pieCtx, {
         type: 'pie',
         data: {
             labels: pieData.map(item => item.name),

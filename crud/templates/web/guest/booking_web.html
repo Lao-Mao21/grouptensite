@@ -1,4 +1,5 @@
 {% extends 'base/base_web.html' %}
+{% load static %}
 
 {% block title %}Book a Room{% endblock title %}
 
@@ -120,12 +121,13 @@
     <div class="max-w-6xl mx-auto">
       <h2 class="text-center text-2xl font-heading font-semibold mb-8">Choose your room</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {% for room_type in room_types %}
+        {% for room in available_rooms %}
         <div class="room-card bg-white p-4 rounded-lg shadow-md">
           <div class="relative">
-            <img src="{{ MEDIA_URL }}{{ room_type.image }}" alt="{{ room_type.name }}" 
+            <img src="{{ MEDIA_URL }}{{ room.room_type|lower }}.jpg" 
+                 alt="{{ room.get_room_type_display }}" 
                  class="w-full h-64 object-cover rounded-lg mb-3">
-            {% if room_type.room_status != 'available' %}
+            {% if room.room_status != 'available' %}
             <div class="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
               <span class="text-white font-medium px-3 py-1 bg-red-500 rounded-full text-sm">
                 Currently Unavailable
@@ -136,34 +138,33 @@
           
           <div class="text-center">
             <div class="bg-orange-500 text-white text-sm py-1 px-4 rounded-full inline-block mb-2 font-medium">
-              {{ room_type.name }}
+              {{ room.get_room_type_display }}
             </div>
             <p class="text-gray-700 font-medium mb-2">
-              ₱{{ room_type.price|floatformat:2 }}
-              {% if room_type.max_price > room_type.price %}
-                - ₱{{ room_type.max_price|floatformat:2 }}
-              {% endif %}
+              ₱{{ room.room_price|floatformat:2 }}
             </p>
             
             <div class="mb-4">
-              {% if room_type.room_status == 'available' %}
+              {% if room.room_status == 'available' %}
               <span class="text-green-600 text-sm font-medium">
-                Room Available
+                Room {{ room.room_number }} Available
               </span>
               {% else %}
               <span class="text-red-600 text-sm font-medium">
-                Room Not Available
+                Not Available
               </span>
               {% endif %}
             </div>
             
             <button type="button"
-                    data-room-id="{{ room_type.id }}"
-                    data-room-name="{{ room_type.name }}"
-                    data-room-price="{{ room_type.price }}"
-                    class="select-room-btn w-full px-4 py-2 {% if room_type.room_status == 'available' %}bg-orange-500 hover:bg-orange-600{% else %}bg-gray-300{% endif %} text-white rounded-lg transition-colors font-medium"
-                    {% if room_type.room_status != 'available' %}disabled{% endif %}>
-              {% if room_type.room_status == 'available' %}
+                    data-room-id="{{ room.room_id }}"
+                    data-room-type="{{ room.room_type }}"
+                    data-room-number="{{ room.room_number }}"
+                    data-room-name="{{ room.get_room_type_display }}"
+                    data-room-price="{{ room.room_price }}"
+                    class="select-room-btn w-full px-4 py-2 {% if room.room_status == 'available' %}bg-orange-500 hover:bg-orange-600{% else %}bg-gray-300{% endif %} text-white rounded-lg transition-colors font-medium"
+                    {% if room.room_status != 'available' %}disabled{% endif %}>
+              {% if room.room_status == 'available' %}
                 Select Room
               {% else %}
                 Not Available
@@ -232,7 +233,7 @@
                         data-room-type="{{ room.room_type }}"
                         data-price="{{ room.room_price }}"
                         data-price-type="per day/night">
-                  Room {{ room.room_number }} - {{ room.get_room_type_display }}
+                  Room {{ room.room_number }} - {{ room.get_room_type_display }} (₱{{ room.room_price|floatformat:2 }})
                 </option>
               {% endfor %}
             </select>
@@ -391,13 +392,33 @@ let selectedRoom = null;
 let roomPrice = 0;
 
 // Function to check room availability
-async function checkRoomAvailability(roomId) {
+async function checkRoomAvailability(roomData, checkIn = null, checkOut = null) {
   try {
-    const response = await fetch(`/check-room-availability/${roomId}/`);
+    // Construct URL with proper encoding
+    let url = `/check-room-availability/${roomData.type}/${roomData.number}/`;
+    if (checkIn && checkOut) {
+      const params = new URLSearchParams({
+        check_in: checkIn,
+        check_out: checkOut
+      });
+      url += `?${params.toString()}`;
+    }
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Room is not available');
+    }
+    
     return data.room_status === 'available';
   } catch (error) {
     console.error('Error checking room availability:', error);
+    alert(error.message || 'Error checking room availability. Please try again.');
     return false;
   }
 }
@@ -418,48 +439,85 @@ function showStep(step) {
 }
 
 async function selectRoom(roomData) {
-  // Check availability before proceeding
-  const isAvailable = await checkRoomAvailability(roomData.id);
-  if (!isAvailable) {
-    alert('Sorry, this room is no longer available. Please select another room.');
-    window.location.reload(); // Reload to show updated availability
-    return;
-  }
-  
-  selectedRoom = roomData;
-  
-  // Update room select dropdown
-  const roomSelect = document.getElementById('room-select');
-  if (roomSelect) {
-    Array.from(roomSelect.options).forEach(option => {
-      if (option.dataset.roomType === roomData.id) {
-        option.selected = true;
-      }
+  try {
+    // Show loading state
+    const button = document.querySelector(`[data-room-id="${roomData.id}"]`);
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span> Checking...';
+    
+    // Check availability before proceeding
+    const isAvailable = await checkRoomAvailability({
+      type: roomData.type,
+      number: roomData.number
     });
+    
+    if (!isAvailable) {
+      button.innerHTML = 'Not Available';
+      setTimeout(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+      }, 2000);
+      return;
+    }
+    
+    selectedRoom = roomData;
+    roomPrice = parseFloat(roomData.price);
+    
+    // Update room select dropdown
+    const roomSelect = document.getElementById('room-select');
+    if (roomSelect) {
+      roomSelect.value = roomData.id;
+      const selectedOption = roomSelect.options[roomSelect.selectedIndex];
+      if (selectedOption) {
+        roomPrice = parseFloat(selectedOption.dataset.price);
+      }
+    }
+    
+    // Update hidden fields
+    document.getElementById('selected_room_id').value = roomData.id;
+    document.getElementById('selected_room_price').value = roomPrice;
+    
+    calculateTotal();
+    nextStep();
+    
+    // Reset button state
+    button.innerHTML = originalText;
+    button.disabled = false;
+  } catch (error) {
+    console.error('Error selecting room:', error);
+    alert('Error selecting room. Please try again.');
+    
+    // Reset button state
+    const button = document.querySelector(`[data-room-id="${roomData.id}"]`);
+    if (button) {
+      button.innerHTML = 'Select Room';
+      button.disabled = false;
+    }
   }
-  
-  // Update hidden fields with room data
-  document.getElementById('selected_room_id').value = roomData.id;
-  document.getElementById('selected_room_price').value = roomData.price;
-  
-  calculateTotal();
-  nextStep();
 }
 
 function calculateTotal() {
-  const checkInInput = document.querySelector('input[name="check_in"]');
-  const checkOutInput = document.querySelector('input[name="check_out"]');
-  
-  if (checkInInput && checkOutInput && selectedRoom) {
-    const checkIn = new Date(checkInInput.value);
-    const checkOut = new Date(checkOutInput.value);
+  try {
+    const checkInInput = document.querySelector('input[name="check_in"]');
+    const checkOutInput = document.querySelector('input[name="check_out"]');
     
-    if (!isNaN(checkIn) && !isNaN(checkOut) && selectedRoom.price) {
-      const days = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
-      const total = days * selectedRoom.price;
+    if (checkInInput && checkOutInput && selectedRoom) {
+      const checkIn = new Date(checkInInput.value);
+      const checkOut = new Date(checkOutInput.value);
       
-      document.getElementById('finalAmount').textContent = total.toFixed(2);
+      if (!isNaN(checkIn) && !isNaN(checkOut) && roomPrice) {
+        const days = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+        if (days <= 0) {
+          document.getElementById('finalAmount').textContent = '0.00';
+          return;
+        }
+        const total = days * roomPrice;
+        document.getElementById('finalAmount').textContent = total.toFixed(2);
+      }
     }
+  } catch (error) {
+    console.error('Error calculating total:', error);
   }
 }
 
@@ -478,56 +536,70 @@ function prevStep() {
 }
 
 async function validateAndProceed() {
-  const form = document.getElementById('bookingForm');
-  
-  // Check if a room is selected
-  if (!selectedRoom) {
-    alert('Please select a room first');
-    return;
-  }
-  
-  // Check room availability before proceeding
-  const isAvailable = await checkRoomAvailability(selectedRoom.id);
-  if (!isAvailable) {
-    alert('Sorry, this room is no longer available. Please select another room.');
-    window.location.reload(); // Reload to show updated availability
-    return;
-  }
-  
-  // Check if dates are selected
-  const checkIn = form.querySelector('[name="check_in"]');
-  const checkOut = form.querySelector('[name="check_out"]');
-  const expectedArrival = form.querySelector('[name="expected_arrival"]');
-  
-  if (!checkIn.value || !checkOut.value || !expectedArrival.value) {
-    alert('Please select all required dates');
-    return;
-  }
-  
-  // Check guest count
-  const guestCount = form.querySelector('[name="guest_count"]');
-  if (!guestCount.value) {
-    alert('Please select number of guests');
-    guestCount.focus();
-    return;
-  }
-  
-  // Store booking details in session storage for payment step
-  const bookingDetails = {
-    room_id: selectedRoom.id,
-    room_price: selectedRoom.price,
-    check_in: checkIn.value,
-    check_out: checkOut.value,
-    expected_arrival: expectedArrival.value,
-    guest_count: guestCount.value,
-    total_amount: document.getElementById('finalAmount').textContent
-  };
-  sessionStorage.setItem('bookingDetails', JSON.stringify(bookingDetails));
-  
-  if (form.checkValidity()) {
-    nextStep();
-  } else {
-    form.reportValidity();
+  try {
+    const form = document.getElementById('bookingForm');
+    
+    // Check if a room is selected
+    if (!selectedRoom) {
+      alert('Please select a room first');
+      return;
+    }
+    
+    // Get form data
+    const checkIn = form.querySelector('[name="check_in"]').value;
+    const checkOut = form.querySelector('[name="check_out"]').value;
+    const guestCount = form.querySelector('[name="guest_count"]').value;
+    const expectedArrival = form.querySelector('[name="expected_arrival"]').value;
+    
+    // Validate required fields
+    if (!checkIn || !checkOut || !guestCount || !expectedArrival) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    // Show loading state
+    const nextButton = form.querySelector('button[onclick="validateAndProceed()"]');
+    const originalText = nextButton.innerHTML;
+    nextButton.disabled = true;
+    nextButton.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span> Checking...';
+    
+    try {
+      // Check room availability for selected dates
+      const isAvailable = await checkRoomAvailability({
+        type: selectedRoom.type,
+        number: selectedRoom.number
+      }, checkIn, checkOut);
+      
+      if (!isAvailable) {
+        alert('Room is no longer available for the selected dates');
+        nextButton.innerHTML = originalText;
+        nextButton.disabled = false;
+        return;
+      }
+      
+      // Store booking details
+      const bookingDetails = {
+        room_id: selectedRoom.id,
+        room_type: selectedRoom.type,
+        room_number: selectedRoom.number,
+        room_price: roomPrice,
+        check_in: checkIn,
+        check_out: checkOut,
+        guest_count: guestCount,
+        expected_arrival: expectedArrival,
+        total_amount: document.getElementById('finalAmount').textContent
+      };
+      sessionStorage.setItem('bookingDetails', JSON.stringify(bookingDetails));
+      
+      nextStep();
+    } finally {
+      // Reset button state
+      nextButton.innerHTML = originalText;
+      nextButton.disabled = false;
+    }
+  } catch (error) {
+    console.error('Error validating form:', error);
+    alert('Error validating form. Please try again.');
   }
 }
 
@@ -541,6 +613,8 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!this.disabled) {
         const roomData = {
           id: this.dataset.roomId,
+          type: this.dataset.roomType,
+          number: this.dataset.roomNumber,
           name: this.dataset.roomName,
           price: parseFloat(this.dataset.roomPrice)
         };
@@ -604,7 +678,24 @@ document.addEventListener('DOMContentLoaded', function() {
     defaultDate: today
   });
 
-  // Initialize card number formatting
+  // Room select change handler
+  const roomSelect = document.getElementById('room-select');
+  if (roomSelect) {
+    roomSelect.addEventListener('change', function() {
+      const selectedOption = this.options[this.selectedIndex];
+      if (selectedOption.value) {
+        roomPrice = parseFloat(selectedOption.dataset.price);
+        calculateTotal();
+      }
+    });
+  }
+
+  // Initialize payment form handlers
+  initializePaymentForm();
+});
+
+function initializePaymentForm() {
+  // Card number formatting
   const cardNumber = document.getElementById('card-number');
   cardNumber.addEventListener('input', function(e) {
     let value = e.target.value.replace(/\D/g, '');
@@ -617,7 +708,7 @@ document.addEventListener('DOMContentLoaded', function() {
     e.target.value = formattedValue;
   });
 
-  // Initialize expiry date formatting
+  // Expiry date formatting
   const cardExpiry = document.getElementById('card-expiry');
   cardExpiry.addEventListener('input', function(e) {
     let value = e.target.value.replace(/\D/g, '');
@@ -628,7 +719,7 @@ document.addEventListener('DOMContentLoaded', function() {
     e.target.value = value;
   });
 
-  // Initialize CVV input
+  // CVV input
   const cardCvv = document.getElementById('card-cvv');
   cardCvv.addEventListener('input', function(e) {
     let value = e.target.value.replace(/\D/g, '');
@@ -636,33 +727,48 @@ document.addEventListener('DOMContentLoaded', function() {
     e.target.value = value;
   });
 
-  // Handle payment form submission
+  // Payment form submission
   const form = document.getElementById('paymentForm');
   const submitButton = document.getElementById('submit-button');
+  const errorElement = document.getElementById('card-errors');
 
   form.addEventListener('submit', async function(event) {
     event.preventDefault();
     
-    submitButton.disabled = true;
-    submitButton.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span> Processing...';
-    
     try {
+      submitButton.disabled = true;
+      submitButton.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span> Processing...';
+      errorElement.textContent = '';
+      
       // Get stored booking details
       const bookingDetails = JSON.parse(sessionStorage.getItem('bookingDetails'));
       
-      // Check room availability one last time before payment
-      const isAvailable = await checkRoomAvailability(bookingDetails.room_id);
+      // Check room availability one last time
+      const isAvailable = await checkRoomAvailability({
+        type: bookingDetails.room_type,
+        number: bookingDetails.room_number
+      }, bookingDetails.check_in, bookingDetails.check_out);
+      
       if (!isAvailable) {
-        throw new Error('Sorry, this room is no longer available. Please select another room.');
+        throw new Error('Room is no longer available');
       }
       
       // Get form data
-      const cardData = {
-        number: document.getElementById('card-number').value.replace(/\s/g, ''),
-        expiry: document.getElementById('card-expiry').value,
-        cvv: document.getElementById('card-cvv').value,
-        card_holder: document.getElementById('cardName').value,
-        billing_address: document.getElementById('billingAddress').value
+      const formData = {
+        booking_id: bookingDetails.room_id,
+        card_data: {
+          number: document.getElementById('card-number').value.replace(/\s/g, ''),
+          expiry: document.getElementById('card-expiry').value,
+          cvv: document.getElementById('card-cvv').value,
+          card_holder: document.getElementById('cardName').value,
+          billing_address: document.getElementById('billingAddress').value
+        },
+        booking_details: {
+          check_in: bookingDetails.check_in,
+          check_out: bookingDetails.check_out,
+          guest_count: parseInt(bookingDetails.guest_count),
+          expected_arrival: bookingDetails.expected_arrival
+        }
       };
 
       const response = await fetch('/process-payment/', {
@@ -671,38 +777,26 @@ document.addEventListener('DOMContentLoaded', function() {
           'Content-Type': 'application/json',
           'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         },
-        body: JSON.stringify({
-          amount: parseFloat(bookingDetails.total_amount),
-          booking_id: bookingDetails.room_id,
-          card_data: cardData,
-          booking_details: {
-            check_in: bookingDetails.check_in,
-            check_out: bookingDetails.check_out,
-            guest_count: parseInt(bookingDetails.guest_count),
-            expected_arrival: bookingDetails.expected_arrival
-          }
-        })
+        body: JSON.stringify(formData)
       });
       
       const data = await response.json();
       
       if (!data.success) {
-        throw new Error(data.error);
+        throw new Error(data.error || 'Payment failed');
       }
       
-      // Clear booking details from session storage
+      // Clear booking details
       sessionStorage.removeItem('bookingDetails');
       
-      // If payment successful, proceed to next step
+      // Show success step
       nextStep();
       
     } catch (error) {
-      const errorElement = document.getElementById('card-errors');
       errorElement.textContent = error.message;
       submitButton.disabled = false;
       submitButton.innerHTML = 'Pay now';
       
-      // If room is no longer available, redirect back to room selection
       if (error.message.includes('no longer available')) {
         setTimeout(() => {
           window.location.reload();
@@ -710,6 +804,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   });
-});
+}
 </script>
 {% endblock %}

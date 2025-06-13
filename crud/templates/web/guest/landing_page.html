@@ -357,15 +357,15 @@
         <input type="text" id="login_username" name="username" required
                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" 
                placeholder="Username">
-        <span class="error-message">Please enter your username</span>
+        <span class="error-message text-red-500 text-sm hidden"></span>
       </div>
       <div>
         <input type="password" id="login_password" name="password" required
                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" 
                placeholder="Password">
-        <span class="error-message">Please enter your password</span>
+        <span class="error-message text-red-500 text-sm hidden"></span>
       </div>
-      <div id="loginError" class="hidden alert alert-error"></div>
+      <div id="loginError" class="hidden text-red-500 text-sm text-center"></div>
       <div class="text-center">
         <button type="submit" 
                 class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-md">
@@ -417,7 +417,7 @@
       {% csrf_token %}
       <div id="registrationError" class="hidden alert alert-error"></div>
       
-      <!-- Step 1: Personal Information -->
+      <!--Step 1: Personal Information -->
       <div class="step-content" id="step1">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="space-y-1">
@@ -642,7 +642,7 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
     // Auto-hide messages after 5 seconds
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => {
@@ -659,363 +659,147 @@
       allowInput: true
     });
 
-    // Form state
-    let currentStep = 1;
-    const totalSteps = 3;
+    // Modal Functions
+    function showModal(modal) {
+  modal.classList.remove('opacity-0', 'pointer-events-none');
+  modal.classList.add('opacity-100', 'pointer-events-auto');
+        const modalContent = modal.querySelector('div');
+        modalContent.classList.remove('scale-95');
+        modalContent.classList.add('scale-100');
+}
 
-    // Elements
+    function hideModal(modal) {
+        const modalContent = modal.querySelector('div');
+        modalContent.classList.remove('scale-100');
+        modalContent.classList.add('scale-95');
+  setTimeout(() => {
+    modal.classList.remove('opacity-100', 'pointer-events-auto');
+    modal.classList.add('opacity-0', 'pointer-events-none');
+        }, 200);
+    }
+
+    // Get modal elements
     const loginModal = document.getElementById('loginModal');
     const createAccountModal = document.getElementById('createAccountModal');
     const loginBtn = document.getElementById('openLoginBtn');
     const createAccountLink = document.getElementById('openCreateAccountBtn');
     const closeButtons = document.querySelectorAll('.modal-close');
-    const nextBtn = document.getElementById('nextBtn');
-    const prevBtn = document.getElementById('prevBtn');
-    const createAcctBtn = document.getElementById('createAccountBtn');
-    const progressBar = document.querySelector('.progress-bar');
-    const stepTitle = document.querySelector('.step-title');
-    const form = document.getElementById('createAccountForm');
     const loginForm = document.getElementById('loginForm');
 
-    // Handle login form submission
-    if (loginForm) {
-      loginForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        // Clear previous errors
-        const errorDiv = document.getElementById('loginError');
-        if (errorDiv) {
-          errorDiv.classList.add('hidden');
-        }
-
-        // Remove any existing error states
-        document.querySelectorAll('.field-error').forEach(field => {
-          field.classList.remove('field-error');
-        });
-
-        // Basic validation
-        const username = document.getElementById('login_username');
-        const password = document.getElementById('login_password');
-        let isValid = true;
-
-        if (username && !username.value.trim()) {
-          username.classList.add('field-error');
-          isValid = false;
-        }
-        if (password && !password.value.trim()) {
-          password.classList.add('field-error');
-          isValid = false;
-        }
-
-        if (!isValid) return;
-
-        // Submit form
-        const formData = new FormData(loginForm);
-        try {
-          const response = await fetch(loginForm.action, {
-            method: 'POST',
-            body: formData,
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest'
-            }
-          });
-          
-          const data = await response.json();
-          
-          if (data.success) {
-            window.location.href = data.redirect_url;
-          } else {
-            if (errorDiv) {
-              errorDiv.textContent = data.error;
-              errorDiv.classList.remove('hidden');
-            }
-          }
-        } catch (error) {
-          console.error('Error:', error);
-          if (errorDiv) {
-            errorDiv.textContent = 'An error occurred. Please try again.';
-            errorDiv.classList.remove('hidden');
-          }
-        }
-      });
-
-      // Remove error state on input for login form
-      loginForm.querySelectorAll('input').forEach(input => {
-        input.addEventListener('input', function() {
-          this.classList.remove('field-error');
-          const errorDiv = document.getElementById('loginError');
-          if (errorDiv) {
-            errorDiv.classList.add('hidden');
-          }
-        });
-      });
-    }
-
-    // FAQ functionality
-  function toggleFAQ(headerElement) {
-    const icon = headerElement.querySelector('i');
-    const paragraph = headerElement.nextElementSibling;
-    paragraph.classList.toggle('hidden');
-    icon.classList.toggle('rotate-180');
-  }
-
-    // Modal Functions
-    function showModal(modal) {
-  modal.classList.remove('opacity-0', 'pointer-events-none');
-  modal.classList.add('opacity-100', 'pointer-events-auto');
-      const modalContent = modal.querySelector('div');
-      modalContent.classList.remove('scale-95');
-      modalContent.classList.add('scale-100');
-}
-
-    function hideModal(modal) {
-      const modalContent = modal.querySelector('div');
-      modalContent.classList.remove('scale-100');
-      modalContent.classList.add('scale-95');
-  setTimeout(() => {
-    modal.classList.remove('opacity-100', 'pointer-events-auto');
-    modal.classList.add('opacity-0', 'pointer-events-none');
-      }, 200);
-    }
-
-    function resetForm() {
-      currentStep = 1;
-      form.reset();
-      updateFormState();
-      const errorDivs = form.querySelectorAll('.alert-error');
-      errorDivs.forEach(div => div.classList.add('hidden'));
-      form.querySelectorAll('.field-error').forEach(field => {
-        field.classList.remove('field-error');
-      });
-    }
-
-    function updateStepIndicators(step) {
-      document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
-        if (index + 1 < step) {
-          indicator.classList.remove('text-gray-400');
-          indicator.classList.add('text-orange-500');
-        } else if (index + 1 === step) {
-          indicator.classList.remove('text-gray-400');
-          indicator.classList.add('text-black');
-        } else {
-          indicator.classList.remove('text-orange-500', 'text-black');
-          indicator.classList.add('text-gray-400');
-  }
-});
-    }
-
-    function updateFormState() {
-      // Update progress bar
-      progressBar.style.width = `${((currentStep - 1) / (totalSteps - 1)) * 100}%`;
-
-      // Update title and indicators
-      stepTitle.textContent = {
-        1: 'Personal Information',
-        2: 'Account Setup',
-        3: "You've Made it!"
-      }[currentStep];
-      updateStepIndicators(currentStep);
-
-      // Hide all steps
-      document.querySelectorAll('.step-content').forEach(step => {
-        step.classList.add('hidden');
-      });
-
-      // Show current step
-      const currentStepElement = document.getElementById(`step${currentStep}`);
-      if (currentStepElement) {
-        currentStepElement.classList.remove('hidden');
-      }
-
-      // Update buttons
-      if (prevBtn && nextBtn && createAcctBtn) {
-        prevBtn.classList.toggle('hidden', currentStep === 1 || currentStep === 3);
-        nextBtn.classList.toggle('hidden', currentStep !== 1);
-        createAcctBtn.classList.toggle('hidden', currentStep !== 2);
-      }
-    }
-
-    // Event Listeners
+    // Add click event for login button
     if (loginBtn) {
-      loginBtn.addEventListener('click', () => showModal(loginModal));
-    }
-
-    if (createAccountLink) {
-      createAccountLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        hideModal(loginModal);
-        setTimeout(() => {
-          showModal(createAccountModal);
-          resetForm();
-        }, 300);
-      });
-    }
-
-    if (closeButtons) {
-      closeButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          const modal = button.closest('[id$="Modal"]');
-          hideModal(modal);
-          if (modal.id === 'createAccountModal') {
-            setTimeout(resetForm, 300);
-          }
+        loginBtn.addEventListener('click', () => {
+            showModal(loginModal);
         });
-      });
+    }
+
+    // Add click event for create account link
+    if (createAccountLink) {
+        createAccountLink.addEventListener('click', (e) => {
+        e.preventDefault();
+            hideModal(loginModal);
+            setTimeout(() => {
+                showModal(createAccountModal);
+            }, 300);
+        });
+    }
+
+    // Add click events for close buttons
+    if (closeButtons) {
+        closeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const modal = button.closest('[id$="Modal"]');
+                hideModal(modal);
+            });
+        });
     }
 
     // Close on outside click
     window.addEventListener('click', (e) => {
-      if (e.target.matches('[id$="Modal"]')) {
-        hideModal(e.target);
-        if (e.target.id === 'createAccountModal') {
-          setTimeout(resetForm, 300);
+        if (e.target.matches('[id$="Modal"]')) {
+            hideModal(e.target);
         }
-      }
     });
 
-    // Form validation
-    function validateStep(step) {
-      const currentStepElement = document.getElementById(`step${step}`);
-      const requiredFields = currentStepElement.querySelectorAll('[required]');
-      let isValid = true;
-
-      requiredFields.forEach(field => {
-        const value = field.value.trim();
-        let fieldValid = true;
-
-        // Specific field validations
-        switch(field.id) {
-          case 'email':
-            fieldValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-            break;
-          case 'phone_number':
-            fieldValid = /^\+?[\d\s-]{10,}$/.test(value);
-            break;
-          case 'date_of_birth':
-            fieldValid = /^\d{4}-\d{2}-\d{2}$/.test(value);
-            break;
-          case 'confirm_password':
-            const password = document.getElementById('password').value;
-            fieldValid = value === password;
-            break;
-          default:
-            fieldValid = value.length > 0;
-        }
-
-        if (!fieldValid) {
-          field.classList.add('field-error');
-          const errorMessage = field.nextElementSibling;
-          if (errorMessage && errorMessage.classList.contains('error-message')) {
-            errorMessage.style.display = 'block';
-  }
-          isValid = false;
-        } else {
-          field.classList.remove('field-error');
-          const errorMessage = field.nextElementSibling;
-          if (errorMessage && errorMessage.classList.contains('error-message')) {
-            errorMessage.style.display = 'none';
-          }
-        }
-      });
-
-      return isValid;
+    // Handle login form submission
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Reset error states
+            const loginError = document.getElementById('loginError');
+            loginError.classList.add('hidden');
+            document.querySelectorAll('.error-message').forEach(msg => msg.classList.add('hidden'));
+            document.querySelectorAll('input').forEach(input => {
+                input.classList.remove('border-red-500');
+                input.classList.remove('ring-red-500');
+            });
+            
+            const formData = new FormData(loginForm);
+            
+            fetch(loginForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    // Show error message
+                    if (data.field) {
+                        // Field-specific error
+                        const input = document.getElementById('login_' + data.field);
+                        const errorSpan = input.nextElementSibling;
+                        
+                        input.classList.add('border-red-500');
+                        input.classList.add('ring-red-500');
+                        errorSpan.textContent = data.error;
+                        errorSpan.classList.remove('hidden');
+                    } else {
+                        // General error
+                        loginError.textContent = data.error;
+                        loginError.classList.remove('hidden');
   }
 
-    // Event Listeners for form navigation
-    if (nextBtn) {
-  nextBtn.addEventListener('click', () => {
-        if (validateStep(currentStep)) {
-          currentStep++;
-          updateFormState();
-        }
-      });
-    }
-
-    if (prevBtn) {
-      prevBtn.addEventListener('click', () => {
-        if (currentStep > 1) {
-          currentStep--;
-          updateFormState();
-        }
-      });
-    }
-
-    // Handle form submission
-    if (form) {
-      form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        // Validate current step
-        if (!validateStep(currentStep)) {
-          return;
-        }
-
-        // Additional password validation for step 2
-        if (currentStep === 2) {
-          const password = document.getElementById('password').value;
-          const confirmPassword = document.getElementById('confirm_password').value;
-          
-          if (password !== confirmPassword) {
-            const confirmPasswordField = document.getElementById('confirm_password');
-            confirmPasswordField.classList.add('field-error');
-            const errorMessage = confirmPasswordField.nextElementSibling;
-            if (errorMessage) {
-              errorMessage.style.display = 'block';
-            }
-            return;
-          }
-        }
-
-        const formData = new FormData(form);
-        try {
-          const response = await fetch(form.action, {
-            method: 'POST',
-            body: formData,
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest'
-            }
-          });
-          
-          const data = await response.json();
-          
-          if (data.success) {
-            currentStep = 3;
-            updateFormState();
-            setTimeout(() => {
-              window.location.href = data.redirect_url;
-            }, 2000);
-          } else {
-            const errorDiv = document.getElementById('registrationError');
-            errorDiv.textContent = data.error;
-            errorDiv.classList.remove('hidden');
-            // Scroll to error message
-            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        } catch (error) {
-          console.error('Error:', error);
-          const errorDiv = document.getElementById('registrationError');
-          errorDiv.textContent = 'An error occurred. Please try again.';
-          errorDiv.classList.remove('hidden');
-          // Scroll to error message
-          errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      });
-
-      // Remove error state on input
-      form.querySelectorAll('input, select, textarea').forEach(field => {
-        field.addEventListener('input', function() {
-          this.classList.remove('field-error');
-          const errorMessage = this.nextElementSibling;
-          if (errorMessage && errorMessage.classList.contains('error-message')) {
-            errorMessage.style.display = 'none';
-          }
-          const errorDiv = document.getElementById('registrationError');
-          if (errorDiv) {
-            errorDiv.classList.add('hidden');
-          }
+                    // Retain form data if provided
+                    if (data.formData) {
+                        Object.keys(data.formData).forEach(key => {
+                            const input = document.getElementById('login_' + key);
+                            if (input) {
+                                input.value = data.formData[key];
+                            }
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                loginError.textContent = 'An error occurred. Please try again.';
+                loginError.classList.remove('hidden');
+            });
         });
-      });
+        
+        // Clear errors when user starts typing
+        loginForm.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', function() {
+                this.classList.remove('border-red-500');
+                this.classList.remove('ring-red-500');
+                this.nextElementSibling.classList.add('hidden');
+                document.getElementById('loginError').classList.add('hidden');
+            });
+        });
     }
+
+    // FAQ functionality
+    window.toggleFAQ = function(headerElement) {
+        const icon = headerElement.querySelector('i');
+        const paragraph = headerElement.nextElementSibling;
+        paragraph.classList.toggle('hidden');
+        icon.classList.toggle('rotate-180');
+    };
   });
 </script>
 {% endblock scripts %}

@@ -35,7 +35,7 @@ urlpatterns = [
     path('guest/logout/', views.guest_logout, name='guest_logout'),
     path('process-payment/', views.process_payment, name='process_payment'),
     path('confirm-payment/', views.confirm_payment, name='confirm_payment'),
-    path('check-room-availability/<int:room_id>/', views.check_room_availability, name='check_room_availability'),
+    path('check-room-availability/<str:room_type>/<str:room_number>/', views.check_room_availability, name='check_room_availability'),
 ]
 
 if settings.DEBUG:

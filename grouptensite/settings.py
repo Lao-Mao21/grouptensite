@@ -127,10 +127,7 @@ STATIC_URL = 'static/'
 LOGIN_URL = '/login_admin/'  # URL where users will be redirected when login is required
 LOGIN_REDIRECT_URL = '/admin_dashboard/'  # URL to redirect after successful login
 
-import pathlib
-
-BASE_DIR = pathlib.Path(__file__).resolve().parent
-
+# Media files (Uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 

@@ -97,9 +97,10 @@
               <th class="py-3 px-4 text-left">Room Number</th>
               <th class="py-3 px-4 text-left">Check in</th>
               <th class="py-3 px-4 text-left">Check out</th>
+              <th class="py-3 px-4 text-left">Status</th>
               <th class="py-3 px-4 text-left">Payment Status</th>
               <th class="py-3 px-4 text-left">Payment Method</th>
-              <th class="py-3 px-4 text-left">Actions</th>
+              <th class="py-3 px-4 text-left">Amount</th>
             </tr>
           </thead>
           <tbody>
@@ -111,6 +112,14 @@
               <td class="py-3 px-4">{{ booking.check_out|date:"M d, Y H:i" }}</td>
               <td class="py-3 px-4">
                 <span class="px-2 py-1 text-sm rounded-full 
+                  {% if booking.room_id.room_status == 'occupied' %}bg-green-100 text-green-800
+                  {% elif booking.room_id.room_status == 'reserved' %}bg-yellow-100 text-yellow-800
+                  {% else %}bg-gray-100 text-gray-800{% endif %}">
+                  {{ booking.room_id.room_status|title }}
+                </span>
+              </td>
+              <td class="py-3 px-4">
+                <span class="px-2 py-1 text-sm rounded-full 
                   {% if booking.payment_status == 'paid' %}bg-green-100 text-green-800
                   {% elif booking.payment_status == 'pending' %}bg-yellow-100 text-yellow-800
                   {% elif booking.payment_status == 'cancelled' %}bg-red-100 text-red-800
@@ -118,30 +127,24 @@
                   {{ booking.payment_status|title }}
                 </span>
               </td>
-              <td class="py-3 px-4">{{ booking.payment_mode|title }}</td>
               <td class="py-3 px-4">
-                {% if booking.room_id.room_status == 'occupied' and booking.payment_status == 'paid' %}
-                <button 
-                  data-guest-id="{{ booking.id }}"
-                  data-room-number="{{ booking.room_id.room_number }}"
-                  data-guest-name="{{ guest.full_name }}"
-                  data-room-type="{{ booking.room_id.room_type }}"
-                  data-check-in="{{ booking.check_in|date:'m/d/y h:i A' }}"
-                  data-check-out="{{ booking.check_out|date:'m/d/y h:i A' }}"
-                  data-status="{{ booking.room_id.room_status }}"
-                  data-payment-status="{{ booking.payment_status }}"
-                  onclick="showCheckoutModalFromData(this)"
-                  class="text-red-600 hover:text-red-800 flex items-center" 
-                  title="Check-Out">
-                  <span class="material-icons text-base mr-1">logout</span>
-                  Check-out
-                </button>
+                {% if booking.transaction_info %}
+                  {{ booking.transaction_info.payment_method|title }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="py-3 px-4">
+                {% if booking.transaction_info %}
+                  ₱{{ booking.transaction_info.amount|floatformat:2 }}
+                {% else %}
+                  -
                 {% endif %}
               </td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="7" class="py-8 text-center text-gray-500">No bookings found</td>
+              <td colspan="9" class="py-8 text-center text-gray-500">No bookings found</td>
             </tr>
             {% endfor %}
           </tbody>
