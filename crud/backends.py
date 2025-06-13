@@ -5,6 +5,9 @@ import random
 import time
 import stripe
 from django.conf import settings
+from django.shortcuts import redirect
+from django.contrib import messages
+from functools import wraps
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -257,3 +260,16 @@ class StripePaymentService:
                 'error': str(e),
                 'error_code': 'server_error'
             }
+
+def guest_login_required(view_func):
+    """
+    Decorator for views that checks that the user is logged in as a guest,
+    redirecting to the landing page if necessary.
+    """
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if 'guest_id' not in request.session:
+            messages.error(request, 'Please login to access this page.')
+            return redirect('landing_page')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
