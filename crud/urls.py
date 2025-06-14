@@ -36,10 +36,13 @@ urlpatterns = [
     path('todays_bookings/', login_required(views.todays_bookings), name='todays_bookings'),
     path('sales_report/', login_required(views.sales_report), name='sales_report'),
     path('pricing/', login_required(views.pricing), name='pricing'),
+    path('set_price/', login_required(views.set_price), name='set_price'),
+    path('book_guest/', login_required(views.book_guest), name='book_guest'),
     path('manage_admin/', login_required(views.manage_admin), name='manage_admin'),
     path('add_admin/', login_required(views.add_admin), name='add_admin'),
     path('edit_admin/<int:admin_id>/', login_required(views.edit_admin), name='edit_admin'),
     path('delete_admin/<int:admin_id>/', login_required(views.delete_admin), name='delete_admin'),
+    path('change_admin_password/<int:admin_id>/', login_required(views.change_admin_password), name='change_admin_password'),
 ]
 
 if settings.DEBUG:

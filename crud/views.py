@@ -97,25 +97,97 @@ def add_room(request):
     return render(request, "web/admin/add_room.html")
 
 @login_required
+def pricing(request):
+    """Handle the pricing page view"""
+    try:
+        # Get all rooms with search functionality
+        search = request.GET.get('search', '')
+        rooms = ManageRoom.objects.all()
+        if search:
+            rooms = rooms.filter(
+                Q(room_number__icontains=search) |
+                Q(room_type__icontains=search)
+            )
+
+        # Paginate the rooms
+        paginator = Paginator(rooms, 10)  # Show 10 rooms per page
+        page_number = request.GET.get('page', 1)
+        rooms = paginator.get_page(page_number)
+
+        # Get room types data for statistics
+        room_type_data = {}
+        all_rooms = ManageRoom.objects.all()
+        for room in all_rooms:
+            room_type = room.room_type
+            if room_type not in room_type_data:
+                room_type_data[room_type] = {
+                    'id': room_type,
+                    'name': room.get_room_type_display(),
+                    'min_price': float('inf'),
+                    'max_price': 0,
+                    'total_rooms': 0,
+                    'available_rooms': 0
+                }
+            
+            room_type_data[room_type]['total_rooms'] += 1
+            if room.room_status == 'available':
+                room_type_data[room_type]['available_rooms'] += 1
+            
+            if room.room_price < room_type_data[room_type]['min_price']:
+                room_type_data[room_type]['min_price'] = float(room.room_price)
+            if room.room_price > room_type_data[room_type]['max_price']:
+                room_type_data[room_type]['max_price'] = float(room.room_price)
+
+        # Convert to list and sort by min price
+        room_types = list(room_type_data.values())
+        room_types.sort(key=lambda x: x['min_price'])
+
+        # Get price types from the model
+        room_price_type = ManageRoom.PRICE_TYPE_CHOICES
+
+        context = {
+            'rooms': rooms,
+            'room_types': room_types,
+            'room_price_type': room_price_type,
+            'current_year': timezone.now().year,
+            'search': search
+        }
+        
+        return render(request, 'web/admin/pricing.html', context)
+        
+    except Exception as e:
+        print(f"Error in pricing view: {str(e)}")  # Add logging
+        messages.error(request, f'Error loading pricing page: {str(e)}')
+        return redirect('admin_dashboard')
+
+@login_required
 def set_price(request):
     if request.method == "POST":
         try:
             room_id = request.POST.get("room_id")
-            new_price = request.POST.get("room_price")
+            room_price = request.POST.get("room_price")
+            price_type = request.POST.get("price_type")
+            
+            if not all([room_id, room_price, price_type]):
+                messages.error(request, "Please fill in all required fields.")
+                return redirect('/pricing/')
             
             room = ManageRoom.objects.get(room_id=room_id)
-            room.room_price = new_price
+            room.room_price = room_price
+            room.room_price_type = price_type
             room.save()
             
             messages.success(request, 'Room price updated successfully.')
-            return redirect('manage_rooms')
+            return redirect('/pricing/')
+            
         except ManageRoom.DoesNotExist:
             messages.error(request, 'Room not found.')
-            return redirect('manage_rooms')
+            return redirect('/pricing/')
         except Exception as e:
             messages.error(request, f'Error updating room price: {str(e)}')
-            return redirect('manage_rooms')
-    return redirect('manage_rooms')
+            return redirect('/pricing/')
+            
+    return redirect('pricing')
 
 @login_required
 def edit_room(request, room_id):
@@ -865,46 +937,122 @@ def add_admin(request):
             is_active=is_active
         )
         admin.save()
-        return redirect('manage_admin')
+        return redirect('/manage_admin/')
     return render(request, "web/admin/add_admin.html")
 
 @login_required        
 def manage_admin(request):
-    admins = AdminAccounts.objects.all()
+    # Get all admins and paginate
+    admins_list = AdminAccounts.objects.all().order_by('first_name')
+    paginator = Paginator(admins_list, 10)  # Show 10 admins per page
+    
+    page = request.GET.get('page', 1)
+    try:
+        admins = paginator.page(page)
+    except PageNotAnInteger:
+        admins = paginator.page(1)
+    except EmptyPage:
+        admins = paginator.page(paginator.num_pages)
+    
     return render(request, "web/admin/manage_admins.html", {
         "admins": admins
     })
 
 @login_required
 def edit_admin(request, admin_id):
-    admin = AdminAccounts.objects.get(id=admin_id)
-    if request.method == "POST":
-        admin.first_name = request.POST.get("first_name")
-        admin.last_name = request.POST.get("last_name")
-        admin.middle_name = request.POST.get("middle_name")
-        admin.username = request.POST.get("username")
-        admin.email = request.POST.get("email")
-        admin.phone_number = request.POST.get("phone_number")
-        admin.address = request.POST.get("address")
-        admin.password = request.POST.get("password")
-        admin.gender = request.POST.get("gender")
-        admin.date_of_birth = request.POST.get("date_of_birth")
-        admin.is_active = request.POST.get("is_active")
-        admin.save()
-        return redirect('manage_admins')
-    return render(request, "web/admin/edit_admin.html", {
-        "admin": admin
-    })
+    try:
+        admin = AdminAccounts.objects.get(admin_id=admin_id)
+        if request.method == "POST":
+            # Check if username already exists for other admins
+            if AdminAccounts.objects.filter(username=request.POST.get("username")).exclude(admin_id=admin_id).exists():
+                messages.error(request, 'Username already exists. Please choose another.')
+                return redirect('manage_admin')
+
+            # Update admin details
+            admin.first_name = request.POST.get("first_name")
+            admin.last_name = request.POST.get("last_name")
+            admin.middle_name = request.POST.get("middle_name", "")
+            admin.username = request.POST.get("username")
+            admin.email = request.POST.get("email")
+            admin.phone_number = request.POST.get("phone_number")
+            admin.address = request.POST.get("address")
+            admin.gender = request.POST.get("gender")
+            admin.date_of_birth = request.POST.get("date_of_birth") or None
+            admin.is_active = request.POST.get("is_active") == "on"
+            
+            # Update full name
+            admin.full_name = f"{admin.first_name} {admin.middle_name} {admin.last_name}".strip()
+            
+            # Validate required fields
+            if not all([admin.first_name, admin.last_name, admin.username, 
+                       admin.email, admin.phone_number, admin.address]):
+                messages.error(request, 'Please fill in all required fields.')
+                return redirect('manage_admin')
+            
+            admin.save()
+            messages.success(request, 'Admin account updated successfully.')
+            return redirect('manage_admin')
+            
+        return redirect('manage_admin')
+    except AdminAccounts.DoesNotExist:
+        messages.error(request, 'Admin account not found.')
+        return redirect('manage_admin')
+    except Exception as e:
+        messages.error(request, f'Error updating admin: {str(e)}')
+        return redirect('manage_admin')
 
 @login_required
 def delete_admin(request, admin_id):
-    admin = AdminAccounts.objects.get(id=admin_id)
-    if request.method == "POST":
-        admin.delete()
-        return redirect('manage_admins')
-    return render(request, "web/admin/confirm_delete_admin.html", {
-        "admin": admin
-    })
+    try:
+        admin = AdminAccounts.objects.get(admin_id=admin_id)
+        if request.method == "POST":
+            admin.delete()
+            messages.success(request, 'Admin account deleted successfully.')
+            return redirect('/manage_admin/')
+        return render(request, "web/admin/confirm_delete_admin.html", {
+            "admin": admin
+        })
+    except AdminAccounts.DoesNotExist:
+        messages.error(request, 'Admin account not found.')
+        return redirect('/manage_admin/')
+    except Exception as e:
+        messages.error(request, f'Error deleting admin: {str(e)}')
+        return redirect('/manage_admin/')
+
+@login_required
+def change_admin_password(request, admin_id):
+    if request.method == 'POST':
+        try:
+            admin = AdminAccounts.objects.get(admin_id=admin_id)
+            current_password = request.POST.get('current_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+
+            # Validate current password
+            if not admin.check_password(current_password):
+                messages.error(request, 'Current password is incorrect.')
+                return redirect('manage_admin')
+
+            # Validate new password
+            if new_password != confirm_password:
+                messages.error(request, 'New passwords do not match.')
+                return redirect('manage_admin')
+
+            # Update password
+            admin.password = new_password  # The model's save method will hash the password
+            admin.save()
+
+            messages.success(request, 'Password changed successfully.')
+            return redirect('manage_admin')
+
+        except AdminAccounts.DoesNotExist:
+            messages.error(request, 'Admin account not found.')
+            return redirect('manage_admin')
+        except Exception as e:
+            messages.error(request, f'Error changing password: {str(e)}')
+            return redirect('manage_admin')
+
+    return redirect('manage_admin')
 
 # Guest Views
 def landing_page(request):
@@ -1466,52 +1614,3 @@ def confirm_payment(request):
             })
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
-
-@login_required
-def pricing(request):
-    """Handle the pricing page view"""
-    try:
-        # Get all room types with their prices
-        rooms = ManageRoom.objects.all()
-        room_type_data = {}
-        
-        # Process each room and aggregate by type
-        for room in rooms:
-            room_type = room.room_type
-            if room_type not in room_type_data:
-                room_type_data[room_type] = {
-                    'id': room_type,
-                    'name': room.get_room_type_display(),
-                    'min_price': float('inf'),
-                    'max_price': 0,
-                    'image': f"{room_type.lower()}.jpg",
-                    'description': room.description,
-                    'amenities': room.amenities,
-                    'total_rooms': 0,
-                    'available_rooms': 0
-                }
-            
-            room_type_data[room_type]['total_rooms'] += 1
-            if room.room_status == 'available':
-                room_type_data[room_type]['available_rooms'] += 1
-            
-            # Update price range
-            if room.room_price < room_type_data[room_type]['min_price']:
-                room_type_data[room_type]['min_price'] = float(room.room_price)
-            if room.room_price > room_type_data[room_type]['max_price']:
-                room_type_data[room_type]['max_price'] = float(room.room_price)
-
-        # Convert to list and sort by min price
-        room_types = list(room_type_data.values())
-        room_types.sort(key=lambda x: x['min_price'])
-
-        context = {
-            'room_types': room_types,
-            'current_year': timezone.now().year,
-        }
-        
-        return render(request, 'web/admin/pricing.html', context)
-        
-    except Exception as e:
-        messages.error(request, f'Error loading pricing page: {str(e)}')
-        return redirect('admin_dashboard') 
