@@ -22,6 +22,44 @@ from .models import (
 from .backends import MockPaymentService, StripePaymentService, guest_login_required
 import json
 
+def update_booking_statuses():
+    """
+    Update booking and room statuses automatically based on current time
+    """
+    current_time = timezone.now()
+    
+    # Update bookings whose check-in time has passed
+    bookings_to_update = ManageGuest.objects.filter(
+        status='reserved',
+        check_in__lte=current_time,
+        check_out__gt=current_time,
+        payment_status='paid'
+    )
+    
+    for booking in bookings_to_update:
+        booking.status = 'occupied'
+        booking.save()
+        
+        # Update room status
+        room = booking.room_id
+        room.room_status = 'occupied'
+        room.save()
+    
+    # Update expired bookings
+    expired_bookings = ManageGuest.objects.filter(
+        status__in=['occupied', 'reserved'],
+        check_out__lte=current_time
+    )
+    
+    for booking in expired_bookings:
+        booking.status = 'checked_out'
+        booking.save()
+        
+        # Update room status
+        room = booking.room_id
+        room.room_status = 'available'
+        room.save()
+
 # Admin Views
 @login_required
 def logout_admin(request):
@@ -312,6 +350,9 @@ def admin_dashboard(request):
 
 @login_required
 def manage_rooms(request):
+    # Update statuses before displaying
+    update_booking_statuses()
+    
     status = request.GET.get('room_status', 'available')
     search = request.GET.get('search', '')
     
@@ -359,6 +400,9 @@ def manage_rooms(request):
 
 @login_required
 def manage_guests(request):
+    # Update statuses before displaying
+    update_booking_statuses()
+    
     search_query = request.GET.get('search', '')
     active_table = request.GET.get('active_table', 'today')
 
@@ -741,6 +785,9 @@ def add_reservation(request):
 
 @login_required
 def book_guest(request):
+    # Update statuses before processing
+    update_booking_statuses()
+    
     if request.method == "POST":
         # Get form data
         full_name = request.POST.get("full_name")
@@ -1026,16 +1073,9 @@ def landing_page(request):
     if 'guest_id' in request.session:
         try:
             guest = GuestAccounts.objects.get(guest_id=request.session['guest_id'])
-            active_booking = ManageGuest.objects.filter(
-                guest_id=guest,
-                status__in=['pending', 'confirmed', 'occupied']
-            ).first()
-            
             context.update({
-                'guest': guest,
-                'has_active_booking': bool(active_booking)
+                'guest': guest
             })
-            
         except GuestAccounts.DoesNotExist:
             pass
     
@@ -1469,6 +1509,7 @@ def process_payment(request):
         guest = GuestAccounts.objects.get(guest_id=request.session.get('guest_id'))
         room = get_object_or_404(ManageRoom, room_id=data['booking_id'])
         
+        # Check if room is available
         if room.room_status != 'available':
             return JsonResponse({
                 'success': False,
@@ -1479,12 +1520,14 @@ def process_payment(request):
         check_out = parse_datetime(data['booking_details']['check_out'])
         expected_arrival = parse_datetime(data['booking_details']['expected_arrival'])
         
+        # Validate dates
         if check_in >= check_out:
             return JsonResponse({
                 'success': False,
                 'error': 'Check-out must be after check-in'
             })
             
+        # Check for overlapping bookings for this specific room
         overlapping = ManageGuest.objects.filter(
             room_id=room,
             status__in=['pending', 'confirmed', 'occupied', 'reserved'],
@@ -1498,9 +1541,23 @@ def process_payment(request):
                 'error': 'Room is not available for selected dates'
             })
         
-        payment_successful = True
+        # Process payment using Stripe or mock service
+        if settings.USE_STRIPE:
+            payment_service = StripePaymentService()
+        else:
+            payment_service = MockPaymentService()
+            
+        # Create initial payment transaction
+        payment = PaymentTransaction.objects.create(
+            amount=float(data['booking_details'].get('total_amount', 0)),
+            status='pending'
+        )
         
-        if payment_successful:
+        # Process the payment
+        result = payment_service.process_payment(payment)
+        
+        if result.get('success'):
+            # Create the booking
             booking = ManageGuest.objects.create(
                 guest_id=guest,
                 guest_name=guest.full_name,
@@ -1514,6 +1571,12 @@ def process_payment(request):
                 payment_mode='card'
             )
             
+            # Update payment with booking reference
+            payment.booking = booking
+            payment.status = 'completed'
+            payment.save()
+            
+            # Update room status
             room.room_status = 'reserved'
             room.save()
             
@@ -1522,6 +1585,8 @@ def process_payment(request):
                 'message': 'Booking confirmed successfully'
             })
         else:
+            payment.status = 'failed'
+            payment.save()
             return JsonResponse({
                 'success': False,
                 'error': 'Payment processing failed'

@@ -624,7 +624,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Initialize Flatpickr
+  // Initialize Flatpickr with improved date validation
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -639,54 +639,102 @@ document.addEventListener('DOMContentLoaded', function() {
     allowInput: true
   };
 
-  // Check-in picker
-  const checkInPicker = flatpickr('input[name="check_in"]', {
+  // Expected arrival picker with improved validation
+  const expectedArrivalPicker = flatpickr('input[name="expected_arrival"]', {
     ...commonConfig,
     minDate: "today",
-    defaultDate: today,
     onChange: function(selectedDates) {
-      if (selectedDates[0]) {
-        const minCheckOut = new Date(selectedDates[0]);
-        minCheckOut.setHours(minCheckOut.getHours() + 1);
+      const selectedDate = selectedDates[0];
+      if (selectedDate) {
+        // Get check-in and check-out dates
+        const checkInDate = checkInPicker.selectedDates[0];
+        const checkOutDate = checkOutPicker.selectedDates[0];
         
-        checkOutPicker.set('minDate', minCheckOut);
-        expectedArrivalPicker.set('maxDate', selectedDates[0]);
-        
-        if (checkOutPicker.selectedDates[0] <= selectedDates[0]) {
-          checkOutPicker.setDate(minCheckOut);
+        // Validate expected arrival is after check-in and before check-out
+        if (checkInDate && selectedDate <= checkInDate) {
+          const minExpectedArrival = new Date(checkInDate);
+          minExpectedArrival.setMinutes(minExpectedArrival.getMinutes() + 1);
+          this.setDate(minExpectedArrival);
+          alert("Expected arrival must be after check-in time");
+          return;
         }
         
-        calculateTotal();
+        if (checkOutDate && selectedDate >= checkOutDate) {
+          const maxExpectedArrival = new Date(checkOutDate);
+          maxExpectedArrival.setMinutes(maxExpectedArrival.getMinutes() - 1);
+          this.setDate(maxExpectedArrival);
+          alert("Expected arrival must be before check-out time");
+          return;
+        }
       }
     }
   });
 
-  // Check-out picker
-  const checkOutPicker = flatpickr('input[name="check_out"]', {
+  // Check-in picker with improved validation
+  const checkInPicker = flatpickr('input[name="check_in"]', {
     ...commonConfig,
-    minDate: tomorrow,
-    defaultDate: tomorrow,
-    onChange: function() {
-      calculateTotal();
+    minDate: "today",
+    onChange: function(selectedDates) {
+      const selectedDate = selectedDates[0];
+      if (selectedDate) {
+        // Set minimum check-out date to 1 hour after check-in
+        const minCheckOut = new Date(selectedDate);
+        minCheckOut.setHours(minCheckOut.getHours() + 1);
+        checkOutPicker.set('minDate', minCheckOut);
+
+        // Update expected arrival constraints
+        const minExpectedArrival = new Date(selectedDate);
+        minExpectedArrival.setMinutes(minExpectedArrival.getMinutes() + 1);
+        expectedArrivalPicker.set('minDate', minExpectedArrival);
+
+        // If check-out is before new check-in, update it
+        const checkOutDate = checkOutPicker.selectedDates[0];
+        if (checkOutDate && checkOutDate <= selectedDate) {
+          checkOutPicker.setDate(minCheckOut);
+        }
+
+        // If expected arrival is now invalid, clear it
+        const expectedArrival = expectedArrivalPicker.selectedDates[0];
+        if (expectedArrival && expectedArrival <= selectedDate) {
+          expectedArrivalPicker.clear();
+        }
+
+        calculateTotal();
+        validateDateOverlap();
+      }
     }
   });
 
-  // Expected arrival picker
-  const expectedArrivalPicker = flatpickr('input[name="expected_arrival"]', {
+  // Check-out picker with improved validation
+  const checkOutPicker = flatpickr('input[name="check_out"]', {
     ...commonConfig,
-    minDate: "today",
-    maxDate: checkInPicker.selectedDates[0] || today,
-    defaultDate: today
+    minDate: tomorrow,
+    onChange: function(selectedDates) {
+      const selectedDate = selectedDates[0];
+      if (selectedDate) {
+        // Check if check-out is after check-in
+        const checkInDate = checkInPicker.selectedDates[0];
+        if (checkInDate && selectedDate <= checkInDate) {
+          const minCheckOut = new Date(checkInDate);
+          minCheckOut.setHours(minCheckOut.getHours() + 1);
+          this.setDate(minCheckOut);
+          alert("Check-out must be at least 1 hour after check-in");
+        }
+        calculateTotal();
+        validateDateOverlap();
+      }
+    }
   });
 
-  // Room select change handler
+  // Room select change handler with availability check
   const roomSelect = document.getElementById('room-select');
   if (roomSelect) {
-    roomSelect.addEventListener('change', function() {
+    roomSelect.addEventListener('change', async function() {
       const selectedOption = this.options[this.selectedIndex];
       if (selectedOption.value) {
         roomPrice = parseFloat(selectedOption.dataset.price);
         calculateTotal();
+        await validateDateOverlap();
       }
     });
   }
@@ -695,40 +743,135 @@ document.addEventListener('DOMContentLoaded', function() {
   initializePaymentForm();
 });
 
+// Function to validate date overlap with existing bookings
+async function validateDateOverlap() {
+  const roomSelect = document.getElementById('room-select');
+  const checkIn = document.querySelector('input[name="check_in"]').value;
+  const checkOut = document.querySelector('input[name="check_out"]').value;
+  
+  if (roomSelect.value && checkIn && checkOut) {
+    const selectedOption = roomSelect.options[roomSelect.selectedIndex];
+    const roomType = selectedOption.dataset.roomType;
+    const roomNumber = selectedOption.textContent.match(/Room (\d+)/)[1];
+    
+    try {
+      const response = await fetch(`/check-room-availability/${roomType}/${roomNumber}/?check_in=${checkIn}&check_out=${checkOut}`);
+      const data = await response.json();
+      
+      const nextButton = document.querySelector('button[onclick="validateAndProceed()"]');
+      if (!data.success) {
+        nextButton.disabled = true;
+        alert(data.message);
+      } else {
+        nextButton.disabled = false;
+      }
+    } catch (error) {
+      console.error('Error checking availability:', error);
+    }
+  }
+}
+
+// Payment form submission with improved validation
 function initializePaymentForm() {
-  // Card number formatting
+  // Card number formatting and validation
   const cardNumber = document.getElementById('card-number');
   cardNumber.addEventListener('input', function(e) {
-    let value = e.target.value.replace(/\D/g, '');
+    let value = e.target.value.replace(/[^\d]/g, '');
     if (value.length > 16) value = value.slice(0, 16);
+    
+    // Format with spaces every 4 digits
     let formattedValue = '';
     for (let i = 0; i < value.length; i++) {
       if (i > 0 && i % 4 === 0) formattedValue += ' ';
       formattedValue += value[i];
     }
     e.target.value = formattedValue;
+    
+    // Validate card number using Luhn algorithm
+    const isValid = validateCardNumber(value);
+    cardNumber.classList.toggle('border-red-500', !isValid && value.length > 0);
+    cardNumber.classList.toggle('border-green-500', isValid);
   });
 
-  // Expiry date formatting
+  // Expiry date formatting and validation
   const cardExpiry = document.getElementById('card-expiry');
   cardExpiry.addEventListener('input', function(e) {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 4) value = value.slice(0, 4);
-    if (value.length > 2) {
-      value = value.slice(0, 2) + '/' + value.slice(2);
+    let value = e.target.value.replace(/[^\d]/g, '');
+    
+    // Format as MM/YY
+    if (value.length >= 2) {
+      const month = parseInt(value.slice(0, 2));
+      if (month > 12) value = '12' + value.slice(2);
+      if (value.length > 2) value = value.slice(0, 2) + '/' + value.slice(2);
     }
+    if (value.length > 5) value = value.slice(0, 5);
     e.target.value = value;
+    
+    // Validate expiry date
+    const isValid = validateExpiryDate(value);
+    cardExpiry.classList.toggle('border-red-500', !isValid && value.length > 0);
+    cardExpiry.classList.toggle('border-green-500', isValid);
   });
 
-  // CVV input
+  // CVV input validation
   const cardCvv = document.getElementById('card-cvv');
   cardCvv.addEventListener('input', function(e) {
-    let value = e.target.value.replace(/\D/g, '');
+    let value = e.target.value.replace(/[^\d]/g, '');
     if (value.length > 4) value = value.slice(0, 4);
     e.target.value = value;
+    
+    // Validate CVV length
+    const isValid = value.length >= 3;
+    cardCvv.classList.toggle('border-red-500', !isValid && value.length > 0);
+    cardCvv.classList.toggle('border-green-500', isValid);
   });
 
-  // Payment form submission
+  // Card holder name validation
+  const cardName = document.getElementById('cardName');
+  cardName.addEventListener('input', function(e) {
+    const value = e.target.value;
+    const isValid = /^[A-Za-z\s]{2,}$/.test(value); // At least 2 characters, letters and spaces only
+    cardName.classList.toggle('border-red-500', !isValid && value.length > 0);
+    cardName.classList.toggle('border-green-500', isValid);
+  });
+
+  // Helper function to validate card number using Luhn algorithm
+  function validateCardNumber(number) {
+    if (!number) return false;
+    let sum = 0;
+    let isEven = false;
+    
+    // Loop through values starting from the rightmost digit
+    for (let i = number.length - 1; i >= 0; i--) {
+      let digit = parseInt(number.charAt(i));
+      
+      if (isEven) {
+        digit *= 2;
+        if (digit > 9) {
+          digit -= 9;
+        }
+      }
+      
+      sum += digit;
+      isEven = !isEven;
+    }
+    
+    return sum % 10 === 0;
+  }
+
+  // Helper function to validate expiry date
+  function validateExpiryDate(value) {
+    if (!value || value.length < 5) return false;
+    
+    const [month, year] = value.split('/');
+    const expiry = new Date(2000 + parseInt(year), parseInt(month) - 1);
+    const today = new Date();
+    today.setDate(1); // Set to first of month for accurate month comparison
+    
+    return expiry > today;
+  }
+
+  // Payment form submission with improved validation
   const form = document.getElementById('paymentForm');
   const submitButton = document.getElementById('submit-button');
   const errorElement = document.getElementById('card-errors');
@@ -737,6 +880,29 @@ function initializePaymentForm() {
     event.preventDefault();
     
     try {
+      // Basic format validation
+      const cardNumberValue = cardNumber.value.replace(/\s/g, '');
+      const expiryValue = cardExpiry.value;
+      const cvvValue = cardCvv.value;
+      const nameValue = cardName.value;
+      
+      // Simple format checks for mock payment
+      if (cardNumberValue.length < 12) {
+        throw new Error('Card number must be at least 12 digits');
+      }
+      
+      if (!expiryValue.includes('/')) {
+        throw new Error('Invalid expiry date format (MM/YY)');
+      }
+      
+      if (cvvValue.length < 3) {
+        throw new Error('CVV must be at least 3 digits');
+      }
+      
+      if (!nameValue.trim()) {
+        throw new Error('Card holder name is required');
+      }
+      
       submitButton.disabled = true;
       submitButton.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span> Processing...';
       errorElement.textContent = '';
@@ -744,7 +910,7 @@ function initializePaymentForm() {
       // Get stored booking details
       const bookingDetails = JSON.parse(sessionStorage.getItem('bookingDetails'));
       
-      // Check room availability one last time
+      // Final availability check
       const isAvailable = await checkRoomAvailability({
         type: bookingDetails.room_type,
         number: bookingDetails.room_number
@@ -758,19 +924,23 @@ function initializePaymentForm() {
       const formData = {
         booking_id: bookingDetails.room_id,
         card_data: {
-          number: document.getElementById('card-number').value.replace(/\s/g, ''),
-          expiry: document.getElementById('card-expiry').value,
-          cvv: document.getElementById('card-cvv').value,
-          card_holder: document.getElementById('cardName').value,
+          number: cardNumberValue,
+          expiry: expiryValue,
+          cvv: cvvValue,
+          card_holder: nameValue,
           billing_address: document.getElementById('billingAddress').value
         },
         booking_details: {
           check_in: bookingDetails.check_in,
           check_out: bookingDetails.check_out,
           guest_count: parseInt(bookingDetails.guest_count),
-          expected_arrival: bookingDetails.expected_arrival
+          expected_arrival: bookingDetails.expected_arrival,
+          total_amount: document.getElementById('finalAmount').textContent
         }
       };
+
+      // For mock payment, simulate processing delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       const response = await fetch('/process-payment/', {
         method: 'POST',
@@ -795,6 +965,7 @@ function initializePaymentForm() {
       
     } catch (error) {
       errorElement.textContent = error.message;
+      errorElement.classList.add('text-red-600', 'mt-2', 'text-sm');
       submitButton.disabled = false;
       submitButton.innerHTML = 'Pay now';
       

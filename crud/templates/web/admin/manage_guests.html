@@ -561,5 +561,81 @@
             closeCheckoutModal();
         });
     });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up automatic status update timer
+        function updateBookingStatuses() {
+            const now = new Date();
+            
+            // Update today's bookings
+            document.querySelectorAll('#today-bookings-table tbody tr').forEach(row => {
+                const checkIn = new Date(row.querySelector('td:nth-child(5)').textContent);
+                const checkOut = new Date(row.querySelector('td:nth-child(6)').textContent);
+                const statusCell = row.querySelector('td:nth-child(4) span');
+                const roomStatusCell = row.querySelector('td:nth-child(1)');
+                
+                if (now >= checkIn && now < checkOut) {
+                    statusCell.textContent = 'Occupied';
+                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
+                    // Update room status in database
+                    updateRoomStatus(row.dataset.roomId, 'occupied');
+                } else if (now >= checkOut) {
+                    statusCell.textContent = 'Checked Out';
+                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800';
+                    // Update room status in database
+                    updateRoomStatus(row.dataset.roomId, 'available');
+                }
+            });
+            
+            // Update reservations
+            document.querySelectorAll('#reservations-table tbody tr').forEach(row => {
+                const expectedArrival = new Date(row.querySelector('td:nth-child(5)').textContent);
+                const checkIn = new Date(row.querySelector('td:nth-child(6)').textContent);
+                const checkOut = new Date(row.querySelector('td:nth-child(7)').textContent);
+                const statusCell = row.querySelector('td:nth-child(4) span');
+                
+                if (now >= checkIn && now < checkOut) {
+                    statusCell.textContent = 'Occupied';
+                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
+                    // Update room status in database
+                    updateRoomStatus(row.dataset.roomId, 'occupied');
+                } else if (now >= checkOut) {
+                    statusCell.textContent = 'Checked Out';
+                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800';
+                    // Update room status in database
+                    updateRoomStatus(row.dataset.roomId, 'available');
+                } else if (now >= expectedArrival && now < checkIn) {
+                    statusCell.textContent = 'Expected';
+                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800';
+                }
+            });
+        }
+
+        // Function to update room status in the database
+        function updateRoomStatus(roomId, status) {
+            if (!roomId) return;
+            
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch(`/update-room-status/${roomId}/${status}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                }
+            }).catch(error => console.error('Error updating room status:', error));
+        }
+
+        // Update statuses immediately and then every minute
+        updateBookingStatuses();
+        setInterval(updateBookingStatuses, 60000);
+
+        // Add room IDs to table rows for status updates
+        document.querySelectorAll('#today-bookings-table tbody tr, #reservations-table tbody tr').forEach(row => {
+            const roomNumber = row.querySelector('td:nth-child(1)').textContent;
+            if (roomNumber) {
+                row.dataset.roomId = roomNumber;
+            }
+        });
+    });
 </script>
 {% endblock %}

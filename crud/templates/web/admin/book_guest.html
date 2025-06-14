@@ -3,6 +3,27 @@
 
 {% block title %}Book Guest{% endblock title %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+// Function to refresh the page every 5 minutes
+function setupAutoRefresh() {
+    // Initial delay of 5 minutes (300000 milliseconds)
+    setTimeout(function() {
+        // Reload the page
+        window.location.reload();
+    }, 300000);
+}
+
+// Set up the refresh when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    setupAutoRefresh();
+});
+</script>
+{% endblock %}
+
 {% block content %}
 <!-- Add Flatpickr CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -208,32 +229,104 @@ document.addEventListener('DOMContentLoaded', function() {
     const dateConfig = {
         enableTime: true,
         dateFormat: "Y-m-d H:i",
-        minDate: "today",
-        time_24hr: false
+        time_24hr: false,
+        minuteIncrement: 30,
+        disableMobile: true,
+        allowInput: true
     };
 
     // Initialize Expected Arrival picker
     const expectedArrivalPicker = flatpickr("#expected-arrival", {
         ...dateConfig,
+        minDate: "today",
         onChange: function(selectedDates) {
-            // Update min date for check-in
-            checkInPicker.set('minDate', selectedDates[0]);
+            const selectedDate = selectedDates[0];
+            if (selectedDate) {
+                // Get check-in and check-out dates
+                const checkInDate = checkInPicker.selectedDates[0];
+                const checkOutDate = checkOutPicker.selectedDates[0];
+                
+                // Validate expected arrival is after check-in and before check-out
+                if (checkInDate && selectedDate <= checkInDate) {
+                    const minExpectedArrival = new Date(checkInDate);
+                    minExpectedArrival.setMinutes(minExpectedArrival.getMinutes() + 1);
+                    this.setDate(minExpectedArrival);
+                    alert("Expected arrival must be after check-in time");
+                    return;
+                }
+                
+                if (checkOutDate && selectedDate >= checkOutDate) {
+                    const maxExpectedArrival = new Date(checkOutDate);
+                    maxExpectedArrival.setMinutes(maxExpectedArrival.getMinutes() - 1);
+                    this.setDate(maxExpectedArrival);
+                    alert("Expected arrival must be before check-out time");
+                    return;
+                }
+            }
         }
     });
 
     // Initialize Check In picker
     const checkInPicker = flatpickr("#check-in", {
         ...dateConfig,
+        minDate: "today",
         onChange: function(selectedDates) {
-            // Update min date for check-out
-            checkOutPicker.set('minDate', selectedDates[0]);
+            const selectedDate = selectedDates[0];
+            if (selectedDate) {
+                // Set minimum check-out date to 1 hour after check-in
+                const minCheckOut = new Date(selectedDate);
+                minCheckOut.setHours(minCheckOut.getHours() + 1);
+                checkOutPicker.set('minDate', minCheckOut);
+
+                // Update expected arrival constraints
+                const minExpectedArrival = new Date(selectedDate);
+                minExpectedArrival.setMinutes(minExpectedArrival.getMinutes() + 1);
+                expectedArrivalPicker.set('minDate', minExpectedArrival);
+
+                // If check-out is before new check-in, update it
+                const checkOutDate = checkOutPicker.selectedDates[0];
+                if (checkOutDate && checkOutDate <= selectedDate) {
+                    checkOutPicker.setDate(minCheckOut);
+                }
+
+                // If expected arrival is now invalid, clear it
+                const expectedArrival = expectedArrivalPicker.selectedDates[0];
+                if (expectedArrival && expectedArrival <= selectedDate) {
+                    expectedArrivalPicker.clear();
+                }
+            }
         }
     });
 
     // Initialize Check Out picker
     const checkOutPicker = flatpickr("#check-out", {
         ...dateConfig,
-        minDate: new Date()
+        minDate: new Date(new Date().setHours(new Date().getHours() + 1)),
+        onChange: function(selectedDates) {
+            const selectedDate = selectedDates[0];
+            if (selectedDate) {
+                // Check if check-out is after check-in
+                const checkInDate = checkInPicker.selectedDates[0];
+                if (checkInDate && selectedDate <= checkInDate) {
+                    const minCheckOut = new Date(checkInDate);
+                    minCheckOut.setHours(minCheckOut.getHours() + 1);
+                    this.setDate(minCheckOut);
+                    alert("Check-out must be at least 1 hour after check-in");
+                    return;
+                }
+
+                // Update expected arrival constraints
+                const maxExpectedArrival = new Date(selectedDate);
+                maxExpectedArrival.setMinutes(maxExpectedArrival.getMinutes() - 1);
+                expectedArrivalPicker.set('maxDate', maxExpectedArrival);
+
+                // If expected arrival is now invalid, clear it
+                const expectedArrival = expectedArrivalPicker.selectedDates[0];
+                if (expectedArrival && expectedArrival >= selectedDate) {
+                    expectedArrivalPicker.clear();
+                }
+            }
+        }
     });
 
     // Handle booking type changes
@@ -249,8 +342,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isReservation) {
             // For reservations, allow future dates
             checkInPicker.set('minDate', 'today');
+            checkInPicker.set('maxDate', null);
         } else {
-            // For immediate bookings, only allow today and set expected arrival to check-in time
+            // For immediate bookings, only allow today
             const today = new Date();
             checkInPicker.set('minDate', today);
             checkInPicker.set('maxDate', today);

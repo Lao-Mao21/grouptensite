@@ -3,136 +3,262 @@
 {% load humanize %}
 
 {% block title %}Manage Rooms{% endblock title %}
+
+{% block extra_head %}
+<style>
+    .status-badge {
+        transition: all 0.3s ease;
+    }
     
+    .room-row {
+        transition: background-color 0.2s ease;
+    }
+    
+    .room-row:hover {
+        background-color: rgba(243, 244, 246, 1);
+    }
+</style>
+
+<script>
+// Function to refresh the page every 5 minutes
+function setupAutoRefresh() {
+    setTimeout(function() {
+        window.location.reload();
+    }, 300000);
+}
+
+// Set up the refresh when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    setupAutoRefresh();
+    initializeStatusUpdates();
+});
+
+function initializeStatusUpdates() {
+    // Update statuses every minute
+    updateRoomStatuses();
+    setInterval(updateRoomStatuses, 60000);
+}
+
+function updateRoomStatuses() {
+    const now = new Date();
+    
+    document.querySelectorAll('.room-row').forEach(row => {
+        const roomId = row.dataset.roomId;
+        const bookingStatus = row.dataset.bookingStatus;
+        const checkIn = row.dataset.checkIn ? new Date(row.dataset.checkIn) : null;
+        const checkOut = row.dataset.checkOut ? new Date(row.dataset.checkOut) : null;
+        const paymentStatus = row.dataset.paymentStatus;
+        const statusCell = row.querySelector('.status-badge');
+        
+        if (!statusCell) return;
+        
+        let newStatus = '';
+        let newClass = '';
+        
+        if (checkOut && now >= checkOut) {
+            newStatus = 'Available';
+            newClass = 'bg-green-100 text-green-800';
+            updateRoomStatus(roomId, 'available');
+        } else if (checkIn && now >= checkIn) {
+            if (paymentStatus === 'paid') {
+                newStatus = 'Occupied';
+                newClass = 'bg-red-100 text-red-800';
+                updateRoomStatus(roomId, 'occupied');
+            } else {
+                newStatus = 'Reserved';
+                newClass = 'bg-yellow-100 text-yellow-800';
+                updateRoomStatus(roomId, 'reserved');
+            }
+        } else if (bookingStatus === 'reserved') {
+            newStatus = 'Reserved';
+            newClass = 'bg-yellow-100 text-yellow-800';
+        } else {
+            newStatus = 'Available';
+            newClass = 'bg-green-100 text-green-800';
+        }
+        
+        if (statusCell.textContent !== newStatus) {
+            statusCell.textContent = newStatus;
+            statusCell.className = `status-badge px-2 py-1 rounded-full text-xs font-medium ${newClass}`;
+        }
+    });
+}
+
+function updateRoomStatus(roomId, status) {
+    if (!roomId) return;
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch(`/update-room-status/${roomId}/${status}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        }
+    }).catch(error => console.error('Error updating room status:', error));
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="min-h-screen bg-gray-100 flex sm:flex-row flex-col">
     {% include "attachments/sidebar.html" %}
-    <div class="max-w-5xl h-fit mx-auto my-auto bg-white rounded-xl shadow-md p-6">
-        <div class="flex-1 p-4 sm:p-8">
-            <div class="mb-4">
-                <span id="current-date" class="text-2xl sm:text-4xl font-bold text-gray-700"></span>
-                <div class="text-2xl font-semibold text-gray-600">Welcome back, Admin</div>
-            </div>
-            <!-- Room Status Switcher and Search -->
-            <form method="get" class="flex flex-col space-y-2">
-                <div class="flex items-center gap-x-6 mb-4">
-                    <label class="flex items-center gap-x-2">
-                        <input type="radio" name="room_status" value="available" {% if selected_status == "available" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
-                        <span>Available Now</span>
-                    </label>
-                    <label class="flex items-center gap-x-2">
-                        <input type="radio" name="room_status" value="occupied" {% if selected_status == "occupied" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
-                        <span>Occupied</span>
-                    </label>
-                    <label class="flex items-center gap-x-2">
-                        <input type="radio" name="room_status" value="reserved" {% if selected_status == "reserved" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
-                        <span>Reserved</span>
-                    </label>
-                    <label class="flex items-center gap-x-2">
-                        <input type="radio" name="room_status" value="maintenance" {% if selected_status == "maintenance" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
-                        <span>Maintenance</span>
-                    </label>
-                    <label class="flex items-center gap-x-2">
-                        <input type="radio" name="room_status" value="cleaning" {% if selected_status == "cleaning" %}checked{% endif %} class="accent-blue-600" onchange="this.form.submit()">
-                        <span>Cleaning</span>
-                    </label>
+    <div class="flex-1 p-2 sm:p-8">
+        <div class="max-w-5xl h-fit mx-auto p-6">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden p-8">
+                <div class="mb-2">
+                    <span id="current-date" class="text-2xl sm:text-4xl font-bold text-gray-700"></span>
+                    <div class="text-2xl font-semibold text-gray-600">Welcome back, Admin</div>
                 </div>
-                <div class="flex items-center gap-x-2 mb-2">
-                    <input type="text" name="search" placeholder="Search" class="flex-1 px-4 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ search }}">
-                    <button type="submit" class="px-4 py-2 bg-blue-700 text-white rounded-r-md hover:bg-blue-800">Search</button>
+                <!-- Room Status Filter -->
+                <div class="p-4 border-b border-gray-200">
+                    <form method="get" class="space-y-4">
+                        <div class="flex flex-wrap gap-4">
+                            <label class="flex items-center gap-x-2">
+                                <input type="radio" name="room_status" value="available" 
+                                    {% if selected_status == "available" %}checked{% endif %} 
+                                    class="accent-blue-600" onchange="this.form.submit()">
+                                <span>Available</span>
+                            </label>
+                            <label class="flex items-center gap-x-2">
+                                <input type="radio" name="room_status" value="occupied" 
+                                    {% if selected_status == "occupied" %}checked{% endif %} 
+                                    class="accent-blue-600" onchange="this.form.submit()">
+                                <span>Occupied</span>
+                            </label>
+                            <label class="flex items-center gap-x-2">
+                                <input type="radio" name="room_status" value="reserved" 
+                                    {% if selected_status == "reserved" %}checked{% endif %} 
+                                    class="accent-blue-600" onchange="this.form.submit()">
+                                <span>Reserved</span>
+                            </label>
+                            <label class="flex items-center gap-x-2">
+                                <input type="radio" name="room_status" value="maintenance" 
+                                    {% if selected_status == "maintenance" %}checked{% endif %} 
+                                    class="accent-blue-600" onchange="this.form.submit()">
+                                <span>Maintenance</span>
+                            </label>
+                            <label class="flex items-center gap-x-2">
+                                <input type="radio" name="room_status" value="cleaning" 
+                                    {% if selected_status == "cleaning" %}checked{% endif %} 
+                                    class="accent-blue-600" onchange="this.form.submit()">
+                                <span>Cleaning</span>
+                            </label>
+                        </div>
+                        
+                        <div class="flex gap-x-2">
+                            <input type="text" name="search" placeholder="Search rooms..." 
+                                class="flex-1 px-4 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value="{{ search }}">
+                            <button type="submit" 
+                                    class="px-4 py-2 bg-blue-700 text-white rounded-r-md hover:bg-blue-800">
+                                Search
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </form>
 
-            <!-- Table Filter -->
-            <div class="mt-2 mb-4">
-                <input type="text" id="rooms-filter" placeholder="Filter table..." class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
+                <!-- Rooms Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Room</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bed Count</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bed Size</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Floor</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                {% if selected_status != 'occupied' and selected_status != 'reserved' %}
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for room in rooms %}
+                            <tr class="room-row hover:bg-gray-50"
+                                data-room-id="{{ room.room_id }}"
+                                data-booking-status="{{ room.room_status }}"
+                                data-payment-status="{{ room.current_payment_status }}">
+                                <td class="px-4 py-2">{{ room.room_number }}</td>
+                                <td class="px-4 py-2">{{ room.room_type }}</td>
+                                <td class="px-4 py-2">{{ room.bed_count }}</td>
+                                <td class="px-4 py-2">{{ room.bed_type }}</td>
+                                <td class="px-4 py-2">{{ room.floor }}</td>
+                                <td class="px-4 py-2">
+                                    <span class="status-badge px-2 py-1 rounded-full text-xs font-medium
+                                        {% if room.room_status == 'available' %}bg-green-100 text-green-800
+                                        {% elif room.room_status == 'occupied' %}bg-red-100 text-red-800
+                                        {% elif room.room_status == 'reserved' %}bg-yellow-100 text-yellow-800
+                                        {% elif room.room_status == 'maintenance' %}bg-purple-100 text-purple-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ room.room_status|title }}
+                                    </span>
+                                </td>
+                                {% if selected_status != 'occupied' and selected_status != 'reserved' %}
+                                <td class="px-4 py-2 text-center">
+                                    <div class="flex justify-center space-x-2">
+                                        <a href="{% url 'edit_room' room.room_id %}" 
+                                        class="text-blue-600 hover:text-blue-800">
+                                            <span class="material-icons text-base">edit</span>
+                                        </a>
+                                        <a href="{% url 'delete_room' room.room_id %}" 
+                                        class="text-red-600 hover:text-red-800">
+                                            <span class="material-icons text-base">delete</span>
+                                        </a>
+                                    </div>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                                    No rooms found
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
 
-            <!-- Single Table -->
-            <div class="overflow-x-auto rounded-lg shadow">
-                <table id="rooms-table" class="min-w-full bg-white border border-gray-200 text-sm">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="px-4 py-2 border">Room</th>
-                            <th class="px-4 py-2 border">Type</th>
-                            <th class="px-4 py-2 border">Bed Count</th>
-                            <th class="px-4 py-2 border">Bed Size</th>
-                            <th class="px-4 py-2 border">Floor</th>
-                            <th class="px-4 py-2 border">Payment Status</th>
-                            {% if selected_status != 'occupied' and selected_status != 'reserved' %}
-                            <th class="px-4 py-2 border text-center">Actions</th>
-                            {% endif %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for room in rooms %}
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-4 py-2 border">{{ room.room_number }}</td>
-                            <td class="px-4 py-2 border">{{ room.room_type }}</td>
-                            <td class="px-4 py-2 border">{{ room.bed_count }}</td>
-                            <td class="px-4 py-2 border">{{ room.bed_type }}</td>
-                            <td class="px-4 py-2 border">{{ room.floor }}</td>
-                            <td class="px-4 py-2 border text-center">
-                                <span class="px-2 py-1 rounded text-sm
-                                    {% if room.current_payment_status == 'paid' %}bg-green-100 text-green-800
-                                    {% elif room.current_payment_status == 'pending' %}bg-yellow-100 text-yellow-800
-                                    {% elif room.current_payment_status == 'cancelled' %}bg-red-100 text-red-800
-                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                    {{ room.current_payment_status|title }}
-                                </span>
-                            </td>
-                            {% if selected_status != 'occupied' and selected_status != 'reserved' %}
-                            <td class="px-4 py-2 border text-center">
-                                <a href="{% url 'edit_room' room.room_id %}" class="text-green-600 hover:text-green-800 mx-1" title="Edit">
-                                    <span class="material-icons align-middle text-base">edit</span>
-                                </a>
-                                <a href="{% url 'delete_room' room.room_id %}" class="text-red-600 hover:text-red-800 mx-1" title="Delete">
-                                    <span class="material-icons align-middle text-base">delete</span>
-                                </a>
-                            </td>
-                            {% endif %}
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="8" class="text-center py-2 px-4 border text-gray-500">No rooms found.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Pagination -->
-            {% if rooms.has_other_pages %}
-            <div class="flex justify-center items-center gap-2 mt-4">
-                {% if rooms.has_previous %}
-                    <a href="?room_status={{ selected_status }}&search={{ search }}&page={{ rooms.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-blue-100">
-                        <span class="material-icons text-base">arrow_back</span>
-                    </a>
-                {% endif %}
-                {% for num in rooms.paginator.page_range %}
-                    {% if rooms.number == num %}
-                        <span class="px-3 py-1 bg-blue-600 text-white rounded">{{ num }}</span>
-                    {% else %}
-                        <a href="?room_status={{ selected_status }}&search={{ search }}&page={{ num }}" class="px-3 py-1 border rounded hover:bg-blue-100">{{ num }}</a>
+                <!-- Pagination -->
+                {% if rooms.has_other_pages %}
+                <div class="flex justify-center items-center gap-2 py-4 border-t border-gray-200">
+                    {% if rooms.has_previous %}
+                        <a href="?room_status={{ selected_status }}&search={{ search }}&page={{ rooms.previous_page_number }}"
+                        class="px-3 py-1 border rounded hover:bg-blue-100">
+                            <span class="material-icons text-base">arrow_back</span>
+                        </a>
                     {% endif %}
-                {% endfor %}
-                {% if rooms.has_next %}
-                    <a href="?room_status={{ selected_status }}&search={{ search }}&page={{ rooms.next_page_number }}" class="px-3 py-1 border rounded hover:bg-blue-100">
-                        <span class="material-icons text-base">arrow_forward</span>
-                    </a>
+                    
+                    {% for num in rooms.paginator.page_range %}
+                        {% if rooms.number == num %}
+                            <span class="px-3 py-1 bg-blue-600 text-white rounded">{{ num }}</span>
+                        {% else %}
+                            <a href="?room_status={{ selected_status }}&search={{ search }}&page={{ num }}"
+                            class="px-3 py-1 border rounded hover:bg-blue-100">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if rooms.has_next %}
+                        <a href="?room_status={{ selected_status }}&search={{ search }}&page={{ rooms.next_page_number }}"
+                        class="px-3 py-1 border rounded hover:bg-blue-100">
+                            <span class="material-icons text-base">arrow_forward</span>
+                        </a>
+                    {% endif %}
+                </div>
                 {% endif %}
-            </div>
-            {% endif %}
-            <!-- Action Buttons -->
-            <div class="flex justify-end gap-2 mt-4">
-                                 <a href="{% url 'manage_guests' %}"
-                          class="px-6 py-2 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition">
-                      Book for guest
-                 </a>
-                <a href="{% url 'add_room' %}"
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-2 p-4 border-t border-gray-200">
+                    <a href="{% url 'manage_guests' %}"
+                    class="px-6 py-2 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition">
+                        Book for guest
+                    </a>
+                    <a href="{% url 'add_room' %}"
                     class="px-6 py-2 rounded bg-blue-700 text-white font-semibold shadow hover:bg-blue-800 transition">
-                    + Add room
-                </a>
+                        + Add room
+                    </a>
+                </div>
             </div>
         </div>
     </div>
