@@ -19,7 +19,7 @@
   }
   .room-card {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
+  }   
   .room-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 16px rgba(0,0,0,0.1);
@@ -646,19 +646,10 @@ document.addEventListener('DOMContentLoaded', function() {
     onChange: function(selectedDates) {
       const selectedDate = selectedDates[0];
       if (selectedDate) {
-        // Get check-in and check-out dates
-        const checkInDate = checkInPicker.selectedDates[0];
+        // Get check-out date only
         const checkOutDate = checkOutPicker.selectedDates[0];
         
-        // Validate expected arrival is after check-in and before check-out
-        if (checkInDate && selectedDate <= checkInDate) {
-          const minExpectedArrival = new Date(checkInDate);
-          minExpectedArrival.setMinutes(minExpectedArrival.getMinutes() + 1);
-          this.setDate(minExpectedArrival);
-          alert("Expected arrival must be after check-in time");
-          return;
-        }
-        
+        // Only validate against check-out date
         if (checkOutDate && selectedDate >= checkOutDate) {
           const maxExpectedArrival = new Date(checkOutDate);
           maxExpectedArrival.setMinutes(maxExpectedArrival.getMinutes() - 1);
@@ -682,21 +673,10 @@ document.addEventListener('DOMContentLoaded', function() {
         minCheckOut.setHours(minCheckOut.getHours() + 1);
         checkOutPicker.set('minDate', minCheckOut);
 
-        // Update expected arrival constraints
-        const minExpectedArrival = new Date(selectedDate);
-        minExpectedArrival.setMinutes(minExpectedArrival.getMinutes() + 1);
-        expectedArrivalPicker.set('minDate', minExpectedArrival);
-
         // If check-out is before new check-in, update it
         const checkOutDate = checkOutPicker.selectedDates[0];
         if (checkOutDate && checkOutDate <= selectedDate) {
           checkOutPicker.setDate(minCheckOut);
-        }
-
-        // If expected arrival is now invalid, clear it
-        const expectedArrival = expectedArrivalPicker.selectedDates[0];
-        if (expectedArrival && expectedArrival <= selectedDate) {
-          expectedArrivalPicker.clear();
         }
 
         calculateTotal();
