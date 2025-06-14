@@ -324,13 +324,21 @@ def manage_rooms(request):
 
     # Annotate rooms with their latest guest's payment status
     for room in rooms_list:
-        latest_booking = None
-        if room.room_status != 'available':
+        if room.room_status == 'occupied':
+            # For occupied rooms, show as paid since they must be paid to be occupied
+            room.current_payment_status = 'paid'
+        elif room.room_status == 'reserved':
+            # Get the latest active booking for reserved rooms
             latest_booking = ManageGuest.objects.filter(
                 room_id=room,
-                status__in=['pending', 'confirmed', 'occupied', 'reserved']
+                status='reserved',
+                check_out__gt=timezone.now()  # Only consider active bookings
             ).order_by('-created_at').first()
-        room.current_payment_status = latest_booking.payment_status if latest_booking else 'No booking'
+            
+            room.current_payment_status = latest_booking.payment_status if latest_booking else 'pending'
+        else:
+            # For available, maintenance, or cleaning rooms
+            room.current_payment_status = 'No booking'
     
     page_number = request.GET.get('page', 1)
     paginator = Paginator(rooms_list, 10)
@@ -356,24 +364,30 @@ def manage_guests(request):
 
     # Base querysets with search filters
     base_search = (
-        Q(guest_id__full_name__icontains=search_query) |
+        Q(guest_name__icontains=search_query) |  # Search by guest name for direct bookings
+        Q(guest_id__full_name__icontains=search_query) |  # Search by guest account name
         Q(room_id__room_number__icontains=search_query) |
         Q(room_id__room_type__icontains=search_query) |
-        Q(room_id__bed_type__icontains=search_query) |
         Q(payment_status__icontains=search_query)
     )
 
     # Today's bookings with search - exclude checked out guests
     today = timezone.now().date()
     todays_bookings = ManageGuest.objects.filter(
-        Q(check_in__date=today) & 
+        (
+            Q(check_in__date=today) |  # Today's check-ins
+            Q(status='occupied', check_out__date__gte=today)  # Currently occupied rooms
+        ) & 
         ~Q(status='checked_out') &  # Exclude checked out guests
         base_search
     ).select_related('guest_id', 'room_id').order_by('check_in')
 
-    # Reservations with search (future bookings) - exclude checked out guests
+    # Reservations with search (future bookings and reserved status)
     reservations = ManageGuest.objects.filter(
-        Q(check_in__date__gt=today) & 
+        (
+            Q(check_in__date__gt=today) |  # Future bookings
+            Q(status='reserved', check_in__date__gte=today)  # Active reservations
+        ) & 
         ~Q(status='checked_out') &  # Exclude checked out guests
         base_search
     ).select_related('guest_id', 'room_id').order_by('check_in')
@@ -382,19 +396,21 @@ def manage_guests(request):
     for booking in todays_bookings:
         nights = (booking.check_out - booking.check_in).days
         booking.total_amount = booking.room_id.room_price * nights if nights > 0 else booking.room_id.room_price
+        
         # Update room status to match the booking status
-        if booking.status == 'confirmed':
-            booking.room_id.room_status = 'reserved'
-            booking.room_id.save()
-        elif booking.status == 'occupied':
+        if booking.status == 'occupied':
             booking.room_id.room_status = 'occupied'
+            booking.room_id.save()
+        elif booking.status == 'confirmed':
+            booking.room_id.room_status = 'reserved'
             booking.room_id.save()
 
     for booking in reservations:
         nights = (booking.check_out - booking.check_in).days
         booking.total_amount = booking.room_id.room_price * nights if nights > 0 else booking.room_id.room_price
-        # Update room status to match the booking status
-        if booking.status == 'confirmed':
+        
+        # Update room status for reservations
+        if booking.status == 'reserved':
             booking.room_id.room_status = 'reserved'
             booking.room_id.save()
 
@@ -738,29 +754,11 @@ def book_guest(request):
         check_in_time = request.POST.get("check_in")
         check_out_time = request.POST.get("check_out")
         payment_mode = request.POST.get("payment_mode")
-        room_status = request.POST.get("room_status")
         booking_type = request.POST.get('booking_type')
-        payment_status = request.POST.get("payment_status")
-
-        # Print received data for debugging
-        print("Received form data:")
-        print(f"full_name: {full_name}")
-        print(f"gender: {gender}")
-        print(f"contact_number: {contact_number}")
-        print(f"nationality: {nationality}")
-        print(f"address: {address}")
-        print(f"expected_arrival: {expected_arrival}")
-        print(f"room_id: {room_id}")
-        print(f"guest_count: {guest_count}")
-        print(f"check_in_time: {check_in_time}")
-        print(f"check_out_time: {check_out_time}")
-        print(f"payment_status: {payment_status}")
-        print(f"payment_mode: {payment_mode}")
-        print(f"booking_type:' {booking_type}")
 
         # Validate required fields
         if not all([full_name, gender, contact_number, nationality, address, 
-                   room_id, guest_count, check_in_time, check_out_time, payment_mode]):
+                   room_id, guest_count, check_in_time, check_out_time, payment_mode, booking_type]):
             missing_fields = []
             if not full_name: missing_fields.append("Full Name")
             if not gender: missing_fields.append("Gender")
@@ -771,40 +769,16 @@ def book_guest(request):
             if not guest_count: missing_fields.append("Guest Count")
             if not check_in_time: missing_fields.append("Check In Time")
             if not check_out_time: missing_fields.append("Check Out Time")
-            if not payment_status: missing_fields.append("Payment Status")
             if not payment_mode: missing_fields.append("Payment Mode")
             if not booking_type: missing_fields.append("Booking Type")
             
             return HttpResponse(f"Missing required fields: {', '.join(missing_fields)}", status=400)
 
         try:
-            # Split full name into parts (assuming format: "First Middle Last")
-            name_parts = full_name.split()
-            first_name = name_parts[0]
-            last_name = name_parts[-1]
-            middle_name = " ".join(name_parts[1:-1]) if len(name_parts) > 2 else ""
-
-            # Create guest account if it doesn't exist
-            guest, created = GuestAccounts.objects.get_or_create(
-                full_name=full_name,
-                defaults={
-                    'first_name': first_name,
-                    'middle_name': middle_name,
-                    'last_name': last_name,
-                    'username': f"guest_{first_name.lower()}_{last_name.lower()}",
-                    'gender': gender.lower(),
-                    'phone_number': contact_number,
-                    'nationality': nationality,
-                    'address': address,
-                    'password': 'defaultpass123',  # You should implement proper password handling
-                    'email': f"guest_{first_name.lower()}_{last_name.lower()}@example.com"  # You should collect email in form
-                }
-            )
-            
             # Get the room
             room = ManageRoom.objects.get(room_id=room_id)
             if room.room_status != "available":
-                return HttpResponse("Room is not available", status=400)
+                return HttpResponse("Room is no longer available", status=400)
 
             # Convert check-in and check-out times
             check_in = parse_datetime(check_in_time)
@@ -818,41 +792,33 @@ def book_guest(request):
             # Set expected arrival if not provided
             expected_arrival_dt = parse_datetime(expected_arrival) if expected_arrival else check_in
 
-            # Create booking
-            ManageGuest.objects.create(
-                guest_id=guest,
-                guest_name=guest.full_name,
+            # Set initial status based on booking type
+            if booking_type == 'check_in':
+                initial_status = 'occupied'
+                payment_status = 'paid'  # For direct check-ins, payment is always marked as paid
+                room_status = 'occupied'
+            else:  # reservation
+                initial_status = 'reserved'
+                payment_status = 'pending'
+                room_status = 'reserved'
+
+            # Create booking without requiring a guest account
+            booking = ManageGuest.objects.create(
+                guest_id=None,  # No guest account required
+                guest_name=full_name,  # Store the name directly
                 room_id=room,
-                status=booking_type,
+                status=initial_status,
                 guest_count=int(guest_count),
                 check_in=check_in,
                 check_out=check_out,
                 expected_arrival=expected_arrival_dt,
-                payment_status="paid", #payment status when submitting
+                payment_status=payment_status,
                 payment_mode=payment_mode
             )
 
             # Update room status
-            if booking_type == 'reservation':
-                room.room_status = 'reserved'
-                room.save()
-            else:
-                room.room_status = 'occupied'
-                room.save()
-            
-            # Set payment status accordingly
-            if payment_status == 'paid':
-                room.payment_status = 'paid'
-                room.save()
-            elif payment_status == 'refunded':
-                room.payment_status = 'refunded'
-                room.save()
-            elif payment_status == 'cancelled':
-                room.payment_status = 'cancelled'
-                room.save()
-            else:
-                room.payment_status = 'pending'
-                room.save()
+            room.room_status = room_status
+            room.save()
 
             return redirect('/manage_guests/')
 
@@ -862,12 +828,10 @@ def book_guest(request):
     # For GET requests, render the booking form
     available_rooms = ManageRoom.objects.filter(room_status="available")
     room_types = [choice[0] for choice in ManageRoom.ROOM_TYPE_CHOICES]
-    all_guests = GuestAccounts.objects.all()  # Get all guests
     
     return render(request, "web/admin/book_guest.html", {
         "available_rooms": available_rooms,
         "room_types": room_types,
-        "all_guests": all_guests,  # Pass all_guests to template
     })
 
 @login_required

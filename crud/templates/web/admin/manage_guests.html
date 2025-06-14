@@ -105,7 +105,7 @@
             {% endif %}
     
             <!-- Today's Bookings Filter -->
-            <div class="mb-4">
+            <div class="mb-4" id="today-filter-container">
                 <input type="text" id="today-bookings-filter" placeholder="Filter today's bookings..." class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
     
@@ -116,8 +116,9 @@
                         <tr>
                             <th class="px-4 py-2 border">Room</th>
                             <th class="px-4 py-2 border">Type</th>
-                            <th class="px-4 py-2 border">Bed Type</th>
+                            <!-- <th class="px-4 py-2 border">Bed Type</th> -->
                             <th class="px-4 py-2 border">Name</th>
+                            <th class="px-4 py-2 border">Status</th>
                             <th class="px-4 py-2 border">Check in</th>
                             <th class="px-4 py-2 border">Check out</th>
                             <th class="px-4 py-2 border">Payment</th>
@@ -130,8 +131,16 @@
                         <tr class="bg-white border-b hover:bg-gray-50">
                             <td class="px-4 py-2 border">{{ booking.room_id.room_number }}</td>
                             <td class="px-4 py-2 border">{{ booking.room_id.get_room_type_display }}</td>
-                            <td class="px-4 py-2 border">{{ booking.room_id.get_bed_type_display }}</td>
-                            <td class="px-4 py-2 border">{{ booking.guest_id.full_name }}</td>
+                            <!-- <td class="px-4 py-2 border">{{ booking.room_id.get_bed_type_display }}</td> -->
+                            <td class="px-4 py-2 border">{{ booking.guest_name }}</td>
+                            <td class="px-4 py-2 border">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium
+                                    {% if booking.status == 'reserved' %}bg-yellow-100 text-yellow-800
+                                    {% elif booking.status == 'confirmed' %}bg-green-100 text-green-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ booking.status|title }}
+                                </span>
+                            </td>
                             <td class="px-4 py-2 border">{{ booking.check_in|date:"m/d/y h:i A" }}</td>
                             <td class="px-4 py-2 border">{{ booking.check_out|date:"m/d/y h:i A" }}</td>
                             <td class="px-4 py-2 border">{{ booking.payment_status }}</td>
@@ -145,7 +154,7 @@
                                     <button 
                                         data-guest-id="{{ booking.id }}"
                                         data-room-number="{{ booking.room_id.room_number }}"
-                                        data-guest-name="{{ booking.guest_id.full_name }}"
+                                        data-guest-name="{{ booking.guest_name }}"
                                         data-room-type="{{ booking.room_id.get_room_type_display }}"
                                         data-check-in="{{ booking.check_in|date:'m/d/y h:i A' }}"
                                         data-check-out="{{ booking.check_out|date:'m/d/y h:i A' }}"
@@ -266,7 +275,8 @@
                             <th class="px-4 py-2 border">Room</th>
                             <th class="px-4 py-2 border">Type</th>
                             <th class="px-4 py-2 border">Name</th>
-                            <th class="px-4 py-2 border">Bed Type</th>
+                            <!-- <th class="px-4 py-2 border">Bed Type</th> -->
+                            <th class="px-4 py-2 border">Status</th>
                             <th class="px-4 py-2 border">Expected Arrival</th>
                             <th class="px-4 py-2 border">Check in</th>
                             <th class="px-4 py-2 border">Check out</th>
@@ -280,12 +290,27 @@
                         <tr class="bg-white border-b hover:bg-gray-50">
                             <td class="px-4 py-2 border">{{ booking.room_id.room_number }}</td>
                             <td class="px-4 py-2 border">{{ booking.room_id.get_room_type_display }}</td>
-                            <td class="px-4 py-2 border">{{ booking.guest_id.full_name }}</td>
-                            <td class="px-4 py-2 border">{{ booking.room_id.get_bed_type_display }}</td>
+                            <td class="px-4 py-2 border">{{ booking.guest_name }}</td>
+                            <!-- <td class="px-4 py-2 border">{{ booking.room_id.get_bed_type_display }}</td> -->
+                            <td class="px-4 py-2 border">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium
+                                    {% if booking.status == 'reserved' %}bg-yellow-100 text-yellow-800
+                                    {% elif booking.status == 'confirmed' %}bg-green-100 text-green-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ booking.status|title }}
+                                </span>
+                            </td>
                             <td class="px-4 py-2 border">{{ booking.expected_arrival|date:"m/d/y h:i A" }}</td>
                             <td class="px-4 py-2 border">{{ booking.check_in|date:"m/d/y h:i A" }}</td>
                             <td class="px-4 py-2 border">{{ booking.check_out|date:"m/d/y h:i A" }}</td>
-                            <td class="px-4 py-2 border">{{ booking.payment_status }}</td>
+                            <td class="px-4 py-2 border">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium
+                                    {% if booking.payment_status == 'paid' %}bg-green-100 text-green-800
+                                    {% elif booking.payment_status == 'pending' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ booking.payment_status|title }}
+                                </span>
+                            </td>
                             <td class="px-4 py-2 border">₱ {{ booking.total_amount|floatformat:2 }}</td>
                             <td class="px-4 py-2 border text-center">
                                 <div class="flex justify-center space-x-2">
@@ -296,11 +321,11 @@
                                     <button 
                                         data-guest-id="{{ booking.id }}"
                                         data-room-number="{{ booking.room_id.room_number }}"
-                                        data-guest-name="{{ booking.guest_id.full_name }}"
+                                        data-guest-name="{{ booking.guest_name }}"
                                         data-room-type="{{ booking.room_id.get_room_type_display }}"
                                         data-check-in="{{ booking.check_in|date:'m/d/y h:i A' }}"
                                         data-check-out="{{ booking.check_out|date:'m/d/y h:i A' }}"
-                                        data-status="{{ booking.room_id.room_status }}"
+                                        data-status="{{ booking.status }}"
                                         data-payment-status="{{ booking.payment_status }}"
                                         onclick="showCheckoutModalFromData(this)"
                                         class="text-red-600 hover:text-red-800" 
@@ -313,7 +338,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="10" class="text-center py-2 px-4 border">No reservations found.</td>
+                            <td colspan="11" class="text-center py-2 px-4 border">No reservations found.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -360,14 +385,17 @@
         const todayTable = document.getElementById('today-table');
         const reservationsTable = document.getElementById('reservations-table');
         const reservationsFilterContainer = document.getElementById('reservations-filter-container');
+        const todayFilterContainer = document.getElementById('today-filter-container');
 
         function updateTables() {
             if (todayRadio.checked) {
                 todayTable.style.display = 'block';
+                todayFilterContainer.style.display = 'block';
                 reservationsTable.style.display = 'none';
                 reservationsFilterContainer.style.display = 'none';
             } else {
                 todayTable.style.display = 'none';
+                todayFilterContainer.style.display = 'none';
                 reservationsTable.style.display = 'block';
                 reservationsFilterContainer.style.display = 'block';
             }
@@ -378,6 +406,14 @@
 
         // Initialize based on current selection
         updateTables();
+
+        // Set initial state based on URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeTable = urlParams.get('active_table');
+        if (activeTable === 'reservations') {
+            reservationsRadio.checked = true;
+            updateTables();
+        }
     }
 
     // Initialize date display

@@ -128,15 +128,15 @@
                 </span>
               </td>
               <td class="py-3 px-4">
-                {% if booking.transaction_info %}
-                  {{ booking.transaction_info.payment_method|title }}
+                {% if payment_transaction.transaction_id %}
+                  {{ payment_transaction.payment_method|title }}
                 {% else %}
                   -
                 {% endif %}
               </td>
               <td class="py-3 px-4">
-                {% if booking.transaction_info %}
-                  ₱{{ booking.transaction_info.amount|floatformat:2 }}
+                {% if payment_transaction.transaction_id %}
+                  ₱{{ payment_transaction.amount|floatformat:2 }}
                 {% else %}
                   -
                 {% endif %}

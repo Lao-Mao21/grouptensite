@@ -20,46 +20,40 @@
                     <!-- Guest Name -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Guest Name *</label>
-                        <select name="full_name" id="guest-select" required
+                        <input type="text" name="full_name" id="guest-name-input" required placeholder="Enter Guest Name"
                                 class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                            <option value="">Select Guest</option>
-                            {% for guest in all_guests %}
-                            <option value="{{ guest.full_name }}" 
-                                    data-gender="{{ guest.gender }}"
-                                    data-contact="{{ guest.phone_number }}"
-                                    data-nationality="{{ guest.nationality|default:'' }}"
-                                    data-address="{{ guest.address|default:'' }}">
-                                {{ guest.full_name }}
-                            </option>
-                            {% endfor %}
-                        </select>
                     </div>
 
                     <!-- Gender -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Gender *</label>
-                        <input type="text" name="gender" id="gender-select" required readonly
-                               class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <select name="gender" id="gender-select" required
+                                class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Prefer not to say</option>
+                        </select>
                     </div>
 
                     <!-- Contact Number -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Contact Number *</label>
-                        <input type="tel" name="contact_number" id="contact-input" required readonly
+                        <input type="tel" name="contact_number" id="contact-input" required maxlength="11" minlength="11" placeholder="09XXXXXXXXX"
                                class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
 
                     <!-- Nationality -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Nationality *</label>
-                        <input type="text" name="nationality" id="nationality-input" required readonly
+                        <input type="text" name="nationality" id="nationality-input" required placeholder="Select Nationality"
                                class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
 
                     <!-- Address -->
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700">Address *</label>
-                        <input type="text" name="address" id="address-input" required readonly
+                        <input type="text" name="address" id="address-input" required placeholder="Enter Address"
                                class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
 
@@ -74,13 +68,16 @@
                         </select>
                     </div>
 
-                    <!-- Expected Arrival -->
-                    <div id="expected-arrival-container" style="display: none;">
-                        <label class="block text-sm font-medium text-gray-700">Expected Arrival *</label>
-                        <input type="datetime-local" name="expected_arrival" id="expected-arrival"
-                               class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <!-- Mode of Payment -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Mode of Payment *</label>
+                        <select name="payment_mode" required 
+                                class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Select</option>
+                            <option value="cash">Cash</option>
+                            <option value="card">Credit/Debit Card</option>
+                        </select>
                     </div>
-                    <input type="hidden" name="expected_arrival" id="expected-arrival-hidden">
 
                     <!-- Room Number and Type -->
                     <div class="md:col-span-1">
@@ -108,48 +105,44 @@
                     <!-- Number of Guests -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Number of Guest *</label>
-                        <input type="number" name="guest_count" id="guest-count" required min="1"
+                        <input type="number" name="guest_count" id="guest-count" required min="1" max="99" placeholder="Enter Number"
                                class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
 
                     <!-- Check In -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Check In *</label>
-                        <input type="datetime-local" name="check_in" id="check-in" required
+                        <input type="datetime-local" name="check_in" id="check-in" required placeholder="Select Date and Time"
                                class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
 
                     <!-- Check Out -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Check Out *</label>
-                        <input type="datetime-local" name="check_out" id="check-out" required
+                        <input type="datetime-local" name="check_out" id="check-out" required placeholder="Select Date and Time"
                                class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
                     
-                    <!-- Payment Status -->
-                    <div>
+                    <!-- Payment Status Automatically Set to Paid-->
+                    <!-- <div class="hidden">
                         <label class="block text-sm font-medium text-gray-700">Payment Status *</label>
+                        <input type="text" name="payment_status" id="payment-status" value="paid" readonly
+                               class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                         <select name="payment_status" required
                                 class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                             <option value="">Select</option>
                             <option value="pending" {% if guest.payment_status == "pending" %}selected{% endif %}>Pending</option>
                             <option value="paid" {% if guest.payment_status == "paid" %}selected{% endif %}>Paid</option>
-                            <option value="refunded" {% if guest.payment_status == "refunded" %}selected{% endif %}>Refunded</option>
-                            <option value="cancelled" {% if guest.payment_status == "cancelled" %}selected{% endif %}>Cancelled</option>
-                        </select>
-                    </div>
+                        </select
+                    </div> -->
 
-                    <!-- Mode of Payment -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Mode of Payment *</label>
-                        <select name="payment_mode" required 
-                                class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                            <option value="">Select</option>
-                            <option value="cash">Cash</option>
-                            <option value="card">Credit/Debit Card</option>
-                            <option value="gcash">GCash</option>
-                        </select>
+                    <!-- Expected Arrival -->
+                    <div id="expected-arrival-container" style="display: none;">
+                        <label class="block text-sm font-medium text-gray-700">Expected Arrival *</label>
+                        <input type="datetime-local" name="expected_arrival" id="expected-arrival" placeholder="Select Expected Arrival"
+                               class="mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
+                    <input type="hidden" name="expected_arrival" id="expected-arrival-hidden">
                 </div>
 
                 <div class="flex justify-end mt-6 space-x-3">
@@ -171,7 +164,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('booking-form');
-    const guestSelect = document.getElementById('guest-select');
+    // const guestSelect = document.getElementById('guest-select');
+    // const guestSelect = document.getElementById('guest-name-input');
     const genderSelect = document.getElementById('gender-select');
     const contactInput = document.getElementById('contact-input');
     const nationalityInput = document.getElementById('nationality-input');
@@ -180,42 +174,42 @@ document.addEventListener('DOMContentLoaded', function() {
     const expectedArrivalContainer = document.getElementById('expected-arrival-container');
     
     // Function to update guest details
-    function updateGuestDetails(selectedOption) {
-        if (selectedOption && selectedOption.value) {
-            // Fill in the form fields with data from the selected option
-            genderSelect.value = selectedOption.dataset.gender || '';
-            contactInput.value = selectedOption.dataset.contact || '';
-            nationalityInput.value = selectedOption.dataset.nationality || '';
-            addressInput.value = selectedOption.dataset.address || '';
-        } else {
-            // Clear all fields if no guest is selected
-            genderSelect.value = '';
-            contactInput.value = '';
-            nationalityInput.value = '';
-            addressInput.value = '';
-        }
-    }
+    // function updateGuestDetails(selectedOption) {
+    //     if (selectedOption && selectedOption.value) {
+    //         // Fill in the form fields with data from the selected option
+    //         genderSelect.value = selectedOption.dataset.gender || '';
+    //         contactInput.value = selectedOption.dataset.contact || '';
+    //         nationalityInput.value = selectedOption.dataset.nationality || '';
+    //         addressInput.value = selectedOption.dataset.address || '';
+    //     } else {
+    //         // Clear all fields if no guest is selected
+    //         genderSelect.value = '';
+    //         contactInput.value = '';
+    //         nationalityInput.value = '';
+    //         addressInput.value = '';
+    //     }
+    // }
 
-    // Add change event listener to guest select
-    if (guestSelect) {
-        guestSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            updateGuestDetails(selectedOption);
-        });
+    // // Add change event listener to guest select
+    // if (guestSelect) {
+    //     guestSelect.addEventListener('change', function() {
+    //         const selectedOption = this.options[this.selectedIndex];
+    //         updateGuestDetails(selectedOption);
+    //     });
 
-        // Trigger the change event if a guest is already selected
-        if (guestSelect.value) {
-            const selectedOption = guestSelect.options[guestSelect.selectedIndex];
-            updateGuestDetails(selectedOption);
-        }
-    }
+    //     // Trigger the change event if a guest is already selected
+    //     if (guestSelect.value) {
+    //         const selectedOption = guestSelect.options[guestSelect.selectedIndex];
+    //         updateGuestDetails(selectedOption);
+    //     }
+    // }
 
     // Common config for date/time pickers
     const dateConfig = {
         enableTime: true,
         dateFormat: "Y-m-d H:i",
         minDate: "today",
-        time_24hr: true
+        time_24hr: false
     };
 
     // Initialize Expected Arrival picker
@@ -272,7 +266,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Create an array of required fields with their display names
         const requiredFields = [
-            { id: 'guest-select', name: 'Guest Name' },
+            // { id: 'guest-select', name: 'Guest Name' },
+            { id: 'guest-name-input', name: 'Guest Name' },
             { id: 'gender-select', name: 'Gender' },
             { id: 'contact-input', name: 'Contact Number' },
             { id: 'nationality-input', name: 'Nationality' },
@@ -296,14 +291,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Check payment mode
+        // Check payment mode and status
         const paymentMode = document.querySelector('select[name="payment_mode"]');
+        // const paymentStatus = document.querySelector('select[name="payment_status"]');
+        
         if (!paymentMode || !paymentMode.value) {
             alert('Please select Payment Mode');
             paymentMode.focus();
             isValid = false;
             return;
         }
+
+        // if (!paymentStatus || !paymentStatus.value) {
+        //     alert('Please select Payment Status');
+        //     paymentStatus.focus();
+        //     isValid = false;
+        //     return;
+        // }
 
         const isReservation = bookingType.value === 'reservation';
         
@@ -331,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Validate guest count is a number
         const guestCount = document.getElementById('guest-count').value.trim();
-        if (isNaN(guestCount) || guestCount < 1) {
+        if (isNaN(guestCount) || guestCount < 1 || guestCount > 99) {
             alert('Please enter a valid number of guests');
             document.getElementById('guest-count').focus();
             isValid = false;
@@ -365,4 +369,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-{% endblock content %} 
+
+<!-- Limit guest count to 2 digits -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const guestInput = document.getElementById('guest-count');
+  
+      guestInput.addEventListener('input', () => {
+        // Remove non-digit characters
+        guestInput.value = guestInput.value.replace(/\D/g, '');
+        // Limit to 2 digits
+        if (guestInput.value.length > 2) {
+          guestInput.value = guestInput.value.slice(0, 2);
+        }
+      });
+    });
+  </script>
+{% endblock content %}

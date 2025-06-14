@@ -61,7 +61,6 @@ class AdminAccounts(models.Model):
     last_name = models.CharField(max_length=155, blank=False, null=False)
     full_name = models.CharField(max_length=310, blank=False, null=False)
     username = models.CharField(max_length=150, unique=True, blank=False, null=False)
-    verification_token = models.CharField(max_length=255, blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
     last_login = models.DateTimeField(blank=True, null=True)
     GENDER_CHOICES = [
@@ -112,11 +111,9 @@ class GuestAccounts(models.Model):
     phone_number = models.CharField(max_length=20, blank=False, null=False)
     address = models.CharField(max_length=255, blank=False, null=False)
     password = models.CharField(max_length=255, blank=False, null=False)
-    is_active = models.BooleanField(default=True)
     date_of_birth = models.DateField(blank=True, null=True)
     last_login = models.DateTimeField(blank=True, null=True)
     email_verified = models.BooleanField(default=False)
-    verification_token = models.CharField(max_length=255, blank=True, null=True)
     nationality = models.CharField(max_length=100, blank=True, null=True)
     emergency_contact = models.CharField(max_length=100, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
@@ -161,7 +158,7 @@ class GuestAccounts(models.Model):
 class ManageGuest(models.Model):
     class Meta:
         db_table = 'manageguest_tbl'
-    guest_id = models.ForeignKey(GuestAccounts, on_delete=models.CASCADE, related_name='guests')
+    guest_id = models.ForeignKey(GuestAccounts, on_delete=models.CASCADE, related_name='guests', null=True, blank=True)
     guest_name = models.CharField(max_length=155, blank=False, null=False)
     room_id = models.ForeignKey(ManageRoom, on_delete=models.CASCADE, related_name='guests')
     status = models.CharField(max_length=20, blank=False, null=False)
@@ -172,7 +169,6 @@ class ManageGuest(models.Model):
     PAYMENT_MODE_CHOICES = [
         ('cash', 'Cash'),
         ('card', 'Credit/Debit Card'),
-        ('gcash', 'GCash'),
     ]
     payment_mode = models.CharField(max_length=20, choices=PAYMENT_MODE_CHOICES, default='cash', blank=False, null=False)
     PAYMENT_STATUS_CHOICES = [
@@ -217,8 +213,6 @@ class PaymentTransaction(models.Model):
     payment_method = models.CharField(max_length=50)
     transaction_reference = models.CharField(max_length=100, unique=True, blank=True, null=True)
     payment_details = models.JSONField(default=dict)
-    stripe_payment_intent_id = models.CharField(max_length=100, blank=True, null=True)
-    stripe_client_secret = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
