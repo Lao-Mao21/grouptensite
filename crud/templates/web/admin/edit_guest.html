@@ -3,109 +3,178 @@
 
 {% block title %}Edit Guest Booking{% endblock title %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+{% endblock %}
+
 {% block content %}
-<div class="min-h-screen bg-gray-200 flex sm:flex-row flex-col">
+<div class="min-h-screen bg-gray-100 flex sm:flex-row flex-col">
     {% include "attachments/sidebar.html" %}
-    <div class="flex-1 p-2 sm:p-8">
-        <div class="mb-1 sm:mb-4">
-            <h1 class="text-2xl sm:text-4xl font-bold text-gray-700">Edit Guest Booking</h1>
+    <div class="flex-1 p-4 sm:p-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Edit Guest Booking</h1>
+                    <p class="text-gray-600 mt-2">Booking ID: #{{ booking.id }}</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="px-3 py-1 rounded-full text-sm font-medium 
+                        {% if booking.status == 'occupied' %}bg-green-100 text-green-800
+                        {% elif booking.status == 'reserved' %}bg-blue-100 text-blue-800
+                        {% elif booking.status == 'checked_out' %}bg-gray-100 text-gray-800
+                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                        {{ booking.status|title }}
+                    </span>
+                    <span class="px-3 py-1 rounded-full text-sm font-medium 
+                        {% if booking.payment_status == 'paid' %}bg-green-100 text-green-800
+                        {% elif booking.payment_status == 'pending' %}bg-yellow-100 text-yellow-800
+                        {% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ booking.payment_status|title }}
+                    </span>
+                </div>
+            </div>
         </div>
-        <div class="max-w-5xl h-fit mx-auto bg-gray-100 rounded-xl shadow-md p-6">
-            <form method="post" class="space-y-4" id="edit-guest-form">
+
+        <!-- Main Form -->
+        <div class="max-w-5xl mx-auto">
+            <form method="post" class="space-y-8" id="edit-booking-form">
                 {% csrf_token %}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Guest Information -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Guest Name</label>
-                        <input type="text" name="full_name" value="{{ guest.guest_id.full_name }}" class="form-select mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" readonly>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Gender</label>
-                        <input type="text" name="gender" value="{{ guest.guest_id.gender }}" class="form-input mt-1 px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Contact Number</label>
-                        <input type="text" name="contact" value="{{ guest.guest_id.phone_number }}" class="mt-1 form-input px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Nationality</label>
-                        <input type="text" name="nationality" value="{{ guest.guest_id.nationality }}" class="mt-1 form-input px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" >
-                    </div>
-
-                    <div class="md:col-span-1">
-                        <label class="block text-sm font-medium text-gray-700">Address</label>
-                        <input type="text" name="address" value="{{ guest.guest_id.address }}" class="mt-1 form-input px-4 py-2 block  w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-
-                    <!-- Booking Details -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Room *</label>
-                        <select name="room_number" required class="mt-1 form-select px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                            {% for room in available_rooms %}
-                                <option value="{{ room.room_id }}"
-                                    {% if room.room_id == guest.room_id.room_id %}selected{% endif %}>
-                                    {{ room.room_number }} - {{ room.room_type }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Number of Guests *</label>
-                        <input type="number" name="guest_count" value="{{ guest.guest_count }}" required 
-                               class="mt-1 form-input px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" min="1">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Check In *</label>
-                        <input type="text" id="check-in" name="check_in" required 
-                               value="{{ guest.check_in|date:'Y-m-d H:i' }}" class="mt-1 form-input px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Check Out *</label>
-                        <input type="text" id="check-out" name="check_out" required 
-                               value="{{ guest.check_out|date:'Y-m-d H:i' }}" class="mt-1 form-input px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-
-                    {% if guest.expected_arrival %}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Expected Arrival</label>
-                        <input type="text" id="expected-arrival" name="expected_arrival" 
-                               value="{{ guest.expected_arrival|date:'Y-m-d H:i' }}" class="mt-1 form-input px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-                    {% endif %}
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Payment Status *</label>
-                        <select name="payment_status" required class="mt-1 form-select px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                            <option value="pending" {% if guest.payment_status == 'pending' %}selected{% endif %}>Pending</option>
-                            <option value="paid" {% if guest.payment_status == 'paid' %}selected{% endif %}>Paid</option>
-                            <option value="cancelled" {% if guest.payment_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
-                            <option value="refunded" {% if guest.payment_status == 'refunded' %}selected{% endif %}>Refunded</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Mode of Payment *</label>
-                        <select name="payment_mode" required class="mt-1 form-select px-4 py-2 block w-full rounded-md bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                            <option value="cash" {% if guest.payment_mode == 'cash' %}selected{% endif %}>Cash</option>
-                            <option value="card" {% if guest.payment_mode == 'card' %}selected{% endif %}>Credit/Debit Card</option>
-                            <option value="gcash" {% if guest.payment_mode == 'gcash' %}selected{% endif %}>GCash</option>
-                        </select>
+                
+                <!-- Guest Information Card -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-semibold text-gray-800">Guest Information</h2>
+                            <span class="text-sm text-gray-500">* Required fields</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Guest Name *</label>
+                                <input type="text" value="{{ booking.guest_name }}" 
+                                       class="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Contact Number *</label>
+                                <input type="text" value="{{ booking.guest_id.phone_number }}" 
+                                       class="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="flex justify-end space-x-3 mt-6">
+                <!-- Booking Details Card -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div class="p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-6">Booking Details</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Room *</label>
+                                <select name="room_id" required 
+                                        class="w-full px-4 py-2.5 rounded-lg bg-white border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                    <option value="{{ booking.room_id.room_id }}">
+                                        Current: Room {{ booking.room_id.room_number }} - {{ booking.room_id.get_room_type_display }}
+                                    </option>
+                                    {% for room in available_rooms %}
+                                        {% if room.room_id != booking.room_id.room_id %}
+                                        <option value="{{ room.room_id }}">
+                                            Room {{ room.room_number }} - {{ room.get_room_type_display }}
+                                        </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Number of Guests *</label>
+                                <input type="number" name="guest_count" value="{{ booking.guest_count }}" required min="1" max="99"
+                                       class="w-full px-4 py-2.5 rounded-lg bg-white border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Check In *</label>
+                                <div class="relative">
+                                    <input type="text" name="check_in" id="check-in" required 
+                                           value="{{ booking.check_in|date:'Y-m-d H:i' }}"
+                                           class="w-full px-4 py-2.5 rounded-lg bg-white border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                    <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Check Out *</label>
+                                <div class="relative">
+                                    <input type="text" name="check_out" id="check-out" required 
+                                           value="{{ booking.check_out|date:'Y-m-d H:i' }}"
+                                           class="w-full px-4 py-2.5 rounded-lg bg-white border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                    <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Expected Arrival</label>
+                                <div class="relative">
+                                    <input type="text" name="expected_arrival" id="expected-arrival"
+                                           value="{{ booking.expected_arrival|date:'Y-m-d H:i' }}"
+                                           class="w-full px-4 py-2.5 rounded-lg bg-white border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                    <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Details Card -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div class="p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-6">Payment Details</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Payment Status *</label>
+                                <select name="payment_status" required 
+                                        class="w-full px-4 py-2.5 rounded-lg bg-white border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                    {% for status, label in payment_status_choices %}
+                                    <option value="{{ status }}" {% if booking.payment_status == status %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Payment Mode</label>
+                                <select name="payment_mode" required 
+                                        class="w-full px-4 py-2.5 rounded-lg bg-white border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                    <option value="cash" {% if booking.payment_mode == 'cash' %}selected{% endif %}>Cash</option>
+                                    <option value="card" {% if booking.payment_mode == 'card' %}selected{% endif %}>Credit/Debit Card</option>
+                                    <option value="gcash" {% if booking.payment_mode == 'gcash' %}selected{% endif %}>GCash</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end space-x-4 pt-6">
                     <a href="{% url 'manage_guests' %}" 
-                       class="px-6 py-2 bg-gray-100 border border-black text-gray-700 font-semibold rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                       class="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
                         Cancel
                     </a>
                     <button type="submit" 
-                            class="px-6 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                            class="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
                         Update Booking
                     </button>
                 </div>
@@ -118,31 +187,103 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize flatpickr for date inputs
-    flatpickr("#check-in", {
+    // Common config for date/time pickers
+    const dateConfig = {
         enableTime: true,
         dateFormat: "Y-m-d H:i",
-        defaultDate: "{{ guest.check_in|date:'Y-m-d H:i' }}"
+        time_24hr: false,
+        minuteIncrement: 30,
+        disableMobile: true,
+        allowInput: true
+    };
+
+    // Initialize Check In picker
+    const checkInPicker = flatpickr("#check-in", {
+        ...dateConfig,
+        onChange: function(selectedDates) {
+            const selectedDate = selectedDates[0];
+            if (selectedDate) {
+                // Set minimum check-out date to 1 hour after check-in
+                const minCheckOut = new Date(selectedDate);
+                minCheckOut.setHours(minCheckOut.getHours() + 1);
+                checkOutPicker.set('minDate', minCheckOut);
+
+                // If check-out is before new check-in, update it
+                const checkOutDate = checkOutPicker.selectedDates[0];
+                if (checkOutDate && checkOutDate <= selectedDate) {
+                    checkOutPicker.setDate(minCheckOut);
+                }
+            }
+        }
     });
 
-    flatpickr("#check-out", {
-        enableTime: true,
-        dateFormat: "Y-m-d H:i",
-        defaultDate: "{{ guest.check_out|date:'Y-m-d H:i' }}"
+    // Initialize Check Out picker
+    const checkOutPicker = flatpickr("#check-out", {
+        ...dateConfig,
+        onChange: function(selectedDates) {
+            const selectedDate = selectedDates[0];
+            if (selectedDate) {
+                // Check if check-out is after check-in
+                const checkInDate = checkInPicker.selectedDates[0];
+                if (checkInDate && selectedDate <= checkInDate) {
+                    const minCheckOut = new Date(checkInDate);
+                    minCheckOut.setHours(minCheckOut.getHours() + 1);
+                    this.setDate(minCheckOut);
+                    alert("Check-out must be at least 1 hour after check-in");
+                    return;
+                }
+
+                // Update expected arrival constraints
+                if (document.getElementById('expected-arrival')) {
+                    const maxExpectedArrival = new Date(selectedDate);
+                    maxExpectedArrival.setMinutes(maxExpectedArrival.getMinutes() - 1);
+                    expectedArrivalPicker.set('maxDate', maxExpectedArrival);
+                }
+            }
+        }
     });
 
-    {% if guest.expected_arrival %}
-    flatpickr("#expected-arrival", {
-        enableTime: true,
-        dateFormat: "Y-m-d H:i",
-        defaultDate: "{{ guest.expected_arrival|date:'Y-m-d H:i' }}"
-    });
-    {% endif %}
+    // Initialize Expected Arrival picker if field exists
+    if (document.getElementById('expected-arrival')) {
+        const expectedArrivalPicker = flatpickr("#expected-arrival", {
+            ...dateConfig,
+            onChange: function(selectedDates) {
+                const selectedDate = selectedDates[0];
+                if (selectedDate) {
+                    const checkOutDate = checkOutPicker.selectedDates[0];
+                    if (checkOutDate && selectedDate >= checkOutDate) {
+                        const maxExpectedArrival = new Date(checkOutDate);
+                        maxExpectedArrival.setMinutes(maxExpectedArrival.getMinutes() - 1);
+                        this.setDate(maxExpectedArrival);
+                        alert("Expected arrival must be before check-out time");
+                    }
+                }
+            }
+        });
+    }
 
     // Form validation
-    const form = document.getElementById('edit-guest-form');
+    const form = document.getElementById('edit-booking-form');
     form.addEventListener('submit', function(e) {
         e.preventDefault();
+
+        // Validate dates
+        const checkIn = new Date(document.getElementById('check-in').value);
+        const checkOut = new Date(document.getElementById('check-out').value);
+        
+        if (checkOut <= checkIn) {
+            alert('Check-out must be after check-in');
+            return;
+        }
+
+        // Validate guest count
+        const guestCount = parseInt(document.querySelector('input[name="guest_count"]').value);
+        if (isNaN(guestCount) || guestCount < 1 || guestCount > 99) {
+            alert('Please enter a valid number of guests (1-99)');
+            return;
+        }
+
+        // Confirm before submitting
         if (confirm('Are you sure you want to update this booking?')) {
             this.submit();
         }

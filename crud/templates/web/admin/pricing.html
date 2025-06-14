@@ -65,18 +65,68 @@
         <!-- Room List Table -->
         <div class="bg-white rounded-lg shadow">
             <div class="p-4 border-b border-gray-200">
-                <form method="GET" action="{% url 'pricing' %}" class="flex gap-2">
-                    <input type="text" name="search" placeholder="Search by room number or type..." 
-                           value="{{ search }}" 
-                           class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                        Search
-                    </button>
-                    {% if search %}
-                    <a href="{% url 'pricing' %}" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
-                        Clear
-                    </a>
-                    {% endif %}
+                <form method="GET" action="{% url 'pricing' %}" class="space-y-4">
+                    <div class="flex flex-wrap gap-4">
+                        <!-- Search -->
+                        <div class="flex-1">
+                            <input type="text" 
+                                   name="search" 
+                                   placeholder="Search by room number or type..." 
+                                   value="{{ search }}" 
+                                   class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <!-- Price Range Filter -->
+                        <div class="flex gap-2 items-center">
+                            <input type="number" 
+                                   name="min_price" 
+                                   placeholder="Min Price" 
+                                   value="{{ min_price }}"
+                                   class="w-24 px-2 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span>to</span>
+                            <input type="number" 
+                                   name="max_price" 
+                                   placeholder="Max Price" 
+                                   value="{{ max_price }}"
+                                   class="w-24 px-2 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <!-- Room Type Filter -->
+                        <div>
+                            <select name="room_type" 
+                                    class="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">All Room Types</option>
+                                {% for room_type in room_types %}
+                                <option value="{{ room_type.id }}" {% if selected_type == room_type.id %}selected{% endif %}>
+                                    {{ room_type.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <!-- Sort By -->
+                        <div>
+                            <select name="sort" 
+                                    class="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="room_number" {% if sort == 'room_number' %}selected{% endif %}>Room Number</option>
+                                <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Price (Low to High)</option>
+                                <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Price (High to Low)</option>
+                                <option value="room_type" {% if sort == 'room_type' %}selected{% endif %}>Room Type</option>
+                            </select>
+                        </div>
+                        <!-- Submit and Clear -->
+                        <div class="flex gap-2">
+                            <button type="submit" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2">
+                                <span class="material-icons text-sm">search</span>
+                                Apply
+                            </button>
+                            {% if search or min_price or max_price or selected_type or sort %}
+                            <a href="{% url 'pricing' %}" 
+                               class="px-4 py-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 flex items-center gap-2">
+                                <span class="material-icons text-sm">clear</span>
+                                Clear
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="overflow-x-auto">
@@ -111,14 +161,14 @@
                 {% if rooms.has_other_pages %}
                 <div class="flex space-x-2">
                     {% if rooms.has_previous %}
-                    <a href="?page={{ rooms.previous_page_number }}{% if search %}&search={{ search }}{% endif %}" 
+                    <a href="?page={{ rooms.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}{% if selected_type %}&room_type={{ selected_type }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}" 
                        class="rounded-full p-1 hover:bg-gray-100 align-middle">
                         <span class="material-icons text-gray-600 border border-gray-300 rounded-full p-1">arrow_back</span>
                     </a>
                     {% endif %}
                     <span class="text-sm text-gray-700 text-center text-3xl align-middle p-2">{{ rooms.number }}</span>
                     {% if rooms.has_next %}
-                    <a href="?page={{ rooms.next_page_number }}{% if search %}&search={{ search }}{% endif %}"
+                    <a href="?page={{ rooms.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}{% if selected_type %}&room_type={{ selected_type }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}"
                        class="rounded-full p-1 hover:bg-gray-100 align-middle">
                         <span class="material-icons text-gray-600 border border-gray-300 rounded-full p-1">arrow_forward</span>
                     </a>
