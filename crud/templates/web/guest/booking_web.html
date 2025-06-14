@@ -120,39 +120,82 @@
   <div id="step1" class="step-content">
     <div class="max-w-6xl mx-auto">
       <h2 class="text-center text-2xl font-heading font-semibold mb-8">Choose your room</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- Room Type Filter -->
+      <div class="mb-6 flex flex-wrap gap-3 justify-center">
+        <button type="button" class="room-type-filter active px-4 py-2 rounded-full text-sm font-medium bg-orange-500 text-white hover:bg-orange-600 transition-colors" data-type="all">
+          All Rooms
+        </button>
+        {% for room_type in room_types %}
+        <button type="button" class="room-type-filter px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors" data-type="{{ room_type.id }}">
+          {{ room_type.name }}
+        </button>
+        {% endfor %}
+      </div>
+
+      <!-- Search and Sort -->
+      <div class="mb-6 flex flex-wrap gap-4 items-center justify-between">
+        <div class="flex-1 max-w-xs">
+          <input type="text" id="room-search" placeholder="Search rooms..." class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+        </div>
+        <div class="flex gap-3">
+          <select id="room-sort" class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="type">Room Type</option>
+            <option value="number">Room Number</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Room Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="room-grid">
         {% for room in available_rooms %}
-        <div class="room-card bg-white p-4 rounded-lg shadow-md">
+        <div class="room-card bg-white rounded-lg shadow-md overflow-hidden" data-room-type="{{ room.room_type|lower }}" data-room-price="{{ room.room_price }}">
           <div class="relative">
             <img src="{{ MEDIA_URL }}{{ room.room_type|lower }}.jpg" 
                  alt="{{ room.get_room_type_display }}" 
-                 class="w-full h-64 object-cover rounded-lg mb-3">
+                 class="w-full h-48 object-cover">
             {% if room.room_status != 'available' %}
-            <div class="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+            <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
               <span class="text-white font-medium px-3 py-1 bg-red-500 rounded-full text-sm">
                 Currently Unavailable
               </span>
             </div>
             {% endif %}
+            <div class="absolute top-3 right-3">
+              <span class="bg-orange-500 text-white text-sm py-1 px-3 rounded-full font-medium">
+                Room {{ room.room_number }}
+              </span>
+            </div>
           </div>
           
-          <div class="text-center">
-            <div class="bg-orange-500 text-white text-sm py-1 px-4 rounded-full inline-block mb-2 font-medium">
-              {{ room.get_room_type_display }}
+          <div class="p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-lg font-semibold text-gray-900">{{ room.get_room_type_display }}</h3>
+              <p class="text-orange-500 font-bold">₱{{ room.room_price|floatformat:2 }}</p>
             </div>
-            <p class="text-gray-700 font-medium mb-2">
-              ₱{{ room.room_price|floatformat:2 }}
-            </p>
             
-            <div class="mb-4">
+            <div class="space-y-2">
+              <div class="flex items-center text-sm text-gray-600">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                Room {{ room.room_number }}
+              </div>
+              <div class="flex items-center text-sm text-gray-600">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                </svg>
+                {{ room.get_room_type_display }}
+              </div>
               {% if room.room_status == 'available' %}
-              <span class="text-green-600 text-sm font-medium">
-                Room {{ room.room_number }} Available
-              </span>
-              {% else %}
-              <span class="text-red-600 text-sm font-medium">
-                Not Available
-              </span>
+              <div class="flex items-center text-sm text-green-600">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Available Now
+              </div>
               {% endif %}
             </div>
             
@@ -162,11 +205,10 @@
                     data-room-number="{{ room.room_number }}"
                     data-room-name="{{ room.get_room_type_display }}"
                     data-room-price="{{ room.room_price }}"
-                    class="select-room-btn w-full px-4 py-2 {% if room.room_status == 'available' %}bg-orange-500 hover:bg-orange-600{% else %}bg-gray-300{% endif %} text-white rounded-lg transition-colors font-medium"
+                    class="select-room-btn mt-4 w-full px-4 py-2 {% if room.room_status == 'available' %}bg-orange-500 hover:bg-orange-600{% else %}bg-gray-300{% endif %} text-white rounded-lg transition-colors font-medium"
                     {% if room.room_status != 'available' %}disabled{% endif %}>
               {% if room.room_status == 'available' %}
                 Select Room
-                
               {% else %}
                 Not Available
               {% endif %}
@@ -174,11 +216,26 @@
           </div>
         </div>
         {% empty %}
-        <div class="col-span-2 text-center py-8">
+        <div class="col-span-full text-center py-8">
           <div class="text-gray-500 text-lg">No rooms are currently available.</div>
           <p class="text-gray-400 mt-2">Please check back later or contact us for assistance.</p>
         </div>
         {% endfor %}
+      </div>
+
+      <!-- Pagination -->
+      <div class="mt-8 flex justify-center items-center space-x-2" id="pagination">
+        <button class="pagination-btn" data-page="prev" disabled>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <div id="page-numbers" class="flex space-x-2"></div>
+        <button class="pagination-btn" data-page="next">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
@@ -721,6 +778,253 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Initialize payment form handlers
   initializePaymentForm();
+
+  // Room filtering and pagination variables
+  let currentPage = 1;
+  const roomsPerPage = 6;
+  let filteredRooms = [];
+  let currentFilter = 'all';
+  let currentSort = 'price-asc';
+  let searchTerm = '';
+
+  // Get all room cards and store initial state
+  const roomGrid = document.getElementById('room-grid');
+  const allRooms = Array.from(document.querySelectorAll('.room-card'));
+  filteredRooms = allRooms;
+
+  // Initialize room type filters
+  document.querySelectorAll('.room-type-filter').forEach(button => {
+    button.addEventListener('click', function() {
+      // Update active state
+      document.querySelectorAll('.room-type-filter').forEach(btn => {
+        btn.classList.remove('active', 'bg-orange-500', 'text-white');
+        btn.classList.add('bg-gray-200', 'text-gray-700');
+      });
+      this.classList.add('active', 'bg-orange-500', 'text-white');
+      this.classList.remove('bg-gray-200', 'text-gray-700');
+
+      // Apply filter
+      currentFilter = this.dataset.type;
+      currentPage = 1;
+      filterAndDisplayRooms();
+    });
+  });
+
+  // Initialize search with debounce
+  const searchInput = document.getElementById('room-search');
+  let searchTimeout;
+  searchInput.addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      searchTerm = this.value.toLowerCase();
+      currentPage = 1;
+      filterAndDisplayRooms();
+    }, 300); // Debounce for 300ms
+  });
+
+  // Initialize sort
+  const sortSelect = document.getElementById('room-sort');
+  sortSelect.addEventListener('change', function() {
+    currentSort = this.value;
+    filterAndDisplayRooms();
+  });
+
+  // Filter and sort rooms
+  function filterAndDisplayRooms() {
+    // Filter rooms
+    filteredRooms = allRooms.filter(room => {
+      if (!room.dataset.roomType) return false;
+      
+      const matchesType = currentFilter === 'all' || room.dataset.roomType === currentFilter;
+      const matchesSearch = room.textContent.toLowerCase().includes(searchTerm);
+      return matchesType && matchesSearch;
+    });
+
+    // Sort rooms
+    filteredRooms.sort((a, b) => {
+      const priceA = parseFloat(a.dataset.roomPrice);
+      const priceB = parseFloat(b.dataset.roomPrice);
+      const roomNumberA = a.querySelector('.room-number')?.textContent.match(/\d+/)?.[0] || '0';
+      const roomNumberB = b.querySelector('.room-number')?.textContent.match(/\d+/)?.[0] || '0';
+      
+      switch(currentSort) {
+        case 'price-asc':
+          return priceA - priceB;
+        case 'price-desc':
+          return priceB - priceA;
+        case 'type':
+          return a.dataset.roomType.localeCompare(b.dataset.roomType);
+        case 'number':
+          return parseInt(roomNumberA) - parseInt(roomNumberB);
+        default:
+          return 0;
+      }
+    });
+
+    updatePagination();
+    displayRooms();
+    updateNoResultsMessage();
+  }
+
+  // Update pagination controls
+  function updatePagination() {
+    const totalPages = Math.max(1, Math.ceil(filteredRooms.length / roomsPerPage));
+    const pageNumbers = document.getElementById('page-numbers');
+    pageNumbers.innerHTML = '';
+
+    // Previous button
+    const prevButton = document.querySelector('.pagination-btn[data-page="prev"]');
+    prevButton.disabled = currentPage === 1;
+    prevButton.classList.toggle('opacity-50', currentPage === 1);
+
+    // Calculate visible page range
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    startPage = Math.max(1, endPage - 4);
+
+    // Add first page if not in range
+    if (startPage > 1) {
+      addPageButton(1);
+      if (startPage > 2) pageNumbers.appendChild(createEllipsis());
+    }
+
+    // Add page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      addPageButton(i);
+    }
+
+    // Add last page if not in range
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) pageNumbers.appendChild(createEllipsis());
+      addPageButton(totalPages);
+    }
+
+    // Next button
+    const nextButton = document.querySelector('.pagination-btn[data-page="next"]');
+    nextButton.disabled = currentPage === totalPages;
+    nextButton.classList.toggle('opacity-50', currentPage === totalPages);
+
+    function addPageButton(pageNum) {
+      const button = document.createElement('button');
+      button.className = `pagination-number px-3 py-1 rounded-lg ${
+        currentPage === pageNum 
+          ? 'bg-orange-500 text-white' 
+          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+      }`;
+      button.textContent = pageNum;
+      button.addEventListener('click', () => {
+        currentPage = pageNum;
+        filterAndDisplayRooms();
+      });
+      pageNumbers.appendChild(button);
+    }
+
+    function createEllipsis() {
+      const span = document.createElement('span');
+      span.className = 'px-2 text-gray-500';
+      span.textContent = '...';
+      return span;
+    }
+  }
+
+  // Display current page of rooms
+  function displayRooms() {
+    const startIndex = (currentPage - 1) * roomsPerPage;
+    const endIndex = startIndex + roomsPerPage;
+    const visibleRooms = filteredRooms.slice(startIndex, endIndex);
+
+    // Hide all rooms first
+    allRooms.forEach(room => {
+      room.style.display = 'none';
+      room.classList.remove('animate-fadeIn');
+    });
+
+    // Show and animate filtered rooms for current page
+    visibleRooms.forEach((room, index) => {
+      room.style.display = 'block';
+      // Add staggered animation
+      setTimeout(() => {
+        room.classList.add('animate-fadeIn');
+      }, index * 100);
+    });
+
+    // Update room counter if it exists
+    const roomCounter = document.getElementById('room-counter');
+    if (roomCounter) {
+      roomCounter.textContent = `Showing ${visibleRooms.length} of ${filteredRooms.length} rooms`;
+    }
+  }
+
+  // Update no results message
+  function updateNoResultsMessage() {
+    const noResultsDiv = document.querySelector('.col-span-full');
+    if (!noResultsDiv) return;
+
+    if (filteredRooms.length === 0) {
+      noResultsDiv.style.display = 'block';
+      noResultsDiv.innerHTML = `
+        <div class="text-gray-500 text-lg">No rooms found matching your criteria.</div>
+        <p class="text-gray-400 mt-2">Try adjusting your filters or search terms.</p>
+      `;
+    } else {
+      noResultsDiv.style.display = 'none';
+    }
+  }
+
+  // Initialize pagination buttons
+  document.querySelectorAll('.pagination-btn').forEach(button => {
+    button.addEventListener('click', function() {
+      if (this.disabled) return;
+      
+      if (this.dataset.page === 'prev' && currentPage > 1) {
+        currentPage--;
+      } else if (this.dataset.page === 'next' && currentPage < Math.ceil(filteredRooms.length / roomsPerPage)) {
+        currentPage++;
+      }
+      filterAndDisplayRooms();
+    });
+  });
+
+  // Add animation classes
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Initial display
+  filterAndDisplayRooms();
+
+  // Handle room selection
+  document.querySelectorAll('.select-room-btn').forEach(button => {
+    button.addEventListener('click', function() {
+      if (this.disabled) return;
+
+      const roomData = {
+        id: this.dataset.roomId,
+        type: this.dataset.roomType,
+        number: this.dataset.roomNumber,
+        name: this.dataset.roomName,
+        price: parseFloat(this.dataset.roomPrice)
+      };
+
+      // Remove selection from all rooms
+      document.querySelectorAll('.room-card').forEach(card => {
+        card.classList.remove('ring-2', 'ring-orange-500');
+      });
+
+      // Add selection to clicked room
+      this.closest('.room-card').classList.add('ring-2', 'ring-orange-500');
+
+      selectRoom(roomData);
+    });
+  });
 });
 
 // Function to validate date overlap with existing bookings
