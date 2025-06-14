@@ -445,7 +445,7 @@
           </div>
           <div class="space-y-1">
             <label class="text-sm text-gray-600">Phone Number *</label>
-            <input type="tel" id="phone_number" name="phone_number" required
+            <input type="tel" id="phone_number" name="phone_number" min="1" maxlength="11" required
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                    placeholder="Phone Number">
             <span class="error-message">Please enter a valid phone number</span>
@@ -457,13 +457,13 @@
               <option value="" disabled selected>Select gender</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
-              <option value="other">Other</option>
+              <option value="other">Prefer not to say</option>
             </select>
             <span class="error-message">Please select your gender</span>
           </div>
           <div class="space-y-1">
             <label class="text-sm text-gray-600">Date of Birth *</label>
-            <input type="text" id="date_of_birth" name="date_of_birth" required
+            <input type="datetime" id="date_of_birth" name="date_of_birth" required
                    class="datepicker w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                    placeholder="YYYY-MM-DD">
             <span class="error-message">Please enter your date of birth</span>
@@ -476,24 +476,11 @@
             <span class="error-message">Please enter your nationality</span>
           </div>
           <div class="space-y-1">
-            <label class="text-sm text-gray-600">Emergency Contact *</label>
-            <input type="text" id="emergency_contact" name="emergency_contact" required
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                   placeholder="Emergency Contact">
-            <span class="error-message">Please enter an emergency contact</span>
-          </div>
-          <div class="space-y-1 md:col-span-3">
             <label class="text-sm text-gray-600">Address *</label>
             <input type="text" id="address" name="address" required
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                    placeholder="Complete Address">
             <span class="error-message">Please enter your address</span>
-          </div>
-          <div class="space-y-1 md:col-span-3">
-            <label class="text-sm text-gray-600">Notes</label>
-            <textarea id="notes" name="notes" rows="2"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      placeholder="Additional Notes"></textarea>
           </div>
         </div>
       </div>
@@ -657,20 +644,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Modal Functions
     function showModal(modal) {
-  modal.classList.remove('opacity-0', 'pointer-events-none');
-  modal.classList.add('opacity-100', 'pointer-events-auto');
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        modal.classList.add('opacity-100', 'pointer-events-auto');
         const modalContent = modal.querySelector('div');
         modalContent.classList.remove('scale-95');
         modalContent.classList.add('scale-100');
-}
+    }
 
     function hideModal(modal) {
         const modalContent = modal.querySelector('div');
         modalContent.classList.remove('scale-100');
         modalContent.classList.add('scale-95');
-  setTimeout(() => {
-    modal.classList.remove('opacity-100', 'pointer-events-auto');
-    modal.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => {
+            modal.classList.remove('opacity-100', 'pointer-events-auto');
+            modal.classList.add('opacity-0', 'pointer-events-none');
         }, 200);
     }
 
@@ -681,6 +668,215 @@ document.addEventListener('DOMContentLoaded', function() {
     const createAccountLink = document.getElementById('openCreateAccountBtn');
     const closeButtons = document.querySelectorAll('.modal-close');
     const loginForm = document.getElementById('loginForm');
+    const createAccountForm = document.getElementById('createAccountForm');
+
+    // Multi-step form variables
+    let currentStep = 1;
+    const totalSteps = 3;
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const createAccountBtn = document.getElementById('createAccountBtn');
+    const progressBar = document.querySelector('.progress-bar');
+    const stepIndicators = document.querySelectorAll('.step-indicator');
+    const stepTitle = document.querySelector('.step-title');
+
+    // Function to update progress bar and step indicators
+    function updateProgress() {
+        const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
+        progressBar.style.width = `${progress}%`;
+        
+        stepIndicators.forEach((indicator, index) => {
+            if (index + 1 < currentStep) {
+                indicator.classList.remove('text-gray-400');
+                indicator.classList.add('text-orange-500');
+            } else if (index + 1 === currentStep) {
+                indicator.classList.remove('text-gray-400');
+                indicator.classList.add('text-orange-500');
+            } else {
+                indicator.classList.add('text-gray-400');
+                indicator.classList.remove('text-orange-500');
+            }
+        });
+
+        // Update step title
+        switch(currentStep) {
+            case 1:
+                stepTitle.textContent = 'Personal Information';
+                break;
+            case 2:
+                stepTitle.textContent = 'Account Setup';
+                break;
+            case 3:
+                stepTitle.textContent = 'Complete';
+                break;
+        }
+    }
+
+    // Function to validate current step
+    function validateStep(step) {
+        const requiredFields = document.querySelectorAll(`#step${step} input[required], #step${step} select[required]`);
+        let isValid = true;
+
+        requiredFields.forEach(field => {
+            field.classList.remove('border-red-500');
+            const errorMessage = field.nextElementSibling;
+            if (errorMessage && errorMessage.classList.contains('error-message')) {
+                errorMessage.classList.add('hidden');
+            }
+
+            if (!field.value.trim()) {
+                isValid = false;
+                field.classList.add('border-red-500');
+                if (errorMessage) {
+                    errorMessage.classList.remove('hidden');
+                }
+            }
+
+            // Additional validation for specific fields
+            if (field.id === 'email' && field.value) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(field.value)) {
+                    isValid = false;
+                    field.classList.add('border-red-500');
+                    if (errorMessage) {
+                        errorMessage.textContent = 'Please enter a valid email address';
+                        errorMessage.classList.remove('hidden');
+                    }
+                }
+            }
+
+            if (field.id === 'phone_number' && field.value) {
+                const phoneRegex = /^\+?[\d\s-]{10,}$/;
+                if (!phoneRegex.test(field.value)) {
+                    isValid = false;
+                    field.classList.add('border-red-500');
+                    if (errorMessage) {
+                        errorMessage.textContent = 'Please enter a valid phone number';
+                        errorMessage.classList.remove('hidden');
+                    }
+                }
+            }
+
+            if (step === 2) {
+                if (field.id === 'password' && field.value) {
+                    if (field.value.length < 8) {
+                        isValid = false;
+                        field.classList.add('border-red-500');
+                        if (errorMessage) {
+                            errorMessage.textContent = 'Password must be at least 8 characters long';
+                            errorMessage.classList.remove('hidden');
+                        }
+                    }
+                }
+                if (field.id === 'confirm_password' && field.value) {
+                    const password = document.getElementById('password').value;
+                    if (field.value !== password) {
+                        isValid = false;
+                        field.classList.add('border-red-500');
+                        if (errorMessage) {
+                            errorMessage.textContent = 'Passwords do not match';
+                            errorMessage.classList.remove('hidden');
+                        }
+                    }
+                }
+            }
+        });
+
+        return isValid;
+    }
+
+    // Function to show/hide steps
+    function showStep(step) {
+        document.querySelectorAll('.step-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+        document.getElementById(`step${step}`).classList.remove('hidden');
+
+        // Update button visibility
+        if (step === 1) {
+            prevBtn.classList.add('hidden');
+            nextBtn.classList.remove('hidden');
+            createAccountBtn.classList.add('hidden');
+        } else if (step === 2) {
+            prevBtn.classList.remove('hidden');
+            nextBtn.classList.add('hidden');
+            createAccountBtn.classList.remove('hidden');
+        } else if (step === 3) {
+            prevBtn.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+            createAccountBtn.classList.add('hidden');
+        }
+
+        updateProgress();
+    }
+
+    // Event listeners for navigation buttons
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            if (validateStep(currentStep)) {
+                currentStep++;
+                showStep(currentStep);
+            }
+        });
+    }
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            currentStep--;
+            showStep(currentStep);
+        });
+    }
+
+    // Handle form submission
+    if (createAccountForm) {
+        createAccountForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!validateStep(currentStep)) {
+                return;
+            }
+
+            const formData = new FormData(createAccountForm);
+            const registrationError = document.getElementById('registrationError');
+            
+            fetch(createAccountForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentStep = 3;
+                    showStep(currentStep);
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 2000);
+                } else {
+                    registrationError.textContent = data.error;
+                    registrationError.classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                registrationError.textContent = 'An error occurred. Please try again.';
+                registrationError.classList.remove('hidden');
+            });
+        });
+
+        // Clear errors when user starts typing
+        createAccountForm.querySelectorAll('input, select').forEach(field => {
+            field.addEventListener('input', function() {
+                this.classList.remove('border-red-500');
+                const errorMessage = this.nextElementSibling;
+                if (errorMessage && errorMessage.classList.contains('error-message')) {
+                    errorMessage.classList.add('hidden');
+                }
+                document.getElementById('registrationError').classList.add('hidden');
+            });
+        });
+    }
 
     // Add click event for login button
     if (loginBtn) {
@@ -692,10 +888,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add click event for create account link
     if (createAccountLink) {
         createAccountLink.addEventListener('click', (e) => {
-        e.preventDefault();
+            e.preventDefault();
             hideModal(loginModal);
             setTimeout(() => {
                 showModal(createAccountModal);
+                currentStep = 1;
+                showStep(1);
             }, 300);
         });
     }
@@ -759,7 +957,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         // General error
                         loginError.textContent = data.error;
                         loginError.classList.remove('hidden');
-  }
+                    }
 
                     // Retain form data if provided
                     if (data.formData) {
@@ -796,7 +994,7 @@ document.addEventListener('DOMContentLoaded', function() {
         paragraph.classList.toggle('hidden');
         icon.classList.toggle('rotate-180');
     };
-  });
+});
 </script>
 {% endblock scripts %}
 
@@ -813,6 +1011,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .animate-slide-in {
   animation: slideIn 0.5s ease-out;
+}
+
+/* Add these styles for the progress bar animation */
+.progress-bar {
+  transition: width 0.3s ease-in-out;
+}
+
+.step-indicator {
+  transition: color 0.3s ease-in-out;
+}
+
+/* Add styles for form validation */
+.error-message {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+input.border-red-500,
+select.border-red-500 {
+  border-color: #ef4444;
+}
+
+input.border-red-500:focus,
+select.border-red-500:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 1px #ef4444;
 }
 </style>
 {% endblock styles %}

@@ -1066,7 +1066,7 @@ def change_admin_password(request, admin_id):
     return redirect('manage_admin')
 
 # Guest Views
-def landing_page(request):
+def nova_hotel(request):
     # This should remain public - no decorator needed
     context = {}
     
@@ -1079,7 +1079,7 @@ def landing_page(request):
         except GuestAccounts.DoesNotExist:
             pass
     
-    return render(request, 'web/guest/landing_page.html', context)
+    return render(request, 'web/guest/nova_hotel.html', context)
 
 def register(request):
     if request.method == 'POST':
@@ -1094,15 +1094,13 @@ def register(request):
                 gender = request.POST.get('gender')
                 date_of_birth = request.POST.get('date_of_birth')
                 nationality = request.POST.get('nationality')
-                emergency_contact = request.POST.get('emergency_contact')
                 address = request.POST.get('address')
-                notes = request.POST.get('notes')
                 username = request.POST.get('username')
                 password = request.POST.get('password')
 
                 # Validate required fields
                 if not all([first_name, last_name, email, phone_number, gender, 
-                          date_of_birth, nationality, emergency_contact, address,
+                          date_of_birth, nationality, address,
                           username, password]):
                     return JsonResponse({
                         'success': False,
@@ -1128,9 +1126,7 @@ def register(request):
                     gender=gender,
                     date_of_birth=date_of_birth,
                     nationality=nationality,
-                    emergency_contact=emergency_contact,
                     address=address,
-                    notes=notes,
                     password=password,  # Model's save method will hash this
                     is_active=True,
                     last_login=timezone.now()
@@ -1143,7 +1139,7 @@ def register(request):
 
                 return JsonResponse({
                     'success': True,
-                    'redirect_url': '/landing_page/'  # Change to redirect to 
+                    'redirect_url': '/nova_hotel/'  # Change to redirect to 
                 })
 
         except Exception as e:
@@ -1193,7 +1189,7 @@ def guest_account(request):
         return render(request, 'web/guest/guest_account.html', context)
     except GuestAccounts.DoesNotExist:
         messages.error(request, "Guest account not found.")
-        return redirect('landing_page')
+        return redirect('/nova_hotel/')
 
 @guest_login_required
 def guest_change_password(request):
@@ -1357,7 +1353,7 @@ def booking_web(request):
         
     except Exception as e:
         messages.error(request, f'Error loading booking page: {str(e)}')
-        return redirect('landing_page')
+        return redirect('/nova_hotel/')
 
 def guest_login(request):
     if request.method == 'POST':
@@ -1440,7 +1436,7 @@ def guest_logout(request):
         # Add success message
         messages.success(request, 'You have been successfully logged out.')
         
-        return HttpResponseRedirect('/landing_page/')
+        return HttpResponseRedirect('/nova_hotel/')
     except Exception as e:
         # Log the error (in a real application)
         print(f"Error during logout: {str(e)}")

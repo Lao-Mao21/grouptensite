@@ -71,19 +71,29 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Room *</label>
-                                <select name="room_id" required 
+                                <select name="room_id" required id="room-select"
                                         class="w-full px-4 py-2.5 rounded-lg bg-white border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                                    <option value="{{ booking.room_id.room_id }}">
-                                        Current: Room {{ booking.room_id.room_number }} - {{ booking.room_id.get_room_type_display }}
+                                    <option value="{{ booking.room_id.room_id }}" data-price="{{ booking.room_id.room_price }}">
+                                        Current: Room {{ booking.room_id.room_number }} - {{ booking.room_id.get_room_type_display }} (₱{{ booking.room_id.room_price }})
                                     </option>
                                     {% for room in available_rooms %}
                                         {% if room.room_id != booking.room_id.room_id %}
-                                        <option value="{{ room.room_id }}">
-                                            Room {{ room.room_number }} - {{ room.get_room_type_display }}
+                                        <option value="{{ room.room_id }}" data-price="{{ room.room_price }}">
+                                            Room {{ room.room_number }} - {{ room.get_room_type_display }} (₱{{ room.room_price }})
                                         </option>
                                         {% endif %}
                                     {% endfor %}
                                 </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Room Price</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₱</span>
+                                    <input type="number" name="room_price" id="room-price" step="0.01" required
+                                           value="{{ booking.room_id.room_price }}" readonly
+                                           class="w-full pl-8 pr-4 py-2.5 rounded-lg bg-gray-50 border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                </div>
                             </div>
 
                             <div>
@@ -214,6 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     checkOutPicker.setDate(minCheckOut);
                 }
             }
+            calculateTotalAmount();
         }
     });
 
@@ -240,6 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     expectedArrivalPicker.set('maxDate', maxExpectedArrival);
                 }
             }
+            calculateTotalAmount();
         }
     });
 
@@ -260,6 +272,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+    }
+
+    // Handle room selection change
+    const roomSelect = document.getElementById('room-select');
+    const roomPriceInput = document.getElementById('room-price');
+    const totalAmountDisplay = document.getElementById('total-amount');
+
+    roomSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const price = selectedOption.getAttribute('data-price');
+        roomPriceInput.value = price;
+        calculateTotalAmount();
+    });
+
+    // Calculate total amount based on dates and room price
+    function calculateTotalAmount() {
+        const checkIn = checkInPicker.selectedDates[0];
+        const checkOut = checkOutPicker.selectedDates[0];
+        const roomPrice = parseFloat(roomPriceInput.value);
+
+        if (checkIn && checkOut && roomPrice) {
+            const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+            const total = nights * roomPrice;
+            if (totalAmountDisplay) {
+                totalAmountDisplay.textContent = '₱' + total.toFixed(2);
+            }
+        }
     }
 
     // Form validation
@@ -288,6 +327,9 @@ document.addEventListener('DOMContentLoaded', function() {
             this.submit();
         }
     });
+
+    // Initial calculation
+    calculateTotalAmount();
 });
 </script>
 {% endblock %}

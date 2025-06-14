@@ -6,8 +6,8 @@ from django.contrib.auth.decorators import login_required
 
 urlpatterns = [
     # Public URLs (accessible to everyone)
-    path('', views.landing_page, name='landing_page'),  # Main entry point
-    path('landing_page/', views.landing_page, name='landing_page'),  # Alternative route
+    path('', views.nova_hotel, name='nova_hotel'),  # Main entry point
+    path('nova_hotel/', views.nova_hotel, name='nova_hotel'),  # Alternative route
     path('register/', views.register, name='register'),
     path('guest/login/', views.guest_login, name='guest_login'),
     

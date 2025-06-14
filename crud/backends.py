@@ -270,6 +270,6 @@ def guest_login_required(view_func):
     def _wrapped_view(request, *args, **kwargs):
         if 'guest_id' not in request.session:
             messages.error(request, 'Please login to access this page.')
-            return redirect('landing_page')
+            return redirect('nova_hotel')
         return view_func(request, *args, **kwargs)
     return _wrapped_view

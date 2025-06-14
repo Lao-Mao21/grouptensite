@@ -75,7 +75,7 @@
         </form>
       
         <!-- Back to Home Link -->
-        <a href="{% url 'landing_page' %}" class="w-[150px]" style="height: 40px;">
+        <a href="{% url 'nova_hotel' %}" class="w-[150px]" style="height: 40px;">
           <div class="w-fit min-w-[80px] h-10 flex items-center justify-center px-6 py-2.5 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -183,15 +183,18 @@
       
       <div>
         <label class="block text-sm mb-1">Current Password *</label>
-        <input type="password" name="current_password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+        <input type="password" name="current_password" minlength="8"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
       </div>
       <div>
         <label class="block text-sm mb-1">New Password *</label>
-        <input type="password" name="new_password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+        <input type="password" name="new_password" minlength="8"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
       </div>
       <div>
         <label class="block text-sm mb-1">Confirm Password *</label>
-        <input type="password" name="confirm_password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+        <input type="password" name="confirm_password" minlength="8"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
       </div>
       <div class="flex space-x-4">
         <button type="submit" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md transition-colors">
