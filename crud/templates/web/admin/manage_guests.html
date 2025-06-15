@@ -107,11 +107,6 @@
                 </div>
             </div>
 
-            <!-- Today's Bookings Filter -->
-            <div class="mb-4" id="today-filter-container">
-                <input type="text" id="today-bookings-filter" placeholder="Filter today's bookings..." class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-    
             <!-- Table Container -->
             <div class="relative overflow-x-auto sm:rounded-lg" id="today-table">
                 <table id="today-bookings-table" class="w-full text-sm text-left text-gray-500">
@@ -158,9 +153,13 @@
                             <td class="px-4 py-2 border">₱ {{ booking.total_amount|floatformat:2 }}</td>
                             <td class="px-4 py-2 border text-center">
                                 <div class="flex justify-center space-x-2">
+                                    {% if booking.id %}
                                     <a href="{% url 'edit_guest' booking.id %}" class="text-blue-600 hover:text-blue-800" title="Edit">
                                         <span class="material-icons text-base">edit</span>
                                     </a>
+                                    {% else %}
+                                        <span class="material-icons text-gray-400 text-base" title="No booking">edit</span>
+                                    {% endif %}
                                     {% if booking.room_id.room_status in 'occupied,reserved' and booking.payment_status == 'paid' %}
                                     <button 
                                         data-guest-id="{{ booking.id }}"
@@ -176,6 +175,8 @@
                                         title="Check-Out">
                                         <span class="material-icons text-base">logout</span>
                                     </button>
+                                    {% else %}
+                                        <span class="material-icons text-gray-400 text-base" title="No booking">logout</span>
                                     {% endif %}
                                 </div>
                             </td>
@@ -244,11 +245,6 @@
                 {% endif %}
             </div>
             {% endif %}
-    
-            <!-- Reservations Filter -->
-            <div class="mb-4" id="reservations-filter-container" style="display:none;">
-                <input type="text" id="reservations-filter" placeholder="Filter reservations..." class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
     
             <!-- Pagination for Reservations from View -->
             {% if reservations.paginator.num_pages > 1 %}
@@ -324,24 +320,27 @@
                             <td class="px-4 py-2 border">₱ {{ booking.total_amount|floatformat:2 }}</td>
                             <td class="px-4 py-2 border text-center">
                                 <div class="flex justify-center space-x-2">
-                                    <a href="{% url 'edit_guest' booking.id %}" class="text-blue-600 hover:text-blue-800" title="Edit">
-                                        <span class="material-icons text-base">edit</span>
-                                    </a>
-                                    {% if booking.room_id.room_status in 'occupied,reserved' and booking.payment_status == 'paid' %}
-                                    <button 
-                                        data-guest-id="{{ booking.id }}"
-                                        data-room-number="{{ booking.room_id.room_number }}"
-                                        data-guest-name="{{ booking.guest_name }}"
-                                        data-room-type="{{ booking.room_id.get_room_type_display }}"
-                                        data-check-in="{{ booking.check_in|date:'m/d/y h:i A' }}"
-                                        data-check-out="{{ booking.check_out|date:'m/d/y h:i A' }}"
-                                        data-status="{{ booking.status }}"
-                                        data-payment-status="{{ booking.payment_status }}"
-                                        onclick="showCheckoutModalFromData(this)"
-                                        class="text-red-600 hover:text-red-800" 
-                                        title="Check-Out">
-                                        <span class="material-icons text-base">logout</span>
-                                    </button>
+                                    {% if booking.id %}
+                                        <a href="{% url 'edit_guest' booking.id %}" class="text-blue-600 hover:text-blue-800" title="Edit">
+                                            <span class="material-icons text-base">edit</span>
+                                        </a>
+                                        <button 
+                                            data-guest-id="{{ booking.id }}"
+                                            data-room-number="{{ booking.room_id.room_number }}"
+                                            data-guest-name="{{ booking.guest_name }}"
+                                            data-room-type="{{ booking.room_id.get_room_type_display }}"
+                                            data-check-in="{{ booking.check_in|date:'m/d/y h:i A' }}"
+                                            data-check-out="{{ booking.check_out|date:'m/d/y h:i A' }}"
+                                            data-status="{{ booking.status }}"
+                                            data-payment-status="{{ booking.payment_status }}"
+                                            onclick="showCheckoutModalFromData(this)"
+                                            class="text-red-600 hover:text-red-800" 
+                                            title="Check-Out">
+                                            <span class="material-icons text-base">logout</span>
+                                        </button>
+                                    {% else %}
+                                        <span class="material-icons text-gray-400 text-base" title="No booking">edit</span>
+                                        <span class="material-icons text-gray-400 text-base" title="No booking">logout</span>
                                     {% endif %}
                                 </div>
                             </td>
@@ -394,20 +393,14 @@
         const reservationsRadio = document.getElementById('show-reservations');
         const todayTable = document.getElementById('today-table');
         const reservationsTable = document.getElementById('reservations-table');
-        const reservationsFilterContainer = document.getElementById('reservations-filter-container');
-        const todayFilterContainer = document.getElementById('today-filter-container');
 
         function updateTables() {
             if (todayRadio.checked) {
                 todayTable.style.display = 'block';
-                todayFilterContainer.style.display = 'block';
                 reservationsTable.style.display = 'none';
-                reservationsFilterContainer.style.display = 'none';
             } else {
                 todayTable.style.display = 'none';
-                todayFilterContainer.style.display = 'none';
                 reservationsTable.style.display = 'block';
-                reservationsFilterContainer.style.display = 'block';
             }
         }
 
@@ -437,7 +430,7 @@
     // Initialize table filters
     function initializeFilters() {
         const todayFilter = document.getElementById('today-bookings-filter');
-        const reservationsFilter = document.getElementById('reservations-filter');
+        const reservationsFilter = null; // filter removed
         
         function filterTable(input, tableId) {
             const filter = input.value.toLowerCase();
@@ -463,12 +456,6 @@
         if (todayFilter) {
             todayFilter.addEventListener('keyup', function() {
                 filterTable(this, 'today-bookings-table');
-            });
-        }
-
-        if (reservationsFilter) {
-            reservationsFilter.addEventListener('keyup', function() {
-                filterTable(this, 'reservations-table');
             });
         }
     }

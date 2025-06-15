@@ -22,6 +22,7 @@ from .models import (
 from .backends import MockPaymentService, StripePaymentService, guest_login_required
 import json
 from django.contrib.auth.hashers import make_password
+import math
 
 def update_booking_statuses():
     """
@@ -104,35 +105,54 @@ def login_admin(request):
 def add_room(request):
     if request.method == "POST":
         try:
-            room_number = request.POST.get("room_number")
-            room_type = request.POST.get("room_type")
-            bed_type = request.POST.get("bed_type")
-            room_price = request.POST.get("room_price")
+            room_number = request.POST.get("room_number", "").strip()
+            room_type   = request.POST.get("room_type")
+            bed_type    = request.POST.get("bed_type")
+            room_price  = request.POST.get("room_price")
+            bed_count   = request.POST.get("bed_count")
+            floor       = request.POST.get("floor")
             room_status = request.POST.get("room_status", "available")
-            
-            # Create new room
-            room = ManageRoom.objects.create(
+
+            # Validate mandatory numeric fields
+            if not bed_count or not bed_count.isdigit():
+                raise ValueError("Bed count must be a number")
+
+            # Uniqueness validation before hitting DB unique constraint
+            if ManageRoom.objects.filter(room_number=room_number).exists():
+                messages.error(request, "Room number already exists.")
+                raise ValueError("duplicate")
+
+            ManageRoom.objects.create(
                 room_number=room_number,
                 room_type=room_type,
                 bed_type=bed_type,
+                bed_count=int(bed_count),
+                floor=floor,
                 room_price=room_price,
                 room_status=room_status
             )
-            
-            messages.success(request, 'Room added successfully.')
+
+            messages.success(request, "Room added successfully.")
             return redirect('manage_rooms')
-        except IntegrityError:
-            messages.error(request, 'Room number already exists.')
-            return render(request, "web/admin/add_room.html", {
-                "room_number": room_number,
-                "room_type": room_type,
-                "bed_type": bed_type,
-                "room_price": room_price,
-                "room_status": room_status
-            })
+
+        except IntegrityError as ie:
+            messages.error(request, f'Database error: {ie}')
+        except ValueError as ve:
+            if str(ve) != "duplicate":
+                messages.error(request, str(ve))
         except Exception as e:
             messages.error(request, f'Error adding room: {str(e)}')
-            return redirect('manage_rooms')
+
+        # fall-through renders form again with entered data
+        return render(request, "web/admin/add_room.html", {
+            "room_number": room_number,
+            "room_type": room_type,
+            "bed_type": bed_type,
+            "bed_count": bed_count,
+            "floor": floor,
+            "room_price": room_price,
+            "room_status": room_status
+        })
     return render(request, "web/admin/add_room.html")
 
 @login_required
@@ -149,7 +169,7 @@ def pricing(request):
             )
 
         # Paginate the rooms
-        paginator = Paginator(rooms, 10)  # Show 10 rooms per page
+        paginator = Paginator(rooms, 5)  # Show rooms per page
         page_number = request.GET.get('page', 1)
         rooms = paginator.get_page(page_number)
 
@@ -354,15 +374,24 @@ def manage_rooms(request):
     # Update statuses before displaying
     update_booking_statuses()
     
-    status = request.GET.get('room_status', 'available')
+    # Determine the selected status from query params; default to 'all'
+    status = request.GET.get('room_status', 'all')
     search = request.GET.get('search', '')
     
     # Get rooms with their latest guest booking and payment status
     rooms_list = ManageRoom.objects.all()
-    if status:
+
+    # Apply status filter only if a specific room status is selected
+    if status and status != 'all':
         rooms_list = rooms_list.filter(room_status=status)
+
+    # Apply search across multiple fields for better usability
     if search:
-        rooms_list = rooms_list.filter(room_number__icontains=search)
+        rooms_list = rooms_list.filter(
+            Q(room_number__icontains=search) |
+            Q(room_type__icontains=search) |
+            Q(floor__icontains=search)
+        )
 
     # Annotate rooms with their latest guest's payment status
     for room in rooms_list:
@@ -383,7 +412,7 @@ def manage_rooms(request):
             room.current_payment_status = 'No booking'
     
     page_number = request.GET.get('page', 1)
-    paginator = Paginator(rooms_list, 10)
+    paginator = Paginator(rooms_list, 4)
     rooms = paginator.get_page(page_number)
     
     # Get all guests and rooms for the booking form
@@ -427,45 +456,44 @@ def manage_guests(request):
         base_search
     ).select_related('guest_id', 'room_id').order_by('check_in')
 
-    # Reservations with search (future bookings and reserved status)
-    reservations = ManageGuest.objects.filter(
-        (
-            Q(check_in__date__gt=today) |  # Future bookings
-            Q(status='reserved', check_in__date__gte=today)  # Active reservations
-        ) & 
-        ~Q(status='checked_out') &  # Exclude checked out guests
-        base_search
-    ).select_related('guest_id', 'room_id').order_by('check_in')
-
-    # Calculate total amount for each booking
+    # Calculate total amount for each booking in today's list
     for booking in todays_bookings:
-        # Calculate nights, ensuring at least 1 night is charged
-        time_diff = booking.check_out - booking.check_in
-        nights = max(1, time_diff.days + (1 if time_diff.seconds > 0 else 0))
-        booking.total_amount = booking.room_id.room_price * nights
-        
-        # Update room status if needed
-        if booking.status == 'occupied' and booking.room_id.room_status != 'occupied':
-            booking.room_id.room_status = 'occupied'
-            booking.room_id.save()
-        elif booking.status == 'reserved' and booking.room_id.room_status != 'reserved':
-            booking.room_id.room_status = 'reserved'
-            booking.room_id.save()
+        duration = booking.check_out - booking.check_in
+        if booking.room_id.room_price_type == 'per hour':
+            units = max(1, math.ceil(duration.total_seconds() / 3600))
+        else:
+            units = max(1, (booking.check_out.date() - booking.check_in.date()).days)
+        booking.total_amount = booking.room_id.room_price * units
 
+    # Guest reservations: bookings still upcoming (reserved) or occupied but not yet checked in today
+    reservations_qs = ManageGuest.objects.filter(
+        (
+            Q(status__iexact='reserved') |
+            (Q(status__iexact='occupied') & Q(check_in__date__gt=today))
+        )
+    ).filter(base_search).select_related('guest_id', 'room_id').order_by('check_in')
+
+    # Use only actual reservations (no placeholders)
+    reservations = list(reservations_qs)
+
+    # Calculate total amount for each reservation
     for booking in reservations:
-        # Calculate nights, ensuring at least 1 night is charged
-        time_diff = booking.check_out - booking.check_in
-        nights = max(1, time_diff.days + (1 if time_diff.seconds > 0 else 0))
-        booking.total_amount = booking.room_id.room_price * nights
+        # Compute total charge based on room price type
+        duration = booking.check_out - booking.check_in
+        if booking.room_id.room_price_type == 'per hour':
+            units = max(1, math.ceil(duration.total_seconds() / 3600))
+        else:
+            units = max(1, (booking.check_out.date() - booking.check_in.date()).days)
+        booking.total_amount = booking.room_id.room_price * units
         
         # Update room status if needed
         if booking.status == 'reserved' and booking.room_id.room_status != 'reserved':
             booking.room_id.room_status = 'reserved'
             booking.room_id.save()
 
-    # Paginate the results
-    paginator_today = Paginator(todays_bookings, 10)
-    paginator_reservations = Paginator(reservations, 10)
+    # Paginate the results - change the number of items per page
+    paginator_today = Paginator(todays_bookings, 5)
+    paginator_reservations = Paginator(reservations, 5)
 
     page_today = request.GET.get('today_page', 1)
     page_reservations = request.GET.get('reservation_page', 1)
@@ -720,7 +748,71 @@ def sales_report(request):
 def todays_bookings(request):
     today = timezone.now().date()
     todays_bookings = ManageGuest.objects.filter(check_in__date=today)
-    return render(request, "web/admin/todays_bookings.html", {"todays_bookings": todays_bookings})
+
+    # Calculate total amount for each booking in today's list
+    for booking in todays_bookings:
+        duration = booking.check_out - booking.check_in
+        if booking.room_id.room_price_type == 'per hour':
+            units = max(1, math.ceil(duration.total_seconds() / 3600))
+        else:
+            units = max(1, (booking.check_out.date() - booking.check_in.date()).days)
+        booking.total_amount = booking.room_id.room_price * units
+
+    # Guest reservations: bookings still upcoming (reserved) or occupied but not yet checked in today
+    reservations_qs = ManageGuest.objects.filter(
+        (
+            Q(status__iexact='reserved') |
+            (Q(status__iexact='occupied') & Q(check_in__date__gt=today))
+        )
+    ).filter(
+        ~Q(status='checked_out')
+    ).select_related('guest_id', 'room_id').order_by('check_in')
+
+    # Use only actual reservations (no placeholders)
+    reservations = list(reservations_qs)
+
+    # Calculate total amount for each reservation
+    for booking in reservations:
+        # Compute total charge based on room price type
+        duration = booking.check_out - booking.check_in
+        if booking.room_id.room_price_type == 'per hour':
+            units = max(1, math.ceil(duration.total_seconds() / 3600))
+        else:
+            units = max(1, (booking.check_out.date() - booking.check_in.date()).days)
+        booking.total_amount = booking.room_id.room_price * units
+        
+        # Update room status if needed
+        if booking.status == 'reserved' and booking.room_id.room_status != 'reserved':
+            booking.room_id.room_status = 'reserved'
+            booking.room_id.save()
+
+    # Paginate the results - change the number of items per page
+    paginator_today = Paginator(todays_bookings, 5)
+    paginator_reservations = Paginator(reservations, 5)
+
+    page_today = request.GET.get('today_page', 1)
+    page_reservations = request.GET.get('reservation_page', 1)
+
+    try:
+        todays_bookings = paginator_today.page(page_today)
+    except (PageNotAnInteger, EmptyPage):
+        todays_bookings = paginator_today.page(1)
+
+    try:
+        reservations = paginator_reservations.page(page_reservations)
+    except (PageNotAnInteger, EmptyPage):
+        reservations = paginator_reservations.page(1)
+
+    context = {
+        'todays_bookings': todays_bookings,
+        'reservations': reservations,
+        'current_year': timezone.now().year,
+        'current_month': timezone.now().strftime('%B'),
+        'total_todays_bookings': todays_bookings.paginator.count,
+        'total_todays_reservations': reservations_qs.count(),
+    }
+
+    return render(request, "web/admin/todays_bookings.html", context)
 
 @login_required
 def add_reservation(request):
@@ -1050,7 +1142,7 @@ def manage_admin(request):
     admins_list = admins_list.order_by('first_name')
     
     # Paginate results
-    paginator = Paginator(admins_list, 10)  # Show 10 admins per page
+    paginator = Paginator(admins_list, 5)  # Show admins per page
     page = request.GET.get('page', 1)
     
     try:

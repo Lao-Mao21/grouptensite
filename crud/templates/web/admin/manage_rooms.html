@@ -137,25 +137,25 @@ function updateRoomStatus(roomId, status) {
                                 <label class="inline-flex items-center gap-x-2">
                                     <input type="radio" name="room_status" value="all" 
                                         {% if not selected_status or selected_status == "all" %}checked{% endif %} 
-                                        class="accent-blue-600 w-4 h-4">
+                                        class="accent-blue-600 w-4 h-4" onchange="this.form.submit()">
                                     <span class="text-sm">All Rooms</span>
                                 </label>
                                 <label class="inline-flex items-center gap-x-2">
                                     <input type="radio" name="room_status" value="available" 
                                         {% if selected_status == "available" %}checked{% endif %} 
-                                        class="accent-blue-600 w-4 h-4">
+                                        class="accent-blue-600 w-4 h-4" onchange="this.form.submit()">
                                     <span class="text-sm">Available</span>
                                 </label>
                                 <label class="inline-flex items-center gap-x-2">
                                     <input type="radio" name="room_status" value="occupied" 
                                         {% if selected_status == "occupied" %}checked{% endif %} 
-                                        class="accent-blue-600 w-4 h-4">
+                                        class="accent-blue-600 w-4 h-4" onchange="this.form.submit()">
                                     <span class="text-sm">Occupied</span>
                                 </label>
                                 <label class="inline-flex items-center gap-x-2">
                                     <input type="radio" name="room_status" value="reserved" 
                                         {% if selected_status == "reserved" %}checked{% endif %} 
-                                        class="accent-blue-600 w-4 h-4">
+                                        class="accent-blue-600 w-4 h-4" onchange="this.form.submit()">
                                     <span class="text-sm">Reserved</span>
                                 </label>
                             </div>
