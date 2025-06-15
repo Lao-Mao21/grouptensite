@@ -99,8 +99,7 @@
               <th class="py-3 px-4 text-left">Check out</th>
               <th class="py-3 px-4 text-left">Status</th>
               <th class="py-3 px-4 text-left">Payment Status</th>
-              <th class="py-3 px-4 text-left">Payment Method</th>
-              <th class="py-3 px-4 text-left">Amount</th>
+              <th class="py-3 px-4 text-left">Cancel</th>
             </tr>
           </thead>
           <tbody>
@@ -112,10 +111,11 @@
               <td class="py-3 px-4">{{ booking.check_out|date:"M d, Y H:i" }}</td>
               <td class="py-3 px-4">
                 <span class="px-2 py-1 text-sm rounded-full 
-                  {% if booking.room_id.room_status == 'occupied' %}bg-green-100 text-green-800
-                  {% elif booking.room_id.room_status == 'reserved' %}bg-yellow-100 text-yellow-800
+                  {% if booking.status == 'occupied' %}bg-green-100 text-green-800
+                  {% elif booking.status == 'reserved' %}bg-yellow-100 text-yellow-800
+                  {% elif booking.status == 'cancelled' %}bg-red-100 text-red-800
                   {% else %}bg-gray-100 text-gray-800{% endif %}">
-                  {{ booking.room_id.room_status|title }}
+                  {{ booking.status|title }}
                 </span>
               </td>
               <td class="py-3 px-4">
@@ -127,18 +127,11 @@
                   {{ booking.payment_status|title }}
                 </span>
               </td>
-              <td class="py-3 px-4">
-                {% if payment_transaction.transaction_id %}
-                  {{ payment_transaction.payment_method|title }}
-                {% else %}
-                  -
-                {% endif %}
-              </td>
-              <td class="py-3 px-4">
-                {% if payment_transaction.transaction_id %}
-                  ₱{{ payment_transaction.amount|floatformat:2 }}
-                {% else %}
-                  -
+              <td>
+                {% if booking.status != 'cancelled' and booking.status != 'checked_out' %}
+                <a href="{% url 'cancel_booking' booking.id %}" class="text-red-600 hover:text-red-800">
+                  <span class="material-icons text-base">cancel</span>
+                </a>
                 {% endif %}
               </td>
             </tr>
@@ -205,6 +198,35 @@
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Cancel Booking Modal -->
+<div id="cancelBookingModal" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+  <div class="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full transform scale-95 transition-transform duration-300">
+    <div class="flex items-center justify-between mb-8">
+      <img src="{{ MEDIA_URL }}NOVA DOORS HOTEL.png" alt="NOVA DOORS HOTEL" class="h-12">
+    </div>
+    <div class="flex items-center mb-6">
+      <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mr-4">
+        <svg class="w-10 h-10 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
+      </div>
+      <h3 class="text-xl">Cancel Booking</h3>
+      <p class="text-gray-500">Are you sure you want to cancel? Refund will be processed in 3-5 business days.</p>
+    </div>
+    <div class="flex justify-center space-x-4">
+      <button onclick="closeCancelBookingModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        Cancel
+      </button>
+      <form id="cancelBookingForm" method="post" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+          Confirm Cancel
+        </button>
+      </form>
+    </div>
   </div>
 </div>
 

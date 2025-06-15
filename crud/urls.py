@@ -18,6 +18,7 @@ urlpatterns = [
     path('guest/change-password/', views.guest_change_password, name='guest_change_password'),
     path('guest/process-payment/', views.process_payment, name='process_payment'),
     path('guest/confirm-payment/', views.confirm_payment, name='confirm_payment'),
+    path('guest/cancel-booking/<int:booking_id>/', views.cancel_booking, name='cancel_booking'),
     path('check-room-availability/<str:room_type>/<str:room_number>/', views.check_room_availability, name='check_room_availability'),
     
     # Admin URLs (protected by login_required)

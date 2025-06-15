@@ -1745,8 +1745,8 @@ def process_booking_payment(request):
             status='pending'
         )
         
-        # Initialize payment service
-        if settings.USE_STRIPE:
+        # Initialize payment service (default to Mock if setting absent)
+        if getattr(settings, 'USE_STRIPE', False):
             payment_service = StripePaymentService()
         else:
             payment_service = MockPaymentService()
@@ -1818,56 +1818,64 @@ def process_payment(request):
                 'error': 'Room is not available for selected dates'
             })
         
-        # Process payment using Stripe or mock service
-        if settings.USE_STRIPE:
-            payment_service = StripePaymentService()
-        else:
-            payment_service = MockPaymentService()
-            
-        # Create initial payment transaction
-        payment = PaymentTransaction.objects.create(
-            amount=float(data['booking_details'].get('total_amount', 0)),
-            status='pending'
+        use_stripe = getattr(settings, 'USE_STRIPE', False)
+
+        # Always create the booking first so we have a valid FK for any payment rows
+        booking = ManageGuest.objects.create(
+            guest_id=guest,
+            guest_name=guest.full_name,
+            room_id=room,
+            status='reserved',
+            guest_count=int(data['booking_details']['guest_count']),
+            check_in=check_in,
+            check_out=check_out,
+            expected_arrival=expected_arrival,
+            payment_status='paid' if not use_stripe else 'pending',
+            payment_mode='card'
         )
-        
-        # Process the payment
-        result = payment_service.process_payment(payment)
-        
-        if result.get('success'):
-            # Create the booking
-            booking = ManageGuest.objects.create(
-                guest_id=guest,
-                guest_name=guest.full_name,
-                room_id=room,
-                status='confirmed',
-                guest_count=data['booking_details']['guest_count'],
-                check_in=check_in,
-                check_out=check_out,
-                expected_arrival=expected_arrival,
-                payment_status='paid',
-                payment_mode='card'
+
+        # Update room status immediately
+        room.room_status = 'reserved'
+        room.save()
+
+        # If Stripe is enabled, create a PaymentTransaction and process it
+        if use_stripe:
+            payment_service = StripePaymentService()
+
+            payment = PaymentTransaction.objects.create(
+                guest=guest,
+                booking=booking,
+                amount=float(data['booking_details'].get('total_amount', 0)),
+                status='pending',
+                payment_method='card'
             )
-            
-            # Update payment with booking reference
-            payment.booking = booking
-            payment.status = 'completed'
+
+            result = payment_service.process_payment(payment)
+
+            if result.get('success'):
+                payment.status = 'completed'
+                booking.payment_status = 'paid'
+                success = True
+                message = 'Booking confirmed successfully'
+            else:
+                payment.status = 'failed'
+                booking.payment_status = 'pending'
+                success = False
+                message = 'Payment processing failed'
+
             payment.save()
-            
-            # Update room status
-            room.room_status = 'reserved'
-            room.save()
-            
-            return JsonResponse({
-                'success': True,
-                'message': 'Booking confirmed successfully'
-            })
-        else:
-            payment.status = 'failed'
-            payment.save()
-            return JsonResponse({
-                'success': False,
-                'error': 'Payment processing failed'
-            })
+            booking.save()
+
+            if success:
+                return JsonResponse({'success': True, 'message': message})
+            else:
+                return JsonResponse({'success': False, 'error': message})
+
+        # For mock payments we skip recording card/payment details entirely
+        return JsonResponse({
+            'success': True,
+            'message': 'Booking confirmed successfully (mock payment)'
+        })
             
     except Exception as e:
         return JsonResponse({
@@ -1920,3 +1928,34 @@ def confirm_payment(request):
             })
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+@guest_login_required
+def cancel_booking(request, booking_id):
+    """Allow a logged-in guest to cancel their own future reservation."""
+    try:
+        booking = get_object_or_404(ManageGuest, id=booking_id, guest_id=request.session.get('guest_id'))
+
+        # Only allow cancellation if booking has not started yet and is not already cancelled/checked out
+        if booking.status in ['reserved', 'confirmed'] and booking.check_in > timezone.now():
+            booking.status = 'cancelled'
+            # If payment was already captured, mark it for refund
+            if booking.payment_status == 'paid':
+                booking.payment_status = 'refunded'
+            booking.save()
+
+            # Free up the room
+            room = booking.room_id
+            room.room_status = 'available'
+            room.save()
+
+            # Mark any related payment transaction as refunded
+            PaymentTransaction.objects.filter(booking=booking).update(status='refunded')
+
+            messages.success(request, 'Booking cancelled successfully.')
+        else:
+            messages.error(request, 'This booking cannot be cancelled.')
+
+    except Exception as e:
+        messages.error(request, f'Error cancelling booking: {e}')
+
+    return redirect('guest_account')
