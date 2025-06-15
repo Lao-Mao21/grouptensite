@@ -62,9 +62,9 @@
   <img src="{{ MEDIA_URL }}unsplash-img.jpg" alt="landing_img.jpg" class="w-full aspect-[14/6] object-cover"/>
   <!-- Transparent color overlay -->
   <div id="home" class="absolute inset-0 bg-orange-400/50 backdrop-blur-xs">
-    <div class="flex flex-col my-auto mx-24 items-left justify-center h-full text-white">
-      <h1 class="text-5xl font-bold text-left">Your Gateway to Blissful Retreats</h1>
-      <p class="text-xl mt-2 max-w-4xl text-left">
+    <div class="flex flex-col my-auto h-full px-4 md:px-24 items-center md:items-start justify-center h-full text-white text-center md:text-left">
+      <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold">Your Gateway to Blissful Retreats</h1>
+      <p class="text-base sm:text-lg lg:text-xl mt-3 sm:mt-4 max-w-md lg:max-w-4xl">
         Welcome to Nova Doors Hotel - your gateway to comfort, elegance, and unforgettable stay. Experience modern luxury
         and personalized service in the heart of the city, where every stay feels like a home away from home.
       </p>
@@ -86,7 +86,7 @@
   {% comment %} room section {% endcomment %}
   <div id="rooms" class="flex-col mx-auto text-center text-black">
     <h1 class="text-5xl text-center font-bold"> OUR ROOMS </h1>
-    <div class="grid grid-rows-1 grid-cols-4 gap-6 px-12 py-8"> <!-- modify grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4 md:px-12 py-8"> <!-- responsive grid -->
       <div class="text-black text-center">
         <img src="{{ MEDIA_URL }}single.jpg" alt="single" class="aspect-[3/4] border border-transparent shadow-md rounded-2xl
         transition-transform duration-500 ease-in-out hover:scale-105">
@@ -131,7 +131,7 @@
   {% comment %} review section {% endcomment %}
   <div class="flex-col mx-auto text-center text-black">
     <h1 class="text-5xl text-center font-bold"> REVIEWS </h1>
-    <div class="grid grid-rows-1 grid-cols-3 gap-32 px-40 pt-12 pb-32"> <!-- modify grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 md:gap-16 xl:gap-32 px-4 md:px-16 xl:px-40 pt-12 pb-32"> <!-- responsive grid -->
       <div class="text-black text-left border border-gray-200 bg-white shadow-md rounded-xl">
         <div class="mt-4space-y-3 p-6">
           <div class="flex space-x-1 pb-32 text-yellow-400">
@@ -213,7 +213,7 @@
 {% comment %} location section {% endcomment %}
 <div class="flex-col mx-auto text-center text-black">
   <h1 class="text-5xl text-center font-bold"> WE ARE LOCATED AT </h1>
-  <div class="flex justify-center align-center px-40 pt-12 pb-32"> <!-- modify flex -->
+  <div class="flex justify-center align-center px-4 md:px-40 pt-12 pb-32"> <!-- modify flex -->
       <div class="text-black text-left border border-gray-200 bg-white shadow-md rounded-xl">
         <div class="mt-4space-y-3 p-6">
           <img src="{{ MEDIA_URL }}location.png" class="size-full" alt="location"/>
