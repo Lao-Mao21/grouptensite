@@ -88,33 +88,11 @@
                                            class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 </div>
                             </div>
-                            <!-- Status Filter -->
-                            <div class="min-w-[150px]">
-                                <select name="status" 
-                                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                                    <option value="">All Status</option>
-                                    <option value="checked_in" {% if selected_status == 'checked_in' %}selected{% endif %}>Checked In</option>
-                                    <option value="checked_out" {% if selected_status == 'checked_out' %}selected{% endif %}>Checked Out</option>
-                                    <option value="reserved" {% if selected_status == 'reserved' %}selected{% endif %}>Reserved</option>
-                                    <option value="cancelled" {% if selected_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
-                                </select>
-                            </div>
-                            <!-- Sort By -->
-                            <div class="min-w-[150px]">
-                                <select name="sort" 
-                                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                                    <option value="name" {% if sort == 'name' %}selected{% endif %}>Sort by Name</option>
-                                    <option value="check_in" {% if sort == 'check_in' %}selected{% endif %}>Sort by Check-in</option>
-                                    <option value="check_out" {% if sort == 'check_out' %}selected{% endif %}>Sort by Check-out</option>
-                                    <option value="room" {% if sort == 'room' %}selected{% endif %}>Sort by Room</option>
-                                    <option value="status" {% if sort == 'status' %}selected{% endif %}>Sort by Status</option>
-                                </select>
-                            </div>
                             <!-- Action Buttons -->
                             <div class="flex gap-2">
                                 <button type="submit" 
                                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1">
-                                    <span class="material-icons text-sm">filter_alt</span>
+                                    <span class="material-icons text-sm">search</span>
                                     Filter
                                 </button>
                                 {% if search or selected_status or date_from or date_to or sort %}
@@ -161,18 +139,26 @@
                             <td class="px-4 py-2 border">
                                 <span class="px-2 py-1 rounded-full text-xs font-medium
                                     {% if booking.status == 'reserved' %}bg-yellow-100 text-yellow-800
-                                    {% elif booking.status == 'confirmed' %}bg-green-100 text-green-800
-                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {% elif booking.status == 'occupied' %}bg-green-100 text-green-800
+                                    {% elif booking.status == 'checked_out' %}bg-gray-100 text-gray-800
+                                    {% else %}bg-blue-100 text-blue-800{% endif %}">
                                     {{ booking.status|title }}
                                 </span>
                             </td>
                             <td class="px-4 py-2 border">{{ booking.check_in|date:"m/d/y h:i A" }}</td>
                             <td class="px-4 py-2 border">{{ booking.check_out|date:"m/d/y h:i A" }}</td>
-                            <td class="px-4 py-2 border">{{ booking.payment_status }}</td>
+                            <td class="px-4 py-2 border">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium
+                                    {% if booking.payment_status == 'paid' %}bg-green-100 text-green-800
+                                    {% elif booking.payment_status == 'pending' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ booking.payment_status|title }}
+                                </span>
+                            </td>
                             <td class="px-4 py-2 border">₱ {{ booking.total_amount|floatformat:2 }}</td>
-                            <td class="px-4 py-2 border text-center align-middle">
+                            <td class="px-4 py-2 border text-center">
                                 <div class="flex justify-center space-x-2">
-                                    <a href="{% url 'edit_guest' booking.id %}" class="text-green-600 hover:text-green-800" title="Edit">
+                                    <a href="{% url 'edit_guest' booking.id %}" class="text-blue-600 hover:text-blue-800" title="Edit">
                                         <span class="material-icons text-base">edit</span>
                                     </a>
                                     {% if booking.room_id.room_status in 'occupied,reserved' and booking.payment_status == 'paid' %}
@@ -183,7 +169,7 @@
                                         data-room-type="{{ booking.room_id.get_room_type_display }}"
                                         data-check-in="{{ booking.check_in|date:'m/d/y h:i A' }}"
                                         data-check-out="{{ booking.check_out|date:'m/d/y h:i A' }}"
-                                        data-status="{{ booking.room_id.room_status }}"
+                                        data-status="{{ booking.status }}"
                                         data-payment-status="{{ booking.payment_status }}"
                                         onclick="showCheckoutModalFromData(this)"
                                         class="text-red-600 hover:text-red-800" 
@@ -300,7 +286,6 @@
                             <th class="px-4 py-2 border">Room</th>
                             <th class="px-4 py-2 border">Type</th>
                             <th class="px-4 py-2 border">Name</th>
-                            <!-- <th class="px-4 py-2 border">Bed Type</th> -->
                             <th class="px-4 py-2 border">Status</th>
                             <th class="px-4 py-2 border">Expected Arrival</th>
                             <th class="px-4 py-2 border">Check in</th>
@@ -316,12 +301,12 @@
                             <td class="px-4 py-2 border">{{ booking.room_id.room_number }}</td>
                             <td class="px-4 py-2 border">{{ booking.room_id.get_room_type_display }}</td>
                             <td class="px-4 py-2 border">{{ booking.guest_name }}</td>
-                            <!-- <td class="px-4 py-2 border">{{ booking.room_id.get_bed_type_display }}</td> -->
                             <td class="px-4 py-2 border">
                                 <span class="px-2 py-1 rounded-full text-xs font-medium
                                     {% if booking.status == 'reserved' %}bg-yellow-100 text-yellow-800
-                                    {% elif booking.status == 'confirmed' %}bg-green-100 text-green-800
-                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {% elif booking.status == 'occupied' %}bg-green-100 text-green-800
+                                    {% elif booking.status == 'checked_out' %}bg-gray-100 text-gray-800
+                                    {% else %}bg-blue-100 text-blue-800{% endif %}">
                                     {{ booking.status|title }}
                                 </span>
                             </td>
@@ -493,6 +478,49 @@
         initializeTableSwitcher();
         updateDate();
         initializeFilters();
+        
+        // Set up automatic status update timer
+        function updateBookingStatuses() {
+            const now = new Date();
+            
+            // Update today's bookings
+            document.querySelectorAll('#today-bookings-table tbody tr').forEach(row => {
+                const checkIn = new Date(row.querySelector('td:nth-child(5)').textContent);
+                const checkOut = new Date(row.querySelector('td:nth-child(6)').textContent);
+                const statusCell = row.querySelector('td:nth-child(4) span');
+                
+                if (now >= checkIn && now < checkOut) {
+                    statusCell.textContent = 'Occupied';
+                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
+                } else if (now >= checkOut) {
+                    statusCell.textContent = 'Checked Out';
+                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800';
+                }
+            });
+            
+            // Update reservations
+            document.querySelectorAll('#reservations-table tbody tr').forEach(row => {
+                const expectedArrival = new Date(row.querySelector('td:nth-child(5)').textContent);
+                const checkIn = new Date(row.querySelector('td:nth-child(6)').textContent);
+                const checkOut = new Date(row.querySelector('td:nth-child(7)').textContent);
+                const statusCell = row.querySelector('td:nth-child(4) span');
+                
+                if (now >= checkIn && now < checkOut) {
+                    statusCell.textContent = 'Occupied';
+                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
+                } else if (now >= checkOut) {
+                    statusCell.textContent = 'Checked Out';
+                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800';
+                } else if (now >= expectedArrival && now < checkIn) {
+                    statusCell.textContent = 'Expected';
+                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800';
+                }
+            });
+        }
+
+        // Update statuses immediately and then every minute
+        updateBookingStatuses();
+        setInterval(updateBookingStatuses, 60000);
     });
 
     function showCheckoutModalFromData(button) {
@@ -524,7 +552,7 @@
             <li><span class="font-medium">Payment Status:</span> ${paymentStatus}</li>
         `;
 
-        // Set the form action - use the correct URL pattern
+        // Set the form action
         form.action = `/check_out/${guestId}/`;
 
         // Show the modal
@@ -556,7 +584,7 @@
                 'X-CSRFToken': csrfToken,
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            credentials: 'same-origin',  // This is important for CSRF
+            credentials: 'same-origin',
             body: new FormData(form)
         })
         .then(response => {
@@ -584,82 +612,6 @@
             console.error('Error:', error);
             alert('Error during check-out: ' + error.message);
             closeCheckoutModal();
-        });
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        // Set up automatic status update timer
-        function updateBookingStatuses() {
-            const now = new Date();
-            
-            // Update today's bookings
-            document.querySelectorAll('#today-bookings-table tbody tr').forEach(row => {
-                const checkIn = new Date(row.querySelector('td:nth-child(5)').textContent);
-                const checkOut = new Date(row.querySelector('td:nth-child(6)').textContent);
-                const statusCell = row.querySelector('td:nth-child(4) span');
-                const roomStatusCell = row.querySelector('td:nth-child(1)');
-                
-                if (now >= checkIn && now < checkOut) {
-                    statusCell.textContent = 'Occupied';
-                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
-                    // Update room status in database
-                    updateRoomStatus(row.dataset.roomId, 'occupied');
-                } else if (now >= checkOut) {
-                    statusCell.textContent = 'Checked Out';
-                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800';
-                    // Update room status in database
-                    updateRoomStatus(row.dataset.roomId, 'available');
-                }
-            });
-            
-            // Update reservations
-            document.querySelectorAll('#reservations-table tbody tr').forEach(row => {
-                const expectedArrival = new Date(row.querySelector('td:nth-child(5)').textContent);
-                const checkIn = new Date(row.querySelector('td:nth-child(6)').textContent);
-                const checkOut = new Date(row.querySelector('td:nth-child(7)').textContent);
-                const statusCell = row.querySelector('td:nth-child(4) span');
-                
-                if (now >= checkIn && now < checkOut) {
-                    statusCell.textContent = 'Occupied';
-                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
-                    // Update room status in database
-                    updateRoomStatus(row.dataset.roomId, 'occupied');
-                } else if (now >= checkOut) {
-                    statusCell.textContent = 'Checked Out';
-                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800';
-                    // Update room status in database
-                    updateRoomStatus(row.dataset.roomId, 'available');
-                } else if (now >= expectedArrival && now < checkIn) {
-                    statusCell.textContent = 'Expected';
-                    statusCell.className = 'px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800';
-                }
-            });
-        }
-
-        // Function to update room status in the database
-        function updateRoomStatus(roomId, status) {
-            if (!roomId) return;
-            
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            fetch(`/update-room-status/${roomId}/${status}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken,
-                    'Content-Type': 'application/json'
-                }
-            }).catch(error => console.error('Error updating room status:', error));
-        }
-
-        // Update statuses immediately and then every minute
-        updateBookingStatuses();
-        setInterval(updateBookingStatuses, 60000);
-
-        // Add room IDs to table rows for status updates
-        document.querySelectorAll('#today-bookings-table tbody tr, #reservations-table tbody tr').forEach(row => {
-            const roomNumber = row.querySelector('td:nth-child(1)').textContent;
-            if (roomNumber) {
-                row.dataset.roomId = roomNumber;
-            }
         });
     });
 </script>

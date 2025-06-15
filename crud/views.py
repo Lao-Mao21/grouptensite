@@ -21,6 +21,7 @@ from .models import (
 )
 from .backends import MockPaymentService, StripePaymentService, guest_login_required
 import json
+from django.contrib.auth.hashers import make_password
 
 def update_booking_statuses():
     """
@@ -436,25 +437,29 @@ def manage_guests(request):
         base_search
     ).select_related('guest_id', 'room_id').order_by('check_in')
 
-    # Calculate the number of nights and total amount for each booking
+    # Calculate total amount for each booking
     for booking in todays_bookings:
-        nights = (booking.check_out - booking.check_in).days
-        booking.total_amount = booking.room_id.room_price * nights if nights > 0 else booking.room_id.room_price
+        # Calculate nights, ensuring at least 1 night is charged
+        time_diff = booking.check_out - booking.check_in
+        nights = max(1, time_diff.days + (1 if time_diff.seconds > 0 else 0))
+        booking.total_amount = booking.room_id.room_price * nights
         
-        # Update room status to match the booking status
-        if booking.status == 'occupied':
+        # Update room status if needed
+        if booking.status == 'occupied' and booking.room_id.room_status != 'occupied':
             booking.room_id.room_status = 'occupied'
             booking.room_id.save()
-        elif booking.status == 'confirmed':
+        elif booking.status == 'reserved' and booking.room_id.room_status != 'reserved':
             booking.room_id.room_status = 'reserved'
             booking.room_id.save()
 
     for booking in reservations:
-        nights = (booking.check_out - booking.check_in).days
-        booking.total_amount = booking.room_id.room_price * nights if nights > 0 else booking.room_id.room_price
+        # Calculate nights, ensuring at least 1 night is charged
+        time_diff = booking.check_out - booking.check_in
+        nights = max(1, time_diff.days + (1 if time_diff.seconds > 0 else 0))
+        booking.total_amount = booking.room_id.room_price * nights
         
-        # Update room status for reservations
-        if booking.status == 'reserved':
+        # Update room status if needed
+        if booking.status == 'reserved' and booking.room_id.room_status != 'reserved':
             booking.room_id.room_status = 'reserved'
             booking.room_id.save()
 
@@ -505,7 +510,7 @@ def add_guest(request):
         notes = request.POST.get("notes")
 
         if GuestAccounts.objects.filter(username=username).exists():
-            messages.error(request, "Usernames duplicates are not allowed")
+            messages.error(request, "Username already exists. Please choose another.")
             # Pass all the form data back to the template
             context = {
                 "first_name": first_name,
@@ -548,25 +553,47 @@ def add_guest(request):
             messages.error(request, "Please fill in all required fields.")
             return render(request, 'web/admin/add_admin.html', context)
 
-        new_guest = GuestAccounts(
-            first_name=first_name,
-            last_name=last_name,
-            middle_name=middle_name,
-            username=username,
-            full_name=full_name,
-            gender=gender,
-            email=email,
-            phone_number=phone_number,
-            address=address,
-            password=password,
-            nationality=nationality,
-            date_of_birth=date_of_birth,
-            emergency_contact=emergency_contact,
-            notes=notes,
-        )
-        new_guest.save()
-        messages.success(request, "Guest added successfully!")
-        return redirect("/manage_guests/")
+        try:
+            guest = GuestAccounts(
+                first_name=first_name,
+                middle_name=middle_name,
+                last_name=last_name,
+                full_name=f"{first_name} {middle_name if middle_name else ''} {last_name}".strip(),
+                username=username,
+                email=email,
+                phone_number=phone_number,
+                gender=gender,
+                date_of_birth=date_of_birth,
+                nationality=nationality,
+                address=address,
+                password=password,  # Model's save method will hash this
+                last_login=timezone.now()
+            )
+
+            # If the model has 'is_active' field, set it explicitly to True
+            if hasattr(guest, 'is_active'):
+                guest.is_active = True
+
+            guest.save()
+            messages.success(request, "Guest added successfully!")
+            return redirect("/manage_guests/")
+        except ValueError as e:
+            messages.error(request, str(e))
+            context = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "middle_name": middle_name,
+                "username": username,
+                "gender": gender,
+                "email": email,
+                "phone_number": phone_number,
+                "address": address,
+                "nationality": nationality,
+                "date_of_birth": date_of_birth,
+                "emergency_contact": emergency_contact,
+                "notes": notes,
+            }
+            return render(request, 'web/admin/add_guest.html', context)
     return render(request, "web/admin/add_guest.html")
 
 @login_required
@@ -840,13 +867,11 @@ def book_guest(request):
             expected_arrival_dt = parse_datetime(expected_arrival) if expected_arrival else check_in
 
             # Set initial status based on booking type
-            if booking_type == 'check_in':
+            if booking_type == 'immediate':
                 initial_status = 'occupied'
-                payment_status = 'paid'  # For direct check-ins, payment is always marked as paid
                 room_status = 'occupied'
             else:  # reservation
                 initial_status = 'reserved'
-                payment_status = 'pending'
                 room_status = 'reserved'
 
             # Create booking without requiring a guest account
@@ -859,7 +884,7 @@ def book_guest(request):
                 check_in=check_in,
                 check_out=check_out,
                 expected_arrival=expected_arrival_dt,
-                payment_status=payment_status,
+                payment_status='paid',  # Always set to paid
                 payment_mode=payment_mode
             )
 
@@ -898,8 +923,7 @@ def add_admin(request):
         is_active = request.POST.get("is_active")
         
         if AdminAccounts.objects.filter(username=username).exists():
-            messages.error(request, "Usernames duplicates are not allowed")
-            # Pass all the form data back to the template
+            messages.error(request, "Username already exists. Please choose another.")
             context = {
                 "first_name": first_name,
                 "last_name": last_name,
@@ -909,13 +933,12 @@ def add_admin(request):
                 "email": email,
                 "phone_number": phone_number,
                 "address": address,
-                # Add any other fields
+                "date_of_birth": date_of_birth,
             }
             return render(request, 'web/admin/add_admin.html', context)
 
         if password != confirm_password:
             messages.error(request, "Passwords do not match")
-            # Pass all the form data back to the template
             context = {
                 "first_name": first_name,
                 "last_name": last_name,
@@ -925,39 +948,111 @@ def add_admin(request):
                 "email": email,
                 "phone_number": phone_number,
                 "address": address,
-                # Add any other fields
+                "date_of_birth": date_of_birth,
             }
             return render(request, 'web/admin/add_admin.html', context)
 
         if not all([first_name, last_name, username, gender, email, phone_number, address, password]):
             messages.error(request, "Please fill in all required fields.")
+            context = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "middle_name": middle_name,
+                "username": username,
+                "gender": gender,
+                "email": email,
+                "phone_number": phone_number,
+                "address": address,
+                "date_of_birth": date_of_birth,
+            }
             return render(request, 'web/admin/add_admin.html', context)
         
-        # Create admin account
-        admin = AdminAccounts.objects.create(
-            first_name=first_name,
-            last_name=last_name,
-            middle_name=middle_name,
-            username=username,
-            email=email,
-            phone_number=phone_number,
-            address=address,
-            password=password,
-            gender=gender,
-            date_of_birth=date_of_birth,
-            is_active=is_active
-        )
-        admin.save()
-        return redirect('/manage_admin/')
+        try:
+            # Check if password is already in use
+            hashed_password = make_password(password)
+            if (AdminAccounts.objects.filter(password=hashed_password).exists() or 
+                GuestAccounts.objects.filter(password=hashed_password).exists()):
+                messages.error(request, "This password is already in use. Please choose a different password.")
+                context = {
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "middle_name": middle_name,
+                    "username": username,
+                    "gender": gender,
+                    "email": email,
+                    "phone_number": phone_number,
+                    "address": address,
+                    "date_of_birth": date_of_birth,
+                }
+                return render(request, 'web/admin/add_admin.html', context)
+
+            # Create admin account
+            full_name = f"{first_name} {middle_name} {last_name}".strip()
+            admin = AdminAccounts.objects.create(
+                first_name=first_name,
+                last_name=last_name,
+                middle_name=middle_name,
+                username=username,
+                full_name=full_name,
+                email=email,
+                phone_number=phone_number,
+                address=address,
+                password=hashed_password,  # Use the hashed password
+                gender=gender,
+                date_of_birth=date_of_birth,
+                is_active=True if is_active else True
+            )
+            messages.success(request, 'Admin account created successfully.')
+            return redirect('manage_admin')
+        except ValueError as e:
+            messages.error(request, str(e))
+            context = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "middle_name": middle_name,
+                "username": username,
+                "gender": gender,
+                "email": email,
+                "phone_number": phone_number,
+                "address": address,
+                "date_of_birth": date_of_birth,
+            }
+            return render(request, 'web/admin/add_admin.html', context)
     return render(request, "web/admin/add_admin.html")
 
 @login_required        
 def manage_admin(request):
-    # Get all admins and paginate
-    admins_list = AdminAccounts.objects.all().order_by('first_name')
-    paginator = Paginator(admins_list, 10)  # Show 10 admins per page
+    # Get search and filter parameters
+    search_query = request.GET.get('search', '')
+    status_filter = request.GET.get('status', '')
     
+    # Start with all admins
+    admins_list = AdminAccounts.objects.all()
+    
+    # Apply search if provided
+    if search_query:
+        admins_list = admins_list.filter(
+            Q(username__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(phone_number__icontains=search_query)
+        )
+    
+    # Apply status filter if provided
+    if status_filter:
+        if status_filter == 'active':
+            admins_list = admins_list.filter(is_active=True)
+        elif status_filter == 'inactive':
+            admins_list = admins_list.filter(is_active=False)
+    
+    # Order by first name
+    admins_list = admins_list.order_by('first_name')
+    
+    # Paginate results
+    paginator = Paginator(admins_list, 10)  # Show 10 admins per page
     page = request.GET.get('page', 1)
+    
     try:
         admins = paginator.page(page)
     except PageNotAnInteger:
@@ -965,9 +1060,17 @@ def manage_admin(request):
     except EmptyPage:
         admins = paginator.page(paginator.num_pages)
     
-    return render(request, "web/admin/manage_admins.html", {
-        "admins": admins
-    })
+    # Prepare context
+    context = {
+        "admins": admins,
+        "search_query": search_query,
+        "status_filter": status_filter,
+        "total_admins": admins_list.count(),
+        "active_admins": admins_list.filter(is_active=True).count(),
+        "inactive_admins": admins_list.filter(is_active=False).count()
+    }
+    
+    return render(request, "web/admin/manage_admins.html", context)
 
 @login_required
 def edit_admin(request, admin_id):
@@ -998,13 +1101,20 @@ def edit_admin(request, admin_id):
             if not all([admin.first_name, admin.last_name, admin.username, 
                        admin.email, admin.phone_number, admin.address]):
                 messages.error(request, 'Please fill in all required fields.')
-                return redirect('manage_admin')
+                return render(request, "web/admin/manage_admins.html", {
+                    "admin": admin,
+                    "error": "Please fill in all required fields."
+                })
             
             admin.save()
             messages.success(request, 'Admin account updated successfully.')
             return redirect('manage_admin')
             
-        return redirect('manage_admin')
+        # For GET requests, render the edit form
+        return render(request, "web/admin/manage_admins.html", {
+            "admin": admin,
+            "edit_mode": True
+        })
     except AdminAccounts.DoesNotExist:
         messages.error(request, 'Admin account not found.')
         return redirect('manage_admin')
@@ -1042,15 +1152,43 @@ def change_admin_password(request, admin_id):
             # Validate current password
             if not admin.check_password(current_password):
                 messages.error(request, 'Current password is incorrect.')
-                return redirect('manage_admin')
+                return render(request, "web/admin/manage_admins.html", {
+                    "admin": admin,
+                    "error": "Current password is incorrect.",
+                    "show_password_modal": True
+                })
 
             # Validate new password
             if new_password != confirm_password:
                 messages.error(request, 'New passwords do not match.')
-                return redirect('manage_admin')
+                return render(request, "web/admin/manage_admins.html", {
+                    "admin": admin,
+                    "error": "New passwords do not match.",
+                    "show_password_modal": True
+                })
+
+            # Validate password length
+            if len(new_password) < 8:
+                messages.error(request, 'Password must be at least 8 characters long.')
+                return render(request, "web/admin/manage_admins.html", {
+                    "admin": admin,
+                    "error": "Password must be at least 8 characters long.",
+                    "show_password_modal": True
+                })
+
+            # Check if new password is already in use
+            hashed_password = make_password(new_password)
+            if (AdminAccounts.objects.exclude(admin_id=admin_id).filter(password=hashed_password).exists() or 
+                GuestAccounts.objects.filter(password=hashed_password).exists()):
+                messages.error(request, 'This password is already in use. Please choose a different password.')
+                return render(request, "web/admin/manage_admins.html", {
+                    "admin": admin,
+                    "error": "This password is already in use. Please choose a different password.",
+                    "show_password_modal": True
+                })
 
             # Update password
-            admin.password = new_password  # The model's save method will hash the password
+            admin.password = hashed_password
             admin.save()
 
             messages.success(request, 'Password changed successfully.')
@@ -1059,11 +1197,31 @@ def change_admin_password(request, admin_id):
         except AdminAccounts.DoesNotExist:
             messages.error(request, 'Admin account not found.')
             return redirect('manage_admin')
+        except ValueError as e:
+            messages.error(request, str(e))
+            return render(request, "web/admin/manage_admins.html", {
+                "admin": admin,
+                "error": str(e),
+                "show_password_modal": True
+            })
         except Exception as e:
             messages.error(request, f'Error changing password: {str(e)}')
-            return redirect('manage_admin')
+            return render(request, "web/admin/manage_admins.html", {
+                "admin": admin,
+                "error": f'Error changing password: {str(e)}',
+                "show_password_modal": True
+            })
 
-    return redirect('manage_admin')
+    # For GET requests, show the password change form
+    try:
+        admin = AdminAccounts.objects.get(admin_id=admin_id)
+        return render(request, "web/admin/manage_admins.html", {
+            "admin": admin,
+            "show_password_modal": True
+        })
+    except AdminAccounts.DoesNotExist:
+        messages.error(request, 'Admin account not found.')
+        return redirect('manage_admin')
 
 # Guest Views
 def nova_hotel(request):
@@ -1114,6 +1272,14 @@ def register(request):
                         'error': 'Username already exists. Please choose another.'
                     })
 
+                # Check if password is already in use
+                hashed_password = make_password(password)
+                if AdminAccounts.objects.filter(password=hashed_password).exists() or GuestAccounts.objects.filter(password=hashed_password).exists():
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'This password is already in use. Please choose a different password.'
+                    })
+
                 # Create GuestAccounts instance
                 guest = GuestAccounts(
                     first_name=first_name,
@@ -1127,10 +1293,14 @@ def register(request):
                     date_of_birth=date_of_birth,
                     nationality=nationality,
                     address=address,
-                    password=password,  # Model's save method will hash this
-                    is_active=True,
+                    password=hashed_password,  # Model's save method will hash this
                     last_login=timezone.now()
                 )
+
+                # If the model has 'is_active' field, set it explicitly to True
+                if hasattr(guest, 'is_active'):
+                    guest.is_active = True
+
                 guest.save()
 
                 # Set session data
@@ -1142,6 +1312,11 @@ def register(request):
                     'redirect_url': '/nova_hotel/'  # Change to redirect to 
                 })
 
+        except ValueError as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
         except Exception as e:
             return JsonResponse({
                 'success': False,
@@ -1212,6 +1387,15 @@ def guest_change_password(request):
                     'error': 'Passwords do not match'
                 })
 
+            # Check if new password is already in use
+            hashed_password = make_password(new_password)
+            if (AdminAccounts.objects.filter(password=hashed_password).exists() or 
+                GuestAccounts.objects.exclude(guest_id=guest.guest_id).filter(password=hashed_password).exists()):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'This password is already in use. Please choose a different password'
+                })
+
             guest.password = new_password
             guest.save()
 
@@ -1224,6 +1408,11 @@ def guest_change_password(request):
             return JsonResponse({
                 'success': False,
                 'error': 'Guest account not found'
+            })
+        except ValueError as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
             })
         except Exception as e:
             return JsonResponse({

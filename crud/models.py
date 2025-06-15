@@ -1,6 +1,6 @@
 from django.db import models
-from django.utils import timezone
 from django.contrib.auth.hashers import make_password, check_password
+from django.utils import timezone
 
 # Create your models here.
 
@@ -78,7 +78,11 @@ class AdminAccounts(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.password.startswith('pbkdf2_'):
-            self.password = make_password(self.password)
+            # Check if password is already in use
+            hashed_password = make_password(self.password)
+            if AdminAccounts.objects.filter(password=hashed_password).exists() or GuestAccounts.objects.filter(password=hashed_password).exists():
+                raise ValueError("This password is already in use. Please choose a different password.")
+            self.password = hashed_password
         super().save(*args, **kwargs)
 
     def check_password(self, raw_password):
@@ -91,6 +95,13 @@ class AdminAccounts(models.Model):
     @property
     def is_authenticated(self):
         return True
+
+    def get_username(self):
+        """Return the username for this User."""
+        return self.username
+
+    def __str__(self):
+        return self.full_name
 
 class GuestAccounts(models.Model):
     class Meta:
@@ -113,6 +124,7 @@ class GuestAccounts(models.Model):
     password = models.CharField(max_length=255, blank=False, null=False)
     date_of_birth = models.DateField(blank=True, null=True)
     last_login = models.DateTimeField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
     email_verified = models.BooleanField(default=False)
     nationality = models.CharField(max_length=100, blank=True, null=True)
     emergency_contact = models.CharField(max_length=100, blank=True, null=True)
@@ -126,7 +138,11 @@ class GuestAccounts(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.password.startswith('pbkdf2_'):
-            self.password = make_password(self.password)
+            # Check if password is already in use
+            hashed_password = make_password(self.password)
+            if AdminAccounts.objects.filter(password=hashed_password).exists() or GuestAccounts.objects.filter(password=hashed_password).exists():
+                raise ValueError("This password is already in use. Please choose a different password.")
+            self.password = hashed_password
         super().save(*args, **kwargs)
         
     def check_password(self, raw_password):
