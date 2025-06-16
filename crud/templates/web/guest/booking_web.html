@@ -298,13 +298,7 @@
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Number of Guests <span class="text-red-500">*</span></label>
-            <select name="guest_count" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
-              <option value="">Select</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-            </select>
+            <input type="number" min="1" max="99" placeholder="Enter Number" id="guest-count" name="guest_count" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Check IN <span class="text-red-500">*</span></label>
@@ -331,7 +325,7 @@
           <button type="button" onclick="prevStep()" class="px-8 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
             Back
           </button>
-          <button type="button" onclick="validateAndProceed()" class="px-8 py-2 bg-green-500 text-white rounded-lg hover:bg-orange-600">
+          <button type="button" onclick="validateAndProceed()" class="px-8 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
             Next
           </button>
         </div>
@@ -1262,4 +1256,20 @@ function initializePaymentForm() {
   });
 }
 </script>
+
+<!-- Limit guest count to 2 digits -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const guestInput = document.getElementById('guest-count');
+  
+      guestInput.addEventListener('input', () => {
+        // Remove non-digit characters
+        guestInput.value = guestInput.value.replace(/\D/g, '');
+        // Limit to 2 digits
+        if (guestInput.value.length > 2) {
+          guestInput.value = guestInput.value.slice(0, 2);
+        }
+      });
+    });
+  </script>
 {% endblock %}
