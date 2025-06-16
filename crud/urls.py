@@ -11,6 +11,7 @@ urlpatterns = [
     path('register/', views.register, name='register'),
     path('guest/login/', views.guest_login, name='guest_login'),
     
+    
     # Guest URLs (protected by guest_login_required)
     path('guest/account/', views.guest_account, name='guest_account'),
     path('guest/logout/', views.guest_logout, name='guest_logout'),
